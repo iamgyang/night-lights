@@ -9,11 +9,11 @@ set type double, perm
 
 // ========== Macros ============
 foreach user in "`c(username)'" {
-	global root "C:/Users/`user'/Dropbox/CGD GlobalSat/"
-	global ntl_input "$root/NTL Data/NTL Extracted Data 2012-2020/"
-	global hf_input "$root/HF_measures/input/"
+		global root "C:/Users/`user'/Dropbox/CGD GlobalSat/"
+		global hf_input "$root/HF_measures/input/"
+		global ntl_input "$hf_input/NTL Extracted Data 2012-2020/"
 }
-
+	
 cd "$input/Household Surveys/LSMS"
 
 cap program drop dirlist

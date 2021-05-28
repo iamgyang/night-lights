@@ -1,8 +1,8 @@
 // Macros
 	foreach user in "`c(username)'" {
 		global root "C:/Users/`user'/Dropbox/CGD GlobalSat/"
-		global ntl_input "$root/NTL Data/NTL Extracted Data 2012-2020/"
 		global hf_input "$root/HF_measures/input/"
+		global ntl_input "$hf_input/NTL Extracted Data 2012-2020/"
 	}
 
 global outreg_file "$hf_input/prelim_reg_7.xls"
@@ -18,6 +18,7 @@ set more off
 	// mmerge
 	// outreg2
 	// somersd
+	// 	asgen
 	
 //Import IMF dataset
 	import excel "$hf_input/National Accounts/imf_national_gdp.xlsx", ///
@@ -147,27 +148,50 @@ set more off
 // save
 	save "$hf_input/NTL_appended.dta", replace
 	use "$hf_input/NTL_appended.dta", clear
+	
 // merge w/ GDP data
 	replace std_pix = "" if std_pix == "NA"
 	destring(std_pix), generate(sd_pix)
-	bysort iso3c time: egen mean_pix = mean(mean_pix) [aweight = pol_area]
-	bysort iso3c time: egen std_pix = mean(std_pix) [aweight = pol_area]
-	bysort iso3c time: egen sum_pix = mean(sum_pix) [aweight = pol_area]
-	collapse (mean) mean_pix sd_pix sum_pix, by (iso3c yq)
+
+	save "$hf_input/NTL_appended.dta", replace
+	use "$hf_input/NTL_appended.dta", clear
+	
+// First, we aggregate by taking a mean (or sum) across the ADM2's (space).
+	bysort iso3c time: asgen mean_pix1 = mean_pix, w(pol_area)
+	bysort iso3c time: asgen sd_pix1 = sd_pix, w(pol_area)
+	bysort iso3c time: egen sum_pix_sum = total(sum_pix)
+	bysort iso3c time: asgen sum_pix_mean = sum_pix, w(pol_area)
+
+// Second, we aggregate by taking a mean across the quarters (time):
+	collapse (mean) mean_pix1 sd_pix1 sum_pix_sum sum_pix_mean, by (iso3c yq)
+	br
+
+// merge with real GDP:
 	mmerge iso3c yq using "$hf_input/imf_real_gdp.dta"
 	keep if inlist(_m, 3)
 	sort iso3c yq
 	drop _m
+	
+// label vars:
 	label variable iso3c "ISO3 national code"
 	label variable yq "quarterly date"
-	label variable mean_pix "mean pixel luminance, weighted by polygon size"
+	label variable mean_pix1 "mean pixel luminance, weighted by polygon size"
 	label variable ///
-	sum_pix "mean of the sum of pixel luminance, weighted by polygon size"
-	label variable sd_pix ///
+	sum_pix_mean "sum of pixel luminance: collapsed with a mean across TIME (months), and a MEAN across LOCATION (ADM2s)"
+	label variable ///
+	sum_pix_sum "sum of pixel luminance: collapsed with a mean across TIME (months), and a SUM across LOCATION (ADM2s)"
+	label variable ///
+	sum_pix_sum "mean of the sum of pixel luminance, weighted by polygon size"
+	label variable sd_pix1 ///
 	"mean of the standard deviation of pixel luminance, weighted by polygon size"
 	label variable rgdp "quarterly real GDP in local currency"
 	label variable nom_gdp "quarterly nominal GDP in local currency"
 	
+// create year and quarter variables for R users:
+	gen year = yofd(dofq(yq))
+	gen quarter = quarter(dofq(yq))	
+	
+// save:
 	save "$hf_input/ntl_natl_gdp.dta", replace
 	
 // prep for regressions:
