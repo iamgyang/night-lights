@@ -202,7 +202,7 @@
 		assert dup_id_cov==0
 		restore
 	
-	save "$hf_input/imf_pwt_GDP_annual.dta", clear
+	save "$hf_input/imf_pwt_GDP_annual.dta", replace
 
 *** Merge all data with NTL data ---------------------------------------------
 	use "$hf_input/ntl_cty_agg.dta", clear
