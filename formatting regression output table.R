@@ -37,3 +37,21 @@ todel <- todel1 & todel2
 
 bob <- bob[!todel,]
 bob %>% write.csv("formatted_regression_initial2.csv")
+
+###########################################################################
+###########################################################################
+# transforming natl_reg_hender_5
+setwd("C:/Users/gyang/Dropbox/CGD GlobalSat/HF_measures/input")
+bob <- fread("natl_reg_hender_18.txt") %>% as.matrix() %>% t()
+bob <- bob %>% as.data.table()
+bob[grepl("quart", V2) , Temporal := "quart"]
+bob[grepl("year", V2) , Temporal := "year"]
+bob[grepl("month", V2) , Temporal := "month"]
+bob[grepl("none_none", V2) , Temporal := "none"]
+bob[grepl("none_none", V2) , Spatial := "none"]
+bob[grepl("gid_2", V2) , Spatial := "gid_2"]
+bob[grepl("iso3c", V2) , Spatial := "iso3c"]
+bob <- as.data.frame(bob)
+bob <- setDT(bob)[(Temporal=="month" & Spatial == "gid_2") | (Temporal=="none" & Spatial == "none")]
+bob %>% write.csv("formatted_regression_initial5.csv")
+
