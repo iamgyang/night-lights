@@ -51,6 +51,7 @@ save "$hf_input/base_NTL.dta", replace
 foreach time_collapse in year quart month none {
 foreach area_collapse in gid_2 iso3c none {
 	use "$hf_input/base_NTL.dta", clear
+	rename pol_area sum_area
 	if ("`time_collapse'" != "none") & ("`area_collapse'" != "none") {
 		drop if sum_pix <0
 		collapse (sum) pol_area sum_pix, by(year `time_collapse' `area_collapse' iso3c)
@@ -65,24 +66,19 @@ foreach area_collapse in gid_2 iso3c none {
 *** -----------------------------------------------
 
 use "$hf_input/imf_pwt_oxf_ntl.dta", clear
-
 keep iso3c year quarter rgdp ox_rgdp_lcu pwt_rgdpna imf_rgdp_lcu WDI 
 rename (rgdp ox_rgdp_lcu pwt_rgdpna imf_rgdp_lcu) (IMF_quart Oxford PWT IMF_WEO)
 collapse (sum) Oxford IMF_quart (mean) WDI PWT IMF_WEO, by(iso3c year)
 replace Oxford = . if Oxford  == 0
 replace IMF_quart = . if IMF_quart  == 0
-replace sum_area = . if sum_area == 0
 save "$hf_input/natl_accounts_GDP_annual_all.dta", replace
-
-
-save "$hf_input/natl_accounts_GDP_annual_all.dta", replace
-
 
 *** -----------------------------------------------
 *** For each of those datasets, run regressions:
 *** -----------------------------------------------
-foreach time_collapse in year quart month {
-foreach area_collapse in gid_2 iso3c {
+
+foreach time_collapse in year quart month none {
+foreach area_collapse in gid_2 iso3c none {
 	import delimited "$hf_input/`time_collapse'_`area_collapse'.csv", clear
 	
 	mmerge iso3c year using "$hf_input/natl_accounts_GDP_annual_all.dta"
@@ -108,23 +104,24 @@ foreach area_collapse in gid_2 iso3c {
 		export delimited "$hf_input/merged_`time_collapse'_`area_collapse'.csv", replace
 	
 	
-	*** regressions on log(1+%changeGDP)~log(1+%changeNTL)
-	
-	foreach var of varlist Oxford IMF_quart PWT IMF_WEO WDI{
-		regress log_delt_`var'_1 log_delt_sum_pix_1 i.year_f i.iso3c_f, robust
-		outreg2 using "$outreg_file_natl_yr", append ///
-		ctitle("`var'_OLS_`time_collapse'_`area_collapse'") ///
-		label dec(4) keep (log_delt_sum_pix_1)
-	}
-	
-	destring year, replace
-	xtset iso3c_f year
-	foreach var of varlist Oxford IMF_quart PWT IMF_WEO WDI{
-		xtreg log_delt_`var'_1 log_delt_sum_pix_1 i.year_f, fe robust
-		outreg2 using "$outreg_file_natl_yr", append ///
-		ctitle("`var'_FE_`time_collapse'_`area_collapse'") ///
-		label dec(4) keep (log_delt_sum_pix_1)
-	}
+	*** Regressions on log(1+%changeGDP)~log(1+%changeNTL)
+		foreach var of varlist Oxford IMF_quart PWT IMF_WEO WDI{
+			regress log_delt_`var'_1 log_delt_sum_pix_1 i.year_f i.iso3c_f, robust
+			outreg2 using "$outreg_file_natl_yr", append ///
+			ctitle("`var'_OLS_`time_collapse'_`area_collapse'") ///
+			label dec(4) keep (log_delt_sum_pix_1)
+		}
+		
+		*** Perform the same regressions but using FE estimator. 
+		*** Should have same coefficients.
+		destring year, replace
+		xtset iso3c_f year
+		foreach var of varlist Oxford IMF_quart PWT IMF_WEO WDI{
+			xtreg log_delt_`var'_1 log_delt_sum_pix_1 i.year_f, fe robust
+			outreg2 using "$outreg_file_natl_yr", append ///
+			ctitle("`var'_FE_`time_collapse'_`area_collapse'") ///
+			label dec(4) keep (log_delt_sum_pix_1)
+		}
 }
 }
 
@@ -146,15 +143,14 @@ areg log_delt_Oxford_1   log_delt_sum_pix_1 i.iso3c_f, absorb(year_f)
 estimates store areg
 estimates table fixed_year_cont fixed_year_dum fixed_country_dum ols_indiv ols_indiv_TEST ols areg, star stats(N r2 r2_a)
 
-
-
 *** -----------------------------------------------
 *** Check with Parth's data in R:
 *** -----------------------------------------------
 
 use "$hf_input/GDP_ntl_neg.dta", clear
 
-br iso3c year sum_pix_month_gid_2 sum_sumlight_rmvad2 if abs(sum_sumlight_rmvad2 - sum_pix_month_gid_2) > 2
+br iso3c year sum_pix_month_gid_2 sum_sumlight_rmvad2 if ///
+abs(sum_sumlight_rmvad2 - sum_pix_month_gid_2) > 2
 
 *** get area growths:
 	gen ntl_p = (sum_sumlight_rmvad2 / sum_area)
