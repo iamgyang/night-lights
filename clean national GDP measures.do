@@ -178,7 +178,31 @@
 	save "$hf_input/imf_pwt_GDP_annual.dta", replace
 	
 *** Import WDI dataset on real GDP (LCU) -------------------------------------
-
+	
+	clear
+	wbopendata, clear nometadata long indicator(NY.GDP.MKTP.KN) year(2000:2021)
+	drop if regionname == "Aggregates"
+	keep countrycode year ny_gdp_mktp_kn
+	rename (countrycode ny_gdp_mktp_kn) (iso3c WDI)
+	fillin iso3c year
+	drop _fillin
+	sort iso3c year
+	tempfile wdi_gdp
+	save `wdi_gdp'
+	
+	use "$hf_input/imf_pwt_GDP_annual.dta", clear
+	mmerge iso3c year using `wdi_gdp'
+	drop _m
+	
+	*** make sure we only have 1 country-year pairs:
+		preserve
+		sort iso3c year
+		keep iso3c year
+		duplicates tag iso3c year, gen (dup_id_cov)
+		assert dup_id_cov==0
+		restore
+	
+	save "$hf_input/imf_pwt_GDP_annual.dta", clear
 
 *** Merge all data with NTL data ---------------------------------------------
 	use "$hf_input/ntl_cty_agg.dta", clear
@@ -195,16 +219,3 @@
 	drop _f
 	save "$hf_input/imf_pwt_oxf_ntl.dta", replace
 
-
-
-
-
-
-
-
-
-
-
-
-*** Merge with NTL based on quarters and ISO3C (taking a mean for ISO3C and 
-*** a sum across quarters.
