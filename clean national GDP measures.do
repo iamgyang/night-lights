@@ -45,53 +45,10 @@
 	replace x = x * bil
 	rename x ox_rgdp_lcu
 	label variable ox_rgdp_lcu "Oxford Economics Real GDP in LCU (millions)"
-	
-*** Convert base_year_price to numeric (get the first 4 numbers); if 
-*** there is a 2018Q3/2019Q2, then take it to be 2018.
-	moss base_year, match("([0-9]+)")  regex
-	drop bil _count _pos1 _match2 _pos2 _match3 _pos3 _match4 _pos4
-	rename _match1 base_year_price_num
-	destring base_year_price_num, replace
-	
-*** Save Oxford dataset as a tempfile:
-	tempfile ox_econ_data
-	save `ox_econ_data'
-	
-*** Going to have to do some work to deflate things.
-*** Import deflator
-	wbopendata, language(en – English) indicator(NY.GDP.DEFL.ZS) long clear
-	keep countrycode year ny_gdp_defl_zs
-	drop if ny_gdp_defl_zs ==.
-	rename (countrycode ny_gdp_defl_zs) (iso3c deflator)
-
-*** We will convert everything to constant 2016 dollars (arbitrary).
-*** So, get a dataset of 2016 prices divided by base_year_price
-	gen denom = deflator if year == 2016
-	by iso3c: egen deflator_2 = max(denom)
-	gen deflator_3 = deflator / deflator_2
-	keep iso3c year deflator_3
-	rename (deflator_3 year) (deflator base_year_price_num)
-	
-*** Merge on base_year_price and country ISO3C with oxford data
-	mmerge base_year_price_num iso3c using `ox_econ_data'
-	keep if _m == 2 | _m == 3
-	drop _m
-	
-*** check: for each iso3c, we should NOT have duplicated iso3c-year-quarter pairs
-*** use fillin for the iso3c-year-quarter pairs that we're missing
-	preserve
-	sort iso3c year period
-	keep iso3c year period
-	duplicates tag iso3c year period, gen (dup_id_cov)
-	assert dup_id_cov==0
-	restore
-	
-*** Divide by deflator to get everything in 2016 prices.
-	replace ox_rgdp_lcu = ox_rgdp_lcu / deflator
-	
+		
 *** Clean quarter variable
 	moss period, match("([0-9]+)")  regex
-	keep iso3c period year ox_rgdp_lcu _match1 scale base_year_price base_year_price_num
+	keep iso3c period year ox_rgdp_lcu _match1 scale
 	rename _match1 quarter
 	destring quarter, replace
 	drop period
@@ -99,6 +56,7 @@
 *** Get all combinations of country code, year, and quarter:
 	fillin iso3c year quarter
 	drop _fillin
+	rename scale base_year_oxford
 	tempfile ox_econ_data2
 	save `ox_econ_data2'
 		
@@ -128,7 +86,6 @@
 	save "$hf_input/imf_oxf_GDP_quarter.dta", replace
 	
 *** merge GDP measures with NTL measures on a quarterly basis
-	drop base_year_price_num scale base_year_price
 	tempfile ox_imf_data
 	save `ox_imf_data'
 	
