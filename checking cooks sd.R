@@ -1,5 +1,9 @@
 library(data.table)
 
+# yap this code's messy...
+
+# Cooks SD ----------------------------------------------------------------
+
 df <-
   read_excel(
     "C:/Users/gyang/Dropbox/CGD GlobalSat/HF_measures/input/manual_reproduce_henderson_pre2013.xlsx",
@@ -19,6 +23,7 @@ s <- as.data.table(s)
 s <- s[order(-abs(s$.cooksd))]
 s
 
+# WDI, Oxford, and Henderson regressions ----------------------------------
 
 bob <- fread("Nighttime_Lights_ADM2_1992_2013.csv")
 bob <- bob[, .(iso3c = countrycode, year, mean_light, sum_light)]
@@ -31,12 +36,17 @@ bob <- bob[, .(sum_light = sum(sum_light, na.rm = T),
         wbgdp = mean(wbgdp, na.rm=T)), by = .(iso3c, year)] %>% 
   na.omit() %>% as.data.table()
 
+bob <- merge(bob, ox, by = c("iso3c", "year"), all.x = T)
+
 bob$year %>% sort %>% table
 
+bob <- bob[order(iso3c, year)]
 bob[,ln_wbgdp:=log(wbgdp/shift(wbgdp)), by = iso3c]
 bob[,ln_sumlight:=log(sum_light/shift(sum_light)), by = iso3c]
+bob[,ln_ox:=log(Oxford/shift(Oxford)), by = iso3c]
 fit <- lm(ln_wbgdp~ln_sumlight + iso3c + factor(year), data = bob[year<=2008])
 fit %>% summary()
+
 
 bob %>% write.csv("henderson_pre2013_ntl_wb_gdp.csv")
 
