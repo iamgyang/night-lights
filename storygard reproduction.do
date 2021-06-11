@@ -24,7 +24,7 @@ pause on
 		global ntl_input "$hf_input/NTL Extracted Data 2012-2020/"
 	}
 
-	global outreg_file_natl_yr "$hf_input/natl_reg_hender_15.xls"
+	global outreg_file_natl_yr "$hf_input/natl_reg_hender_18.xls"
 
 	clear all
 	set more off 
@@ -45,7 +45,7 @@ pause on
 
 use "$hf_input/all_NTL_data.dta", clear
 gen month = substr(time, 1, 3)
-keep iso3c gid_2 mean_pix sum_pix year quart month
+keep iso3c gid_2 mean_pix sum_pix year quart month pol_area
 save "$hf_input/base_NTL.dta", replace
 
 foreach time_collapse in year quart month none {
@@ -54,15 +54,15 @@ foreach area_collapse in gid_2 iso3c none {
 	rename pol_area sum_area
 	if ("`time_collapse'" != "none") & ("`area_collapse'" != "none") {
 		drop if sum_pix <0
-		collapse (sum) pol_area sum_pix, by(year `time_collapse' `area_collapse' iso3c)
+		collapse (sum) sum_area sum_pix, by(year `time_collapse' `area_collapse' iso3c)
 	}
-	collapse (sum) sum_pix pol_area, by(year iso3c)
+	collapse (sum) sum_pix sum_area, by(year iso3c)
 	export delimited "$hf_input/`time_collapse'_`area_collapse'.csv", replace
 }
 }
 
 *** -----------------------------------------------
-*** Produce full merged GDP dataset:
+*** Produce full merged GDP dataset, collapsed at annual level:
 *** -----------------------------------------------
 
 use "$hf_input/imf_pwt_oxf_ntl.dta", clear
@@ -80,7 +80,8 @@ save "$hf_input/natl_accounts_GDP_annual_all.dta", replace
 foreach time_collapse in year quart month none {
 foreach area_collapse in gid_2 iso3c none {
 	import delimited "$hf_input/`time_collapse'_`area_collapse'.csv", clear
-	
+	fillin iso3c year
+	drop _fillin
 	mmerge iso3c year using "$hf_input/natl_accounts_GDP_annual_all.dta"
 	replace sum_pix = sum_pix / sum_area
 	label variable sum_pix "Sum pixels / Area"
@@ -125,7 +126,70 @@ foreach area_collapse in gid_2 iso3c none {
 }
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// ARCHIVE ==============================================================
+
+
+
+import delimited "$hf_input/merged_none_none.csv", clear
+
+drop iso3c_f
+encode iso3c, gen(iso3c_f)
+drop year_f
+tostring year, replace
+encode year, gen(year_f)
+
+regress log_delt_oxford_1 log_delt_sum_pix_1 
+avplot log_delt_sum_pix_1, mlabel(iso3c)
+
+regress log_delt_imf_quart_1 log_delt_sum_pix_1 i.year_f i.iso3c_f
+avplot log_delt_sum_pix_1, mlabel(iso3c)
+
+regress log_delt_wdi_1 log_delt_sum_pix_1 i.year_f i.iso3c_f
+avplot log_delt_sum_pix_1, mlabel(iso3c)
+
+
+
+
+
+
+
+
+
 exit
+
+
 xtset iso3c_f year
 xtreg  log_delt_Oxford_1   log_delt_sum_pix_1     i.year, fe
 estimates store fixed_year_cont
