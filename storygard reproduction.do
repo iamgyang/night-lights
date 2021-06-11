@@ -48,43 +48,32 @@ gen month = substr(time, 1, 3)
 keep iso3c gid_2 mean_pix sum_pix year quart month
 save "$hf_input/base_NTL.dta", replace
 
-foreach time_collapse in year quart month {
-foreach area_collapse in gid_2 iso3c {
+foreach time_collapse in year quart month none {
+foreach area_collapse in gid_2 iso3c none {
 	use "$hf_input/base_NTL.dta", clear
-	collapse (sum) sum_pix, by(year `time_collapse' `area_collapse' iso3c)
-	drop if sum_pix <0
-	collapse (sum) sum_pix, by(year iso3c)
+	if ("`time_collapse'" != "none") & ("`area_collapse'" != "none") {
+		drop if sum_pix <0
+		collapse (sum) pol_area sum_pix, by(year `time_collapse' `area_collapse' iso3c)
+	}
+	collapse (sum) sum_pix pol_area, by(year iso3c)
 	export delimited "$hf_input/`time_collapse'_`area_collapse'.csv", replace
 }
 }
 
 *** -----------------------------------------------
-*** Produce GDP datasets:
+*** Produce full merged GDP dataset:
 *** -----------------------------------------------
 
 use "$hf_input/imf_pwt_oxf_ntl.dta", clear
 
-keep iso3c year quarter rgdp ox_rgdp_lcu pwt_rgdpna imf_rgdp_lcu sum_area
+keep iso3c year quarter rgdp ox_rgdp_lcu pwt_rgdpna imf_rgdp_lcu WDI 
 rename (rgdp ox_rgdp_lcu pwt_rgdpna imf_rgdp_lcu) (IMF_quart Oxford PWT IMF_WEO)
-collapse (sum) Oxford IMF_quart sum_area (mean) PWT IMF_WEO, by(iso3c year)
+collapse (sum) Oxford IMF_quart (mean) WDI PWT IMF_WEO, by(iso3c year)
 replace Oxford = . if Oxford  == 0
 replace IMF_quart = . if IMF_quart  == 0
 replace sum_area = . if sum_area == 0
 save "$hf_input/natl_accounts_GDP_annual_all.dta", replace
 
-clear
-wbopendata, clear nometadata long indicator(NY.GDP.MKTP.KN) year(2000:2021)
-drop if regionname == "Aggregates"
-keep countrycode year ny_gdp_mktp_kn
-rename (countrycode ny_gdp_mktp_kn) (iso3c WDI)
-fillin iso3c year
-drop _fillin
-sort iso3c year
-tempfile wdi_gdp
-save `wdi_gdp'
-
-use "$hf_input/natl_accounts_GDP_annual_all.dta", clear
-mmerge iso3c year using `wdi_gdp'
 
 save "$hf_input/natl_accounts_GDP_annual_all.dta", replace
 
