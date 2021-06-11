@@ -68,7 +68,7 @@
 *** So, get a dataset of 2016 prices divided by base_year_price
 	gen denom = deflator if year == 2016
 	by iso3c: egen deflator_2 = max(denom)
-	gen deflator_3 = deflator / deflator_2 * 100
+	gen deflator_3 = deflator / deflator_2
 	keep iso3c year deflator_3
 	rename (deflator_3 year) (deflator base_year_price_num)
 	
