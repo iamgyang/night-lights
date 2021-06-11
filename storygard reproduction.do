@@ -130,29 +130,54 @@ foreach area_collapse in gid_2 iso3c none {
 *** --------------------------------
 *** Check if NTL aggregation downloaded online for PRIOR data is accurate
 *** --------------------------------
+	clear all
+	set more off 
+	
+	global outreg_file_pre_2013 "$hf_input/natl_reg_hender_pre_2013_13.xls"
+	
+*** get the dataset of pixel AREA from our original NTL dataset
+	import delimited "$hf_input/none_none.csv", clear
+	bysort iso3c: egen median_sum_area = median(sum_area)
+	collapse (firstnm) median_sum_area, by(iso3c)
+	rename median_sum_area sum_area
+	tempfile pixel_area
+	save `pixel_area'
 
 *** Import dataset
-	global outreg_file_pre_2013 "$hf_input/natl_reg_hender_pre_2013_2.xls"
 	import delimited "$hf_input/Nighttime_Lights_ADM2_1992_2013.csv", clear
 	collapse (sum) sum_light, by(countrycode countryname year)
+// 	rename (mean_light) (sum_light)
+	
+*** Merge with pixel area:
+	rename countrycode iso3c
+	mmerge iso3c using `pixel_area'
+	keep if _m == 3
+	drop _m
 	
 *** Merge w/ GDP measures:
-	rename countrycode iso3c
 	mmerge iso3c year using "$hf_input/natl_accounts_GDP_annual_all.dta"
 	keep if _m == 3
-	keep iso3c countryname year sum_light Oxford WDI
+	keep iso3c countryname year sum_light Oxford WDI sum_area
 	rename sum_light sum_pix
+	replace sum_pix = sum_pix / sum_area
+	label variable sum_pix "Sum pixels / Area"
+		
+// 	export delimited "$hf_input/henderson.csv", replace
 	
 *** Get logged 1-yr growth variables:
 		foreach var of varlist sum_pix Oxford WDI {
 			sort iso3c year
 			loc lab: variable label `var'
 			by iso3c: gen `var'_L1 = `var'[_n-1] if year==year[_n-1]+1
-			gen delt_`var'_1 = `var'/`var'_L1-1
+			gen delt_`var'_1 = `var'/`var'_L1
 			gen log_delt_`var'_1 = ln(delt_`var'_1)
 			drop delt_`var'_1 `var'_L1
 			label variable log_delt_`var'_1 "Log 1yr change in `lab'" 
 		}
+	br
+
+*** get rid of post-2008
+// 	keep if year <= 2008
 	
 ***	Make country and year fixed effects.
 	encode iso3c, gen(iso3c_f)
@@ -179,9 +204,29 @@ foreach area_collapse in gid_2 iso3c none {
 	}
 
 
+*** compare NTL from 2012-2013
 
 
 
+
+
+
+import delimited "$hf_input/henderson_pre2013_ntl_wb_gdp.csv", clear
+destring oxford ln_wbgdp ln_sumlight ln_ox, replace ignore(`"NA"', illegal) force
+keep iso3c year ln_wbgdp ln_sumlight ln_ox
+foreach var of varlist year ln_wbgdp ln_sumlight ln_ox {
+	drop if `var' == .
+}
+
+encode iso3c, gen(iso3c_f)
+tostring year, replace
+encode year, gen(year_f)
+destring year, replace
+
+
+xtset iso3c_f year
+
+xtreg ln_ox ln_sumlight i.year_f, fe robust
 
 
 
