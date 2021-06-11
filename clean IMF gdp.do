@@ -1,4 +1,4 @@
-// Macros
+// Macros ----------------------------------------
 	foreach user in "`c(username)'" {
 		global root "C:/Users/`user'/Dropbox/CGD GlobalSat/"
 		global hf_input "$root/HF_measures/input/"
@@ -11,14 +11,14 @@ global import_nightlights "yes"
 clear all
 set more off 
 
-// ssc install:
-	// rangestat
-	// wbopendata
-	// kountry
-	// mmerge
-	// outreg2
-	// somersd
-	// 	asgen
+loc install_user_defined_functions "No"
+	
+*** Install user-defined functions: ----------------------------------------
+	if ("`install_user_defined_functions'" == "Yes") {
+		foreach i in rangestat wbopendata kountry mmerge outreg2 somersd asgen moss {
+			ssc install `i'
+		}
+	}
 	
 //Import IMF dataset
 	import excel "$hf_input/National Accounts/imf_national_gdp.xlsx", ///
