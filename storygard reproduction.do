@@ -127,12 +127,56 @@ foreach area_collapse in gid_2 iso3c none {
 }
 
 
+*** --------------------------------
+*** Check if NTL aggregation downloaded online for PRIOR data is accurate
+*** --------------------------------
 
+*** Import dataset
+	global outreg_file_pre_2013 "$hf_input/natl_reg_hender_pre_2013_2.xls"
+	import delimited "$hf_input/Nighttime_Lights_ADM2_1992_2013.csv", clear
+	collapse (sum) sum_light, by(countrycode countryname year)
+	
+*** Merge w/ GDP measures:
+	rename countrycode iso3c
+	mmerge iso3c year using "$hf_input/natl_accounts_GDP_annual_all.dta"
+	keep if _m == 3
+	keep iso3c countryname year sum_light Oxford WDI
+	rename sum_light sum_pix
+	
+*** Get logged 1-yr growth variables:
+		foreach var of varlist sum_pix Oxford WDI {
+			sort iso3c year
+			loc lab: variable label `var'
+			by iso3c: gen `var'_L1 = `var'[_n-1] if year==year[_n-1]+1
+			gen delt_`var'_1 = `var'/`var'_L1-1
+			gen log_delt_`var'_1 = ln(delt_`var'_1)
+			drop delt_`var'_1 `var'_L1
+			label variable log_delt_`var'_1 "Log 1yr change in `lab'" 
+		}
+	
+***	Make country and year fixed effects.
+	encode iso3c, gen(iso3c_f)
+	tostring year, replace
+	encode year, gen(year_f)
 
-
-
-
-
+*** Regressions on log(1+%changeGDP)~log(1+%changeNTL)
+	foreach var of varlist Oxford WDI{
+		regress log_delt_`var'_1 log_delt_sum_pix_1 i.year_f i.iso3c_f, robust
+		outreg2 using "$outreg_file_pre_2013", append ///
+		ctitle("`var'_OLS_`time_collapse'_`area_collapse'") ///
+		label dec(4) keep (log_delt_sum_pix_1)
+	}
+	
+*** Perform the same regressions but using FE estimator. 
+*** Should have same coefficients.
+	destring year, replace
+	xtset iso3c_f year
+	foreach var of varlist Oxford WDI{
+		xtreg log_delt_`var'_1 log_delt_sum_pix_1 i.year_f, fe robust
+		outreg2 using "$outreg_file_pre_2013", append ///
+		ctitle("`var'_FE_`time_collapse'_`area_collapse'") ///
+		label dec(4) keep (log_delt_sum_pix_1)
+	}
 
 
 
