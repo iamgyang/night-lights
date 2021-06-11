@@ -21,7 +21,7 @@
 		}
 	}
 
-*** Import Oxford-IMF Fiscal Monitor dataset ----------------------------------
+*** Comparison between Oxford & IMF Fiscal Monitor dataset -----------------
 *** Import dataset.
 	use "$hf_input/imf_oxf_GDP_quarter.dta", clear
 	
@@ -65,7 +65,7 @@
 	graph bar (asis) avg_gr_imf avg_gr_ox diff, blabel(bar) legend(order(1 "IMF" 2 "Oxford" 3 "Standard Deviation of Difference")) scheme(s2color8) ytitle("") title("Average Annual Growth (2013-2020) vs. Standard Deviation") caption("Source: IMF, Oxford Economics")
 	graph export "$hf_input/bar_imf_oxf_quart_gdp_gr_stdev.png", replace
 	
-*** Import PWT-IMF WEO dataset ------------------------------------------------
+*** Comparison between PWT and IMF WEO dataset ----------------------------
 
 *** Import dataset
 	use "$hf_input/imf_pwt_GDP_annual.dta", clear
@@ -85,6 +85,7 @@
 	drop if pwt_rgdpna==. | imf_rgdp_lcu==.
 	
 *** get implied growth rate for these yrs
+	drop WDI
 	reshape wide pwt_rgdpna imf_rgdp_lcu, i(iso3c) j(year)
 	gen avg_gr_pwt = (pwt_rgdpna2019/pwt_rgdpna2012)^(1/(2019-2012)) -1
 	gen avg_gr_imf = (imf_rgdp_lcu2019/imf_rgdp_lcu2012)^(1/(2019-2013+1)) -1
