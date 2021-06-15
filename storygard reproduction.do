@@ -1,5 +1,3 @@
-pause on
-
 *** re-producing the storygard regressions under different methods of cleaning
 *** the underlying negative night lights data
 
@@ -71,6 +69,7 @@ rename (rgdp ox_rgdp_lcu pwt_rgdpna imf_rgdp_lcu) (IMF_quart Oxford PWT IMF_WEO)
 collapse (sum) Oxford IMF_quart (mean) WDI PWT IMF_WEO, by(iso3c year)
 replace Oxford = . if Oxford  == 0
 replace IMF_quart = . if IMF_quart  == 0
+sort iso3c year
 save "$hf_input/natl_accounts_GDP_annual_all.dta", replace
 
 *** -----------------------------------------------
@@ -80,8 +79,10 @@ save "$hf_input/natl_accounts_GDP_annual_all.dta", replace
 foreach time_collapse in year quart month none {
 foreach area_collapse in gid_2 iso3c none {
 	import delimited "$hf_input/`time_collapse'_`area_collapse'.csv", clear
+	sort iso3c year
 	fillin iso3c year
 	drop _fillin
+	sort iso3c year
 	mmerge iso3c year using "$hf_input/natl_accounts_GDP_annual_all.dta"
 	replace sum_pix = sum_pix / sum_area
 	label variable sum_pix "Sum pixels / Area"
@@ -202,8 +203,36 @@ foreach area_collapse in gid_2 iso3c none {
 		ctitle("`var'_FE_`time_collapse'_`area_collapse'") ///
 		label dec(4) keep (log_delt_sum_pix_1)
 	}
+	
+	
+*** --------------------------------
+*** Check NTL LN(GDP) ~ LN(lights/area) + country + year FE
+*** --------------------------------
+
+use "$hf_input/natl_accounts_GDP_annual_all.dta", clear
+gen ln_ox = ln(Oxford)
+gen ln_wdi = ln(WDI)
 
 
+
+
+
+
+
+
+
+
+
+	
+	
+	
+	
+	
+	
+	
+	
+*** ----------------------------------------------------------------------
+*** ----------------------------------------------------------------------
 *** compare NTL from 2012-2013
 
 
@@ -227,20 +256,6 @@ destring year, replace
 xtset iso3c_f year
 
 xtreg ln_ox ln_sumlight i.year_f, fe robust
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
