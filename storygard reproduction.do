@@ -22,7 +22,7 @@
 		global ntl_input "$hf_input/NTL Extracted Data 2012-2020/"
 	}
 
-	global outreg_file_natl_yr "$hf_input/natl_reg_hender_18.xls"
+	global outreg_file_natl_yr "$hf_input/natl_reg_hender_21.xls"
 
 	clear all
 	set more off 
@@ -87,26 +87,21 @@ foreach area_collapse in gid_2 iso3c none {
 	replace sum_pix = sum_pix / sum_area
 	label variable sum_pix "Sum pixels / Area"
 	
-	*** get logged 1-yr growth variables:
+	*** get logged variables:
 		foreach var of varlist sum_pix Oxford IMF_quart PWT IMF_WEO WDI {
 			sort iso3c year
 			loc lab: variable label `var'
-			by iso3c: gen `var'_L1 = `var'[_n-1] if year==year[_n-1]+1
-			gen delt_`var'_1 = `var'/`var'_L1
-			gen log_delt_`var'_1 = ln(delt_`var'_1)
-			drop delt_`var'_1 `var'_L1
-			label variable log_delt_`var'_1 "Log 1yr change in `lab'" 
+			gen log_delt_`var'_1 = ln(`var')
+			label variable log_delt_`var'_1 "Log `lab'" 
 		}
 		
 	***	make country and year fixed effects.
 		encode iso3c, gen(iso3c_f)
 		tostring year, replace
 		encode year, gen(year_f)
-// 		export delimited "$hf_input/temp_collapse.csv", replace
 		export delimited "$hf_input/merged_`time_collapse'_`area_collapse'.csv", replace
-	
-	
-	*** Regressions on log(1+%changeGDP)~log(1+%changeNTL)
+		
+	*** Regressions on log(GDP)~log(NTL)
 		foreach var of varlist Oxford IMF_quart PWT IMF_WEO WDI{
 			regress log_delt_`var'_1 log_delt_sum_pix_1 i.year_f i.iso3c_f, robust
 			outreg2 using "$outreg_file_natl_yr", append ///
@@ -114,12 +109,12 @@ foreach area_collapse in gid_2 iso3c none {
 			label dec(4) keep (log_delt_sum_pix_1)
 		}
 		
-		*** Perform the same regressions but using FE estimator. 
-		*** Should have same coefficients.
+	*** Perform the same regressions but using FE estimator. 
+	*** Should have same coefficients.
 		destring year, replace
 		xtset iso3c_f year
 		foreach var of varlist Oxford IMF_quart PWT IMF_WEO WDI{
-			xtreg log_delt_`var'_1 log_delt_sum_pix_1 i.year_f, fe robust
+			xtreg log_delt_`var'_1 log_delt_sum_pix_1 i.year_f, fe robust cluster(iso3c_f)
 			outreg2 using "$outreg_file_natl_yr", append ///
 			ctitle("`var'_FE_`time_collapse'_`area_collapse'") ///
 			label dec(4) keep (log_delt_sum_pix_1)
@@ -205,18 +200,6 @@ foreach area_collapse in gid_2 iso3c none {
 	}
 	
 	
-*** --------------------------------
-*** Check NTL LN(GDP) ~ LN(lights/area) + country + year FE
-*** --------------------------------
-
-use "$hf_input/natl_accounts_GDP_annual_all.dta", clear
-gen ln_ox = ln(Oxford)
-gen ln_wdi = ln(WDI)
-
-
-
-
-
 
 
 
