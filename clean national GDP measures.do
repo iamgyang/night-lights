@@ -60,9 +60,90 @@
 	tempfile ox_econ_data2
 	save `ox_econ_data2'
 		
-*** Merge with IMF quarterly real GDP:	
 *** Import IMF quarterly real GDP --------------------------------------------
+
+*** Import dataset
+	import excel "$hf_input/National Accounts/imf_national_gdp.xlsx", ///
+	sheet("Nominal Quarterly") cellrange(B7:AH85) clear
+
+*** replace first row to be the variable names
+	foreach var of varlist * {
+	  replace `var' = "" if `var'=="..."
+	  rename `var' `=strtoname("x"+`var'[1])'
+	  
+	}
+
+*** drop 1st row
+	drop in 1
+	destring x*, replace
+
+*** rename everything to lower
+	rename *, lower
+	rename xcountry country
+
+*** get iso3c codes:
+	kountry country, from(other) stuck
+	ren(_ISO3N_) (temp)
+	kountry temp, from(iso3n) to(iso3c)
+	ren (_ISO3C_) (iso3c)
+	replace iso3c = "ARM" if country == "Armenia, Rep. of"
+	replace iso3c = "AZE" if country == "Azerbaijan, Rep. of"
+	replace iso3c = "BLR" if country == "Belarus, Rep. of"
+	replace iso3c = "HKG" if country == "China, P.R.: Hong Kong"
+	replace iso3c = "HRV" if country == "Croatia, Rep. of"
+	replace iso3c = "EST" if country == "Estonia, Rep. of"
+	replace iso3c = "XKX" if country == "Kosovo, Rep. of"
+	replace iso3c = "MDA" if country == "Moldova, Rep. of"
+	replace iso3c = "MKD" if country == "North Macedonia, Republic of"
+	replace iso3c = "POL" if country == "Poland, Rep. of"
+	replace iso3c = "SRB" if country == "Serbia, Rep. of"
+	replace iso3c = "SVK" if country == "Slovak Rep."
+	replace iso3c = "SVN" if country == "Slovenia, Rep. of"
+	drop temp
+	
+***	wide to long:
+	reshape long x, i(country iso3c) j(year_quarter, string)
+	drop if country == "Euro Area"
+	drop if x == .
+	rename x nom_gdp
+	gen  yq = quarterly(year_quarter, "YQ")
+	format yq %tq
+	drop year_quarter
+	gen year = yofd(dofq(yq))
+	tempfile quarterly_nominal_gdp
+	save `quarterly_nominal_gdp'
+	
+*** Convert from nominal to real GDP
+
+*** get GDP deflator data:
+	wbopendata, language(en – English) indicator(NY.GDP.DEFL.ZS) long clear
+	keep countrycode year ny_gdp_defl_zs
+	drop if ny_gdp_defl_zs ==.
+	rename (countrycode ny_gdp_defl_zs) (iso3c deflator)
+	mmerge iso3c year using `quarterly_nominal_gdp'
+	keep if inlist(_m, 2,3)
+	
+/*  make the base year 2016: (won't really make a difference if all we do is 
+	growth regressions, but if we do something else, want to have this comparable) */
+	bysort iso3c: egen min_yr = min(year)
+	bysort iso3c: egen max_yr = max(year)
+	egen inf_yr = max(min_yr)
+	egen sup_yr = min(max_yr)
+	tab inf_yr sup_yr 
+	desc sup_yr 
+	
+	gen denom = deflator if year == 2016
+	by iso3c: egen deflator_2 = max(denom)
+	gen deflator_3 = deflator / deflator_2 * 100
+	keep iso3c nom_gdp yq deflator_3
+	sort iso3c yq
+	gen rgdp = nom_gdp / deflator_3
+	drop deflator_3
+
+*** done with cleaning GDP data:
+	save "$hf_input/imf_real_gdp.dta", replace
 	use "$hf_input/imf_real_gdp", clear
+	
 	gen year = year(dofq(yq))
 	gen quarter = quarter(dofq(yq))
 	drop yq
@@ -91,7 +172,7 @@
 	
 *** ANNUAL =================================================================
 
-*** Import IMF WEO dataset on real GDP (LCU) ---------------------------------
+*** Import IMF WEO dataset on real GDP (LCU) -------------------------------
 	import delimited "$hf_input/National Accounts/WEOApr2021all.txt", clear
 	keep if subjectdescriptor == "Gross domestic product, constant prices"
 	keep if units == "National currency"
@@ -112,7 +193,7 @@
 	assert dup_id_cov==0
 	restore
 	
-*** Import PWT dataset on real GDP (PPP) -------------------------------------
+*** Import PWT dataset on real GDP (PPP) -----------------------------------
 	use "$hf_input/National Accounts/pwt100.dta", clear
 	keep rgdpna year countrycode
 	drop if rgdpna == . 
