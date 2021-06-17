@@ -83,7 +83,7 @@ set more off
 		
 	// Now that we have the full dataset in long format, we'd like to turn it into 
 	// wide format so that we can do some regressions on it. For the change in GDP 
-	// per capita, we have the delt_gdppc variable, which is define for years only. 
+	// per capita, we have the delt_gdppc variable, which is defined for years only. 
 	// For the change in night lights pixels, we have the delt_sumpix variable, 
 	// which is defined for a year and month. This means that we first do the pivot 
 	// wider for one variable and then we do it again for the next, while merging 

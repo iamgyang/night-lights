@@ -10,11 +10,6 @@
 *** 5. collapse by ADM2 month and drop if negative --> collapse to country-year
 *** 6. collapse by country year and drop if negative --> collapse to country-year
 
-*** For each of those 4 datasets:
-
-*** Regress ln(ANNUAL GROWTH GDP) ~ ln(ANNUAL GROWTH sum lights) [w/ country and year fixed effects]
-*** Regress ln(QUARTER GROWTH GDP) ~ ln(QUARTER GROWTH sum lights) [w/ country and year fixed effects]
-
 *** Macros -----------------------------------------------------------------
 	foreach user in "`c(username)'" {
 		global root "C:/Users/`user'/Dropbox/CGD GlobalSat/"
@@ -22,21 +17,11 @@
 		global ntl_input "$hf_input/NTL Extracted Data 2012-2020/"
 	}
 
-	global outreg_file_natl_yr "$hf_input/natl_reg_hender_21.xls"
+	global outreg_file_natl_yr "$hf_input/natl_reg_hender_23.xls"
 
 	clear all
 	set more off 
 	
-*** CHANGE THIS!! --- Do we want to install user-defined functions? --------
-	loc install_user_defined_functions "No"
-	
-*** Install user-defined functions: ----------------------------------------
-	if ("`install_user_defined_functions'" == "Yes") {
-		foreach i in rangestat wbopendata kountry mmerge outreg2 somersd asgen moss {
-			ssc install `i'
-		}
-	}
-
 *** -----------------------------------------------
 *** Produce NTL datasets that have negatives deleted at certain points:
 *** -----------------------------------------------
@@ -158,7 +143,7 @@ foreach area_collapse in gid_2 iso3c none {
 	replace sum_pix = sum_pix / sum_area
 	label variable sum_pix "Sum pixels / Area"
 		
-// 	export delimited "$hf_input/henderson.csv", replace
+    export delimited "$hf_input/henderson.csv", replace
 	
 *** Get logged 1-yr growth variables:
 		foreach var of varlist sum_pix Oxford WDI {
@@ -199,164 +184,63 @@ foreach area_collapse in gid_2 iso3c none {
 		label dec(4) keep (log_delt_sum_pix_1)
 	}
 	
+*** ----------------------------------------------------------------------
+*** Compare HWS with Australian downloaded data from the internet:
+*** ----------------------------------------------------------------------
+
+*** Import the Australian dataset:
+	import delimited "$hf_input/henderson.csv", clear
+	gen log_lights_austra = ln(sum_pix)
+	keep iso3c year log_lights_austra
+	tempfile australian
+	save `australian'
+	
+*** Import the henderson dataset:
+	use "$hf_input/HWS AER replication/hsw_final_tables_replication/global_total_dn_uncal.dta", replace
+	
+*** make sure that there's a 1-1 relationship between isonv10 iso3v10 country 
+*** codes
+	preserve 
+	keep isonv10 iso3v10
+	duplicates drop
+	tab isonv10
+	return list, all
+	loc before `r(N)'
+	keep iso3v10
+	duplicates drop
+	tab iso3v10
+	assert `r(N)' == `before'
+	restore
+
+*** keep the variables we're interested in.
+	keep iso3v10 year lndn
+	rename (iso3v10 lndn) (iso3c log_lights_HWS)
 	
 
+*** merge the two datasets
+	mmerge iso3c year using `australian'
+	drop _m
 
+*** make sure that the number of observations per country-year is 1.
+	preserve
+	duplicates tag iso3c year, gen (dup_id_cov)
+	assert dup_id_cov==0
+	restore
+	
+*** take a linear regression between the two
+	regress log_lights_austra log_lights_HWS
+	outreg2 using "$hf_input/lm_aus_hws.txt", replace
+	
+*** plot a scatterplot between the two	
+	label variable log_lights_austra "ln(lighs/area) from Australian ADM2 datasource."
+	scatter(log_lights_austra log_lights_HWS)
+	graph export "$hf_input/scatterplot_AUS_HWS.pdf", replace
 
-
-
-
-	
-	
-	
-	
-	
-	
 	
 	
 *** ----------------------------------------------------------------------
+*** For each year, get the elasticity:
 *** ----------------------------------------------------------------------
-*** compare NTL from 2012-2013
-
-
-
-
-
-
-import delimited "$hf_input/henderson_pre2013_ntl_wb_gdp.csv", clear
-destring oxford ln_wbgdp ln_sumlight ln_ox, replace ignore(`"NA"', illegal) force
-keep iso3c year ln_wbgdp ln_sumlight ln_ox
-foreach var of varlist year ln_wbgdp ln_sumlight ln_ox {
-	drop if `var' == .
-}
-
-encode iso3c, gen(iso3c_f)
-tostring year, replace
-encode year, gen(year_f)
-destring year, replace
-
-
-xtset iso3c_f year
-
-xtreg ln_ox ln_sumlight i.year_f, fe robust
-
-
-
-
-
-
-// ARCHIVE ==============================================================
-
-
-
-import delimited "$hf_input/merged_none_none.csv", clear
-
-drop iso3c_f
-encode iso3c, gen(iso3c_f)
-drop year_f
-tostring year, replace
-encode year, gen(year_f)
-
-regress log_delt_oxford_1 log_delt_sum_pix_1 
-avplot log_delt_sum_pix_1, mlabel(iso3c)
-
-regress log_delt_imf_quart_1 log_delt_sum_pix_1 i.year_f i.iso3c_f
-avplot log_delt_sum_pix_1, mlabel(iso3c)
-
-regress log_delt_wdi_1 log_delt_sum_pix_1 i.year_f i.iso3c_f
-avplot log_delt_sum_pix_1, mlabel(iso3c)
-
-
-
-
-
-
-
-
-
-exit
-
-
-xtset iso3c_f year
-xtreg  log_delt_Oxford_1   log_delt_sum_pix_1     i.year, fe
-estimates store fixed_year_cont
-xtreg  log_delt_Oxford_1   log_delt_sum_pix_1     i.year_f, fe
-estimates store fixed_year_dum
-xtreg  log_delt_Oxford_1   log_delt_sum_pix_1     i.iso3c_f, fe
-estimates store fixed_country_dum
-regress log_delt_Oxford_1   log_delt_sum_pix_1     i.iso3c_f     
-estimates store ols_indiv
-regress log_delt_Oxford_1 log_delt_sum_pix_1 i.iso3c_f , cluster(iso3c_f)
-estimates store ols_indiv_TEST
-regress log_delt_Oxford_1   log_delt_sum_pix_1     i.iso3c_f     i.year_f
-estimates store ols
-areg log_delt_Oxford_1   log_delt_sum_pix_1 i.iso3c_f, absorb(year_f)
-estimates store areg
-estimates table fixed_year_cont fixed_year_dum fixed_country_dum ols_indiv ols_indiv_TEST ols areg, star stats(N r2 r2_a)
-
-*** -----------------------------------------------
-*** Check with Parth's data in R:
-*** -----------------------------------------------
-
-use "$hf_input/GDP_ntl_neg.dta", clear
-
-br iso3c year sum_pix_month_gid_2 sum_sumlight_rmvad2 if ///
-abs(sum_sumlight_rmvad2 - sum_pix_month_gid_2) > 2
-
-*** get area growths:
-	gen ntl_p = (sum_sumlight_rmvad2 / sum_area)
-	gen ntl_g = (sum_pix_month_gid_2 / sum_area)
-	
-*** get logged 1-yr growth variables:
-	foreach var of varlist ntl_p ntl_g Oxford IMF_quart PWT IMF_WEO {
-		sort iso3c year
-		loc lab: variable label `var'
-		by iso3c: gen `var'_L1 = `var'[_n-1] if year==year[_n-1]+1
-		gen delt_`var'_1 = `var'/`var'_L1
-		gen log_delt_`var'_1 = ln(delt_`var'_1)
-		drop delt_`var'_1 `var'_L1
-		label variable log_delt_`var'_1 "Log 1yr change in `lab'" 
-	}
-	
-*** create categorical variables:
-	encode iso3c, gen(iso3c_f)
-	tostring year, replace
-	encode year, gen(year_f)
-
-*** get squared term for log:
-	rename log_delt_ntl_g_1 log_delt_sum_pix_1
-	gen sq_log_delt_sum_pix_1 = (log_delt_sum_pix_1)^2
-
-*** aesthetics: labeling:
-	label variable log_delt_sum_pix_1 "Log(Annual Change in Sum Pixels)"
-	label variable sq_log_delt_sum_pix_1 "Log(Annual Change in Sum Pixels)^2"
-	
-global outreg_file_story_fe "$hf_input/outreg_file_story_fe_7.xls"
-foreach var of varlist Oxford IMF_quart PWT IMF_WEO {
-		regress   log_delt_`var'_1   log_delt_sum_pix_1 sq_log_delt_sum_pix_1 sq_log_delt_sum_pix_1 ///
-		i.iso3c_f i.year_f, robust
-		outreg2 using "$outreg_file_story_fe", append ctitle(`var') ///
-		label dec(4) keep (log_delt_sum_pix_1 sq_log_delt_sum_pix_1)
-	}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

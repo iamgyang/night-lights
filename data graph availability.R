@@ -1724,7 +1724,3 @@ ggsave(
   limitsize = FALSE
 )
 
-
-
-
-lmss$year %>% hist(.,)

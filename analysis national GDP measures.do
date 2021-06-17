@@ -11,16 +11,6 @@
 	clear all
 	set more off 
 	
-*** CHANGE THIS!! --- Do we want to install user-defined functions? --------
-	loc install_user_defined_functions "No"
-	
-*** Install user-defined functions: ----------------------------------------
-	if ("`install_user_defined_functions'" == "Yes") {
-		foreach i in rangestat wbopendata kountry mmerge outreg2 somersd asgen moss {
-			ssc install `i'
-		}
-	}
-
 *** Comparison between Oxford & IMF Fiscal Monitor dataset -----------------
 *** Import dataset.
 	use "$hf_input/imf_oxf_GDP_quarter.dta", clear
