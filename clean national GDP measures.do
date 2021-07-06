@@ -5,21 +5,11 @@
 		global ntl_input "$hf_input/NTL Extracted Data 2012-2020/"
 	}
 
-	global outreg_file_natl_yr "$hf_input/natl_reg_8.xls"
-	global outreg_file_natl_quart "$hf_input/natl_reg_1.xls"
+	global outreg_file_natl_yr "$hf_input/natl_reg_9.xls"
+	global outreg_file_natl_quart "$hf_input/natl_reg_9.xls"
 
 	clear all
-	set more off 
-	
-*** CHANGE THIS!! --- Do we want to install user-defined functions? --------
-	loc install_user_defined_functions "No"
-	
-*** Install user-defined functions: ----------------------------------------
-	if ("`install_user_defined_functions'" == "Yes") {
-		foreach i in rangestat wbopendata kountry mmerge outreg2 somersd asgen moss {
-			ssc install `i'
-		}
-	}
+	set more off
 	
 *** QUATERLY =================================================================
 
@@ -38,14 +28,14 @@
 	reshape long x, i(iso3c scale period) j(year)
 	sort iso3c year period
 	
-*** Convert everything to millions. 
-*** (if 'scale' says billions, divide the values by 1000)
-	gen bil = 1000 if strpos(scale, "Billion")
-	replace bil = 1 if bil ==.
-	replace x = x * bil
+*** Convert everything to billions. 
+*** (if 'scale' says millions, divide the values by 1000)
+	gen mil = 1000 if strpos(scale, "Million")
+	replace mil = 1 if mil ==.
+	replace x = x / mil
 	rename x ox_rgdp_lcu
-	label variable ox_rgdp_lcu "Oxford Economics Real GDP in LCU (millions)"
-		
+	label variable ox_rgdp_lcu "Oxford Economics Real GDP in LCU (billions)"
+	
 *** Clean quarter variable
 	moss period, match("([0-9]+)")  regex
 	keep iso3c period year ox_rgdp_lcu _match1 scale
@@ -110,11 +100,15 @@
 	format yq %tq
 	drop year_quarter
 	gen year = yofd(dofq(yq))
+	
+*** conver to billions (currently in millions)
+	replace nom_gdp = nom_gdp / 1000
+	
 	tempfile quarterly_nominal_gdp
 	save `quarterly_nominal_gdp'
 	
 *** Convert from nominal to real GDP
-
+	
 *** get GDP deflator data:
 	wbopendata, language(en – English) indicator(NY.GDP.DEFL.ZS) long clear
 	keep countrycode year ny_gdp_defl_zs
@@ -162,13 +156,9 @@
 	
 *** export to dta:
 	sort iso3c year quarter
-	label variable nom_gdp "IMF nominal GDP, quarterly, national." 
-	label variable rgdp "IMF real GDP, quarterly, national." 
+	label variable nom_gdp "IMF nominal GDP, quarterly, national, billions" 
+	label variable rgdp "IMF real GDP, quarterly, national, billions" 
 	save "$hf_input/imf_oxf_GDP_quarter.dta", replace
-	
-*** merge GDP measures with NTL measures on a quarterly basis
-	tempfile ox_imf_data
-	save `ox_imf_data'
 	
 *** ANNUAL =================================================================
 
@@ -208,6 +198,10 @@
 	duplicates tag iso3c year, gen (dup_id_cov)
 	assert dup_id_cov==0
 	restore
+
+*** conver to billions (currently in millions)
+	replace rgdpna = rgdpna / 1000
+	label variable rgdpna "PWT Real GDP, constant 2017, billions"
 	
 *** Merge IMF and PWT real GDP -----------------------------------------------
 	mmerge iso3c year using `weo_levels'
@@ -240,20 +234,122 @@
 		assert dup_id_cov==0
 		restore
 	
+	*** convert to billions:
+		replace WDI = WDI / (10^9)
+		label variable WDI "WDI GDP, constant LCU, billions"
+	
 	save "$hf_input/imf_pwt_GDP_annual.dta", replace
-
-*** Merge all data with NTL data ---------------------------------------------
-	use "$hf_input/ntl_cty_agg.dta", clear
-	rename quart quarter
-	mmerge year quarter iso3c using `ox_imf_data'
-	drop _m
-	mmerge year iso3c using "$hf_input/imf_pwt_GDP_annual.dta"
+	
+*** Import WDI dataset on electricity access --------------------------------
+	clear
+	foreach wb_lp in EG.ELC.ACCS.ZS EG.USE.ELEC.KH.PC {
+		wbopendata, clear nometadata long indicator(`wb_lp') ///
+		year(2000:2021)
+		drop if regionname == "Aggregates"
+		keep countrycode year eg_*
+		if ("`wb_lp'"=="EG.USE.ELEC.KH.PC") {
+			rename (countrycode eg_*) (iso3c pwr_consump_kwh_pcap.)
+		}
+		else if ("`wb_lp'"=="EG.ELC.ACCS.ZS") {
+		    rename(countrycode eg_*) (iso3c elec_access_prc.)
+		}
+		fillin iso3c year
+		drop _fillin
+		sort iso3c year
+		if ("`wb_lp'"=="EG.ELC.ACCS.ZS") {
+			tempfile electricity
+			save `electricity'
+		}
+	}
+	mmerge iso3c year using `electricity'
+	assert _m == 3
 	drop _m
 	
-*** drop IMF WEO estimates of future GDP growth
-	drop if year > 2021 | quarter == .
-	fillin iso3c year quarter
-	table _f
-	drop _f
-	save "$hf_input/imf_pwt_oxf_ntl.dta", replace
+	*** make sure we only have 1 country-year pairs:
+		preserve
+		sort iso3c year
+		keep iso3c year
+		duplicates tag iso3c year, gen (dup_id_cov)
+		assert dup_id_cov==0
+		restore
+	
+	*** log variables and label them:
+		gen ln_pwr_consum = ln(pwr_consump_kwh_pcap)
+		gen ln_elec_access = ln(elec_access_prc)
+		label var ln_pwr_consum "Log(Power Consumption, kwh per capita)"
+		label var ln_elec_access "Log(% Electricity Access)"
+	
+	save "$hf_input/electricity.dta", replace
+	
+*** Create a monthly NTL - GDP dataset: =======================================
+	use "$hf_input/NTL_appended.dta", clear
+	gen year = year(date2)
+	gen month = month(date2)
+	gen quarter = quarter(date2)
+	
+/* make sure that the number of rows at the beginning is the same as the 
+number of rows at the end */
+	gen n = _n
+	egen n_row_before = max(n)
+	drop n
 
+*** Merge with GDP data:
+	mmerge iso3c year using "$hf_input/imf_pwt_GDP_annual.dta"
+ 	keep if inlist(_m, 1, 3)
+	drop _m
+
+	mmerge iso3c year quarter using "$hf_input/imf_oxf_GDP_quarter.dta"
+ 	keep if inlist(_m, 1, 3)
+	drop _m
+
+/* make sure that the number of rows at the beginning is the same as the 
+number of rows at the end */
+	gen n = _n
+	egen n_row_after = max(n)
+	drop n
+	
+	assert n_row_after == n_row_before
+	drop n_row_*
+	
+	rename (nom_gdp rgdp) (imf_quart_nom_gdp imf_quart_rgdp)
+	duplicates tag objectid time, gen(dup)
+	assert dup == 0
+	drop dup
+	save "$hf_input/NTL_GDP_month_ADM2.dta", replace
+	
+// We have 5 GDP variables: PWT, WDI, Oxford, IMF WEO, and IMF-quarterly.
+// IMF quarterly has terrible coverage, so within the other 4, Oxford, IMF WEO, 
+// and WDI are based on LCU, where they use different base years. 
+// All 4 of these PWT, WDI, Oxford-LCU, IMF-LCU are in real terms.
+// Only Oxford amongst these 4 is at quarterly level, rest are at annual level.
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
