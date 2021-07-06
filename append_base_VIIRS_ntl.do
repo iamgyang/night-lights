@@ -5,7 +5,6 @@
 		global ntl_input "$hf_input/NTL Extracted Data 2012-2020/"
 	}
 
-global outreg_file "$hf_input/prelim_reg_7.xls"
 global import_nightlights "yes"
 	
 clear all
@@ -54,9 +53,58 @@ else if ("$import_nightlights" != "yes") {
 	use "$hf_input/NTL_appended.dta", clear
 }
 
+// Clean up: 
+drop v1
+replace gadmid = "" if gadmid == "NA"
+replace iso = "" if iso == "NA"
+replace gid_2 = "" if gid_2 == "NA"
+replace gid_1 = "" if gid_1 == "NA"
+replace name_0 = "" if name_0 == "NA"
+replace iso3c = "" if iso3c == "NA"
+replace name_1 = "" if name_1 == "NA"
+
+// Some ISO codes are in the ISO variable, as opposed to the ISO3C variable. 
+// Similarly, we are missing some GADM codes
+replace iso3c = iso if (iso != "" & iso3c == "")
+replace gid_2 = "gadm" + gadmid if (gid_2 == "" & gadmid!="")
+
 // save
 save "$hf_input/NTL_appended.dta", replace
 	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

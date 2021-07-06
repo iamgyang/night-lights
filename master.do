@@ -6,8 +6,9 @@ Summary:
 		i.   Import the night lights dataset from CSV and append all years.
 		ii.  Clean the national accounts GDP measures.
 		iii. Compare the GDP measures between each other, and create a few plots.
-		iv.	 Reproduce the Storygard regressions under the same specifications 
+		iv.	 Reproduce the Storeygard regressions under the same specifications 
 			 using the new VIIRS dataset.
+		v.	 Reproduce the exact AER Storeygard output from their replication files
 
 	b.	City-level comparisons:
 		i.	Clean city-level GDP measures
@@ -39,7 +40,7 @@ foreach user in "`c(username)'" {
 
 if ("`install_user_defined_functions'" == "Yes") {
 	foreach i in rangestat wbopendata kountry mmerge outreg2 somersd ///
-	asgen moss {
+	asgen moss reghdfe ftools {
 		ssc install `i'
 	}
 }
@@ -64,8 +65,8 @@ if ("`install_user_defined_functions'" == "Yes") {
 			do "$code/clean national GDP measures.do"
 			
 /* 		iii. Compare the GDP measures between each other, and create a few plots.
- 			 Take a log-log plot of GDP measures. Also, calculate the standard deviation 
- 			 of the difference in GDP measures and make a bargraph. 
+ 			 Take a log-log plot of GDP measures. Also, calculate the standard 
+			 deviation of the difference in GDP measures and make a bargraph. 
 */
 			do "$code/analysis national GDP measures.do"
 
@@ -78,6 +79,13 @@ if ("`install_user_defined_functions'" == "Yes") {
 			 regressions with that separate dataset).
 */
 			do "$code/storygard reproduction.do"
+			
+/* 		v.	 Reproduce the exact AER Storeygard output from their replication 
+			 files. May take actually going into the do file itself, as some 
+			 times I had some error messages in running the first few lines.
+*/
+			 do "$root/input/HWS AER replication/hsw_final_tables_replication/lightspaper_replication.do"
+
 
 // 	b.	City-level comparisons:
 
