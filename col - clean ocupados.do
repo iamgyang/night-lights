@@ -62,8 +62,35 @@ levelsof fullname, local(files_toloop)
 
 // Grab all the Ocupados from the folder ----------------------------
 
-// https://www.statalist.org/forums/forum/general-stata-discussion/general/1303673-looping-over-files-in-a-folder
+program dir_convert_2_dta
+	args obs_in_file files_to_loop
+	forvalues i=1/`obs_in_file' {
+		use "`files_to_loop'" in `i', clear
+		local file = fullname
+		
+		di "`file'"
+		// if the file is a txt file, save it as a DTA file
+		// here, dollar sign indicates the end of the string
+		if (regexm("`file'", ".txt$")) {
+			import delimited using "`file'", clear //bindquote(strict)
+			local file = regexr("`file'", ".txt$", "")
+			capture quietly gen file_name = "`file'"
+			capture quietly replace file_name = "`file'"
+			di "`file'.dta"
+			save "`file'.dta", replace
+		}
 
+		// If the file is already a DTA file, save a column indicating the file location.
+		// And, rename all the variables to be lower case.
+		else if (regexm("`file'", ".dta$")) {
+			use "`file'", clear
+			capture quietly gen file_name = "`file'"
+			capture quietly replace file_name = "`file'"
+			rename *, lower
+			save "`file'", replace
+		}
+	}
+end
 
 // get all the file names from a directory
 filelist , dir("$hf_input/Household Surveys/Colombia/") pattern(*Ocupados*)
@@ -77,32 +104,7 @@ save "`files'"
 local obs = _N
 
 // convert the files in the directory to be DTA files:
-forvalues i=1/`obs' {
-    use "`files'" in `i', clear
-	local file = fullname
-
-	di "`file'"
-	// if the file is a txt file, save it as a DTA file
-	// here, dollar sign indicates the end of the string
-	if (regexm("`file'", ".txt$")) {
-		import delimited using "`file'", clear //bindquote(strict)
-		local file = regexr("`file'", ".txt$", "")
-		capture quietly gen file_name = "`file'"
-		capture quietly replace file_name = "`file'"
-		di "`file'.dta"
-		save "`file'.dta", replace
-	}
-
-	// If the file is already a DTA file, save a column indicating the file location.
-	// And, rename all the variables to be lower case.
-	if (regexm("`file'", ".dta$")) {
-		use "`file'", clear
-		capture quietly gen file_name = "`file'"
-		capture quietly replace file_name = "`file'"
-		rename *, lower
-		save "`file'", replace
-	}
-}
+dir_convert_2_dta `obs' "`files'"
 
 // Append all the Ocupados files by year: --------------------------
 clear
@@ -120,7 +122,6 @@ foreach x of numlist 2013/2021 {
 	}
 	save "$hf_input/`x'appended.dta", replace
 }
-
 
 // Clean the resulting appended files -----------------------------------------
 
@@ -178,7 +179,7 @@ foreach x of numlist 2013/2021 {
 
 // append all the years
 use "$hf_input/colombia2020cleaned.dta", clear
-foreach x of numlist 2013/2019 2021 {
+foreach x of numlist 2013/2021 {
 	append using "$hf_input/colombia`x'cleaned.dta", force
 }
 // Convert variables to non-numeric:
