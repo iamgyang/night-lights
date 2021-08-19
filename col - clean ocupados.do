@@ -62,6 +62,9 @@ levelsof fullname, local(files_toloop)
 
 // Grab all the Ocupados from the folder ----------------------------
 
+// https://www.statalist.org/forums/forum/general-stata-discussion/general/1303673-looping-over-files-in-a-folder
+
+
 // get all the file names from a directory
 filelist , dir("$hf_input/Household Surveys/Colombia/") pattern(*Ocupados*)
 // norecur
@@ -69,10 +72,15 @@ gen fullname = dirname + "/" + filename
 keep fullname
 gen ext = substr(fullname, length(fullname)-2, 3)
 keep if ext == "dta" | ext == "txt"
-levelsof fullname, local(files_toloop)
+tempfile files
+save "`files'"
+local obs = _N
 
 // convert the files in the directory to be DTA files:
-foreach file of local `files_toloop' {
+forvalues i=1/`obs' {
+    use "`files'" in `i', clear
+	local file = fullname
+
 	di "`file'"
 	// if the file is a txt file, save it as a DTA file
 	// here, dollar sign indicates the end of the string
