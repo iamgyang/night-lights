@@ -1,3 +1,7 @@
+// For the Columbia folder, Dropbox, IF want to rewind, do it to 11:59 AM 7/22/2021
+// C:\Users\`user'\Dropbox\CGD GlobalSat\HF_measures\input\Household Surveys\Colombia
+
+
 /*
 Summary:
 
@@ -9,14 +13,18 @@ Summary:
 		iv.	 Reproduce the Storeygard regressions under the same specifications 
 			 using the new VIIRS dataset.
 		v.	 Reproduce the exact AER Storeygard output from their replication files
-
+		
 	b.	City-level comparisons:
 		i.	Clean city-level GDP measures
 		ii.	Merge with night lights and produce regressions
+		
+	c.  China subnational data:
+		i.	Clean Chinese subnational data
 
 2.	Household Surveys:
 	a.	Get the list of variables from all the dta files in the Colombia surveys
 	b.	Get the list of variables from all the dta files in the LSMS surveys
+	c.	Clean Colombia dataset
 
 */
 
@@ -101,6 +109,12 @@ if ("`install_user_defined_functions'" == "Yes") {
 // 		iii. Produce regressions
 			do "$code/regression city nightlights.do"
 
+			
+// c.  China subnational data:
+
+//		i.	Clean Chinese subnational data
+			do "$code/clean china.do"
+
 
 // =========================================================================
 
@@ -117,6 +131,21 @@ if ("`install_user_defined_functions'" == "Yes") {
 // 	b.	Get the list of variables from all the dta files in the LSMS surveys
 	do "$code/data list variable labels in LSMS.do"
 
+//	c.	Clean Colombia dataset
+// 		This file does a few things: 
+// 			 - converts txt files to dta files 
+// 			 - appends all the colombia datasets together 
+// 			 - converts spanish datasets to english
+// 			 - collapses the data using the survey weights to an ADM1-month level
+	do "$code/col - clean expansion factor dpto weights.do"
+	do "$code/col - clean vivienda.do"
+	do "$code/col - clean ocupados.do"
+	do "$code/col - clean características generales.do"
+	do "$code/col - merge together.do"
+	do "$code/col - to english - 1.do"
+	do "$code/col - collapse to adm-month.do"
+	do "$code/col - to english - 2.do"
+	
 
 // =========================================================================
 
