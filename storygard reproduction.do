@@ -216,14 +216,6 @@ drop PWT IMF_WEO WDI
 			Within R-squared, e(r2_within))
 	}
 
-
-
-
-
-
-
-
-	
 // ----------------------------------------------------------------------
 // Compare 2012-2013 for Henderson vs. VIIRS vs. Australian DMSP on Henderson 
 // GDP and Oxford GDP:
@@ -305,6 +297,8 @@ drop PWT IMF_WEO WDI
 // Should have same coefficients.
 	destring year, replace
 	xtset iso3c_f year
+	
+	save "two_years_countries.dta", replace
 	
 // do regressions
 	
