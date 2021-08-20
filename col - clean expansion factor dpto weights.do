@@ -39,8 +39,12 @@ sort year ext
 by year: gen dup = _n
 drop if dup >= 2
 
+tempfile files
+save "`files'"
+local obs = _N
+
 program dir_convert_2_dta
-	args files_toloop_
+	args files_toloop_ 
 	// convert the files in the directory to be DTA files:
 	foreach file in "`files_toloop_'" {
 		di "`file'"
