@@ -32,16 +32,18 @@ if (1==1) {
 	replace iso3c = "CIV" if country == "CÃ´te d'Ivoire"
 	replace iso3c = "PRK" if country == "Dem. People's Republic of Korea"
 	replace iso3c = "SWZ" if country == "Eswatini"
-	replace iso3c = "FSM" if country == "Micronesia (Fed. States of)"
 	replace iso3c = "PSE" if country == "State of Palestine"
 	replace iso3c = "VEN" if country == "Venezuela (Bolivarian Republic of)"
 	replace iso3c = "XKX" if country == "Kosovo"
 	replace iso3c = "MKD" if country == "North Macedonia"
 	replace iso3c = "CUW" if country == "CuraÃ§ao"
 	replace iso3c = "REU" if country == "RÃ©union"
-	replace iso3c = "PYF" if country == "Polynesia"
-
+	replace iso3c = "FSM" if country == "Micronesia (Fed. States of)"
+	replace iso3c = "PYF" if country == "French Polynesia"
+	
 	drop temp
+	drop if country == "Polynesia" // Polynesia refers to the REGION, not the COLONY
+	drop if country == "Micronesia" // we have fed states of micronesia, which is the COUNTRY; micronesia is the REGION
 	drop if country == "Africa"
 	drop if country == "Channel Islands"
 	drop if country == "Oceania"
