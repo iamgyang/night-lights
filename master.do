@@ -20,7 +20,13 @@ Summary:
 		
 	c.  China subnational data:
 		i.	Clean Chinese subnational data
-
+		
+	d.  Angrist, Goldberg, Jolliffe using the same data
+		i.	data prep
+		ii. graphs
+	
+	e.	Comprehensive Table of Findings		
+		
 2.	Household Surveys:
 	a.	Get the list of variables from all the dta files in the Colombia surveys
 	b.	Get the list of variables from all the dta files in the LSMS surveys
@@ -115,6 +121,16 @@ if ("`install_user_defined_functions'" == "Yes") {
 //		i.	Clean Chinese subnational data
 			do "$code/clean china.do"
 
+
+// d.  Angrist, Goldberg, Jolliffe using the same data
+
+// 		i.	data prep
+			do "$code/clean population.do"
+			do "$code/clean angrist.do"
+
+// e.	Comprehensive table of findings
+
+			do "$code/comprehensive validation table.do"
 
 // =========================================================================
 
