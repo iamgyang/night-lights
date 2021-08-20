@@ -7,9 +7,8 @@ foreach user in "`c(username)'" {
 
 clear all
 set more off
-// -------------------------------------------------------------------------
 
-tempfile viirs dmsp dmsp_hender
+// -------------------------------------------------------------------------
 
 // VIIRS cleaned & raw -----------------
 // By cleaned, we mean NTL with deletions and without month-ADM2 deletions
@@ -35,6 +34,8 @@ foreach i in `del' {
 	drop dup
 	save "collapsed_dataset_`i'.dta", replace
 }
+
+tempfile viirs dmsp dmsp_hender
 
 use "collapsed_dataset_delete.dta", clear
 rename (sum_area sum_pix) (del_sum_area del_sum_pix)
@@ -68,7 +69,8 @@ gen exp_hws_wdi = exp(lngdpwdilocal)
 save `dmsp_hender'
 
 // WB historical income classifications --------------
-import excel "OGHIST_historical_WB_country_income_classification.xls", sheet("Country Analytical History") allstring clear
+import excel "OGHIST_historical_WB_country_income_classification.xls", ///
+sheet("Country Analytical History") allstring clear
 gen rownum = _n
 replace A = "colnames" if rownum == 5
 drop if A == ""
@@ -93,6 +95,8 @@ foreach i of varlist * {
 reshape long FY, i(colnames) j(year, string)
 rename FY income
 destring year, replace
+
+// since it gives 2 digit fiscal years, we conver to 4 digit fiscal years
 replace year = 1900 + year if year >= 50
 replace year = 2000 + year if year < 50
 drop if income == ""
@@ -114,20 +118,20 @@ drop _m
 mmerge iso3c year using un_pop_estimates_cleaned.dta
 drop _m
 
+// get balanced panel
 fillin iso3c year
-br if _f != 0 
-confirm that we only have 1 country-year
+local thisyear: di %tdDNCY daily("$S_DATE", "DMY")
+di "`thisyear'"
+local thisyear = substr("`thisyear'", 5, 4)
+drop if year > `thisyear'
 
+// confirm that we only have 1 country-year in our panel
+bysort iso3c year: gen dup = _n
+assert dup == 1
 
+drop _fillin dup
 
-
-
-
-
-
-
-
-
+save clean_validation_base.dta, replace
 
 
 

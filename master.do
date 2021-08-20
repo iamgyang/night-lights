@@ -130,7 +130,8 @@ if ("`install_user_defined_functions'" == "Yes") {
 
 // e.	Comprehensive table of findings
 
-			do "$code/comprehensive validation table.do"
+			do "$code/validation table - clean.do"
+			do "$code/validation table - regressions.do"
 
 // =========================================================================
 
