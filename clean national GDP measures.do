@@ -1,15 +1,16 @@
-*** Macros -----------------------------------------------------------------
-	foreach user in "`c(username)'" {
-		global root "C:/Users/`user'/Dropbox/CGD GlobalSat/"
-		global hf_input "$root/HF_measures/input/"
-		global ntl_input "$hf_input/NTL Extracted Data 2012-2020/"
-	}
+// Macros ---------------------------------------------------------------------
+foreach user in "`c(username)'" {
+	global root "C:/Users/`user'/Dropbox/CGD GlobalSat/"
+	global hf_input "$root/HF_measures/input/"
+	global ntl_input "$hf_input/NTL Extracted Data 2012-2020/"
+}
+set more off 
+cd "$hf_input"
 
 	global outreg_file_natl_yr "$hf_input/natl_reg_9.xls"
 	global outreg_file_natl_quart "$hf_input/natl_reg_9.xls"
 
 	clear all
-	set more off
 	
 *** QUATERLY =================================================================
 
