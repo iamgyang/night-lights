@@ -47,6 +47,7 @@ foreach i in Oxford PWT WDI {
     replace `i' = `i' * (10^9)
 }
 gen del_sum_pix_area = del_sum_pix / del_sum_area
+gen sum_pix_area = sum_pix / sum_area
 
 save `viirs'
 
@@ -130,7 +131,100 @@ assert dup == 1
 
 drop _fillin dup
 
+// -------------------------------------------------------------------------
+// Extra variables after merging -------------------------------------------
+// -------------------------------------------------------------------------
+
+// lights per area for DMSP
+gen sum_light_dmsp_div_area = sum_light_dmsp / sum_area
+label variable sum_light_dmsp_div_area "DMSP lights divided / polygon area"
+
+// label variables
+label variable del_sum_area "VIIRS (cleaned) polygon area"
+label variable del_sum_pix "VIIRS (cleaned) sum of pixels"
+label variable Oxford "Oxford real GDP LCU"
+label variable PWT "PWT real GDP PPP"
+label variable WDI "WDI real GDP LCU"
+label variable sum_area "lights (raw) polygon area"
+label variable sum_pix "VIIRS (raw) sum of pixels"
+label variable sum_pix_area "VIIRS (raw) sum of pixels / area"
+label variable del_sum_pix_area "VIIRS (cleaned) pixels / area"
+label variable sum_light_dmsp "DMSP sum of pixels"
+label variable lndn "Log DMSP pixels / area (original)"
+label variable lngdpwdilocal "Log WDI real GDP LCU (original)"
+label variable exp_hws_wdi "WDI real GDP LCU (original)"
+label variable income "WB historical income classification"
+label variable poptotal "population (UN)"
+label variable sum_light_dmsp_div_area "DMSP sum of pixels / area"
+
+// measure vars
+local measure_vars "Oxford PWT WDI del_sum_pix sum_pix sum_light_dmsp del_sum_pix_area sum_pix_area"
+
+// per capita values
+foreach i in `measure_vars' {
+    gen `i'_pc = `i' / poptotal
+	loc lab: variable label `i'
+	di "`lab'"
+	label variable `i'_pc "`lab' per capita"
+}
+
+foreach l in `measure_vars' {
+	local measure_vars "`measure_vars' `l'_pc"
+}
+
+// log values
+foreach i in `measure_vars' {
+    gen ln_`i' = ln(`i')
+	loc lab: variable label `i'
+	di "`lab'"
+	label variable ln_`i' "Log `lab'"
+}
+
+// first differences on the logged variables
+foreach var of varlist ln_* {
+    generate g_`var' = `var' - `var'[_n-1] if iso3c==iso3c[_n-1]
+	loc lab: variable label `var'
+	di "`lab'"
+	label variable g_`var' "Diff. `lab'"
+}
+
+// encode categorical variables
+gen yr = year
+tostring yr, replace
+ds, has(type string)
+local string_vars `r(varlist)'
+
+foreach i in `string_vars' {
+	di "`i'"
+	encode `i', gen(cat_`i')
+}
+
+drop yr
+
 save clean_validation_base.dta, replace
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
