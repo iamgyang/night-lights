@@ -188,7 +188,7 @@ cd "$hf_input"
 	use "$hf_input/National Accounts/pwt100.dta", clear
 	keep rgdpna year countrycode
 	drop if rgdpna == . 
-	drop if year < 2012
+// 	drop if year < 2012
 	rename countrycode iso3c
 	tempfile pwt
 	save `pwt'
@@ -213,7 +213,7 @@ cd "$hf_input"
 *** Import WDI dataset on real GDP (LCU) -------------------------------------
 	
 	clear
-	wbopendata, clear nometadata long indicator(NY.GDP.MKTP.KN) year(2000:2021)
+	wbopendata, clear nometadata long indicator(NY.GDP.MKTP.KN) year(1990:2021)
 	drop if regionname == "Aggregates"
 	keep countrycode year ny_gdp_mktp_kn
 	rename (countrycode ny_gdp_mktp_kn) (iso3c WDI)
@@ -245,7 +245,7 @@ cd "$hf_input"
 	clear
 	foreach wb_lp in EG.ELC.ACCS.ZS EG.USE.ELEC.KH.PC {
 		wbopendata, clear nometadata long indicator(`wb_lp') ///
-		year(2000:2021)
+		year(1990:2021)
 		drop if regionname == "Aggregates"
 		keep countrycode year eg_*
 		if ("`wb_lp'"=="EG.USE.ELEC.KH.PC") {
@@ -296,21 +296,21 @@ number of rows at the end */
 
 *** Merge with GDP data:
 	mmerge iso3c year using "$hf_input/imf_pwt_GDP_annual.dta"
- 	keep if inlist(_m, 1, 3)
+//  	keep if inlist(_m, 1, 3)
 	drop _m
 
 	mmerge iso3c year quarter using "$hf_input/imf_oxf_GDP_quarter.dta"
- 	keep if inlist(_m, 1, 3)
+//  	keep if inlist(_m, 1, 3)
 	drop _m
 
-/* make sure that the number of rows at the beginning is the same as the 
-number of rows at the end */
-	gen n = _n
-	egen n_row_after = max(n)
-	drop n
-	
-	assert n_row_after == n_row_before
-	drop n_row_*
+// /* make sure that the number of rows at the beginning is the same as the 
+// number of rows at the end */
+// 	gen n = _n
+// 	egen n_row_after = max(n)
+// 	drop n
+//	
+// 	assert n_row_after == n_row_before
+// 	drop n_row_*
 	
 	rename (nom_gdp rgdp) (imf_quart_nom_gdp imf_quart_rgdp)
 	duplicates tag objectid time, gen(dup)
