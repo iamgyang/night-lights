@@ -11,6 +11,12 @@ cd "$hf_input"
 
 // VIIRS cleaned & raw -----------------
 // By cleaned, we mean NTL with deletions and without month-ADM2 deletions
+use "$hf_input/imf_pwt_GDP_annual.dta", clear
+keep iso3c year pwt_rgdpna WDI
+rename (pwt_rgdpna WDI) (pwt_rgdpna_check WDI_check)
+tempfile pwt_wdi_check
+save `pwt_wdi_check'
+
 local del "delete not_delete"
 
 foreach i in `del' {
@@ -31,6 +37,14 @@ foreach i in `del' {
 	duplicates tag iso3c year, gen(dup)
 	assert dup == 0
 	drop dup
+	
+	// merging back in PWT by year-iso3c should give the exact same results 
+	// after collapsing by mean as before collapsing by mean
+	mmerge iso3c year using `pwt_wdi_check'
+	assert (abs(pwt_rgdpna_check - PWT) < 0.1) | (pwt_rgdpna_check==. & PWT==.)
+	assert (abs(WDI_check - WDI) < 0.1) | (WDI_check==. & WDI==.)
+	drop *_check _m
+	
 	save "collapsed_dataset_`i'.dta", replace
 }
 
@@ -46,6 +60,17 @@ drop _m
 foreach i in Oxford PWT WDI {
     replace `i' = `i' * (10^9)
 }
+
+// since landmasses don't change over time, make area same area for each 
+// country for all years (including those prior to 2012) for the non-cleaned dataset:
+bysort iso3c: egen sum_area_repx = max(sum_area)
+replace sum_area = sum_area_repx
+drop sum_area_repx
+
+foreach i in del_sum_area del_sum_pix sum_area sum_pix {
+	replace `i' = . if `i' ==0
+}
+
 gen del_sum_pix_area = del_sum_pix / del_sum_area
 gen sum_pix_area = sum_pix / sum_area
 
@@ -89,6 +114,7 @@ foreach i of varlist * {
     replace `i' = "" if `i' == ".."
 	replace `i' = "LIC" if `i' == "L"
 	replace `i' = "LMIC" if `i' == "LM"
+	replace `i' = "LMIC" if `i' == "LM*"
 	replace `i' = "UMIC" if `i' == "UM"
 	replace `i' = "HIC" if `i' == "H"
 }
@@ -158,7 +184,7 @@ label variable poptotal "population (UN)"
 label variable sum_light_dmsp_div_area "DMSP sum of pixels / area"
 
 // measure vars
-local measure_vars "Oxford PWT WDI del_sum_pix sum_pix sum_light_dmsp del_sum_pix_area sum_pix_area"
+local measure_vars "Oxford PWT WDI del_sum_pix sum_pix sum_light_dmsp del_sum_pix_area sum_light_dmsp_div_area sum_pix_area"
 
 // per capita values
 foreach i in `measure_vars' {
@@ -191,16 +217,36 @@ foreach var of varlist ln_* {
 // encode categorical variables
 gen yr = year
 tostring yr, replace
-ds, has(type string)
-local string_vars `r(varlist)'
-
-foreach i in `string_vars' {
+label define income 1 "LIC" 2 "LMIC" 3 "UMIC" 4 "HIC"
+encode income, generate(cat_income) label(income) 
+foreach i in iso3c yr {
 	di "`i'"
 	encode `i', gen(cat_`i')
 }
 
 drop yr
 
+// get BASE year for growth regressions:
+
+foreach i in PWT {
+	foreach year_base in 1992 2012 {
+		gen base_ln_`i'_pc_`year_base' = ln_`i'_pc if year == `year_base'
+		bysort iso3c: egen ln_`i'_pc_`year_base' = max(base_ln_`i'_pc_`year_base')
+		drop base_ln_`i'_pc_`year_base'
+		label variable ln_`i'_pc_`year_base' "Log `i' real GDP PPP per capita, `year_base'"
+	}
+}
+
+// create an income variable that is based on the FIRST income present
+foreach year_base in 1992 2012 {
+	sort cat_iso3c year
+	gen cat_income`year_base' = cat_income if year == `year_base'
+	bysort cat_iso3c:  fillmissing cat_income`year_base', with(mean)
+	capture quietly label define income 1 "LIC" 2 "LMIC" 3 "UMIC" 4 "HIC"
+	label value cat_income`year_base' income
+	label variable cat_income`year_base' "WB income group, `year_base'"
+}
+	
 save clean_validation_base.dta, replace
 
 
