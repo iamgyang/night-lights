@@ -50,7 +50,7 @@ cd "$hf_input"
 	rename scale base_year_oxford
 	tempfile ox_econ_data2
 	save `ox_econ_data2'
-		
+
 *** Import IMF quarterly real GDP --------------------------------------------
 
 *** Import dataset
@@ -302,20 +302,24 @@ number of rows at the end */
 	mmerge iso3c year quarter using "$hf_input/imf_oxf_GDP_quarter.dta"
 //  	keep if inlist(_m, 1, 3)
 	drop _m
-
-// /* make sure that the number of rows at the beginning is the same as the 
-// number of rows at the end */
-// 	gen n = _n
-// 	egen n_row_after = max(n)
-// 	drop n
-//	
-// 	assert n_row_after == n_row_before
-// 	drop n_row_*
 	
 	rename (nom_gdp rgdp) (imf_quart_nom_gdp imf_quart_rgdp)
-	duplicates tag objectid time, gen(dup)
-	assert dup == 0
-	drop dup
+	
+	preserve
+	keep if objectid != ""
+ 	duplicates tag objectid time, gen(dup)
+ 	assert dup == 0
+ 	drop dup
+	restore
+
+// 	check: IF object ID is empty, then there should be no duplicate year-iso3c-quarters
+
+	preserve
+	keep if objectid == ""
+	bysort year iso3c quarter: gen dup = _n
+	assert dup == 1
+	restore
+	
 	save "$hf_input/NTL_GDP_month_ADM2.dta", replace
 	
 // We have 5 GDP variables: PWT, WDI, Oxford, IMF WEO, and IMF-quarterly.
