@@ -15,8 +15,6 @@ full_gold overlaps_gold full_same_sample_gold {
 }
 
 // ------------------------------------------------------------------------
-
-
 // Confirming that we have the same dataset with the original Henderson variables:
 
 use "$hf_input/HWS AER replication/hsw_final_tables_replication/global_total_dn_uncal.dta", clear
@@ -36,6 +34,10 @@ assert lngdpwdilocal == lngdpwdilocal_orig
 
 save "vars_hender.dta", replace
 
+// ======================================================================
+// HENDERSON ============================================================
+// ======================================================================
+{
 // full regression Henderson ------------------------------------
 use clean_validation_base.dta, clear
 
@@ -163,11 +165,32 @@ foreach gdp_var in ln_WDI ln_PWT {
 }
 }
 
+
+}
+
+
 // full regression Goldberg ------------------------------------
 use clean_validation_base.dta, replace
 
-// regression of log GDP pc in base year ~ avg log GDP pc difference in years since (OLS)
+// regression of mean log first difference in GDP ~ mean log first difference in lights
+// regression of mean log first difference in GDP ~ mean log first difference in lights + income + lights::income
 
+keep g_ln_gdp_gold g_ln_WDI_ppp_pc g_ln_del_sum_pix_pc g_ln_sum_pix_pc ///
+g_ln_sum_light_dmsp_pc ///
+mean_g_ln_lights_gold g_ln_gdp_gold g_ln_sumoflights_gold_pc ///
+cat_iso3c ln_WDI_ppp_pc_1992 ln_WDI_ppp_pc_2012 cat_income1992 year
+
+ds
+local varlist `r(varlist)'
+local excluded cat_iso3c cat_income`year'
+local varlist : list varlist - excluded 
+
+include "$root/HF_measures/code/copylabels.do"
+collapse (mean) `varlist', by(cat_iso3c cat_income`year')
+include "$root/HF_measures/code/attachlabels.do"
+
+save "angrist_goldberg_collapsed.dta", replace
+	
 // define 2 datasets: 1 that is collapsed from 1992 - 2012; another collapsed from 2012-2021
 foreach year in 1992 2012 {
 	preserve
@@ -179,12 +202,18 @@ foreach year in 1992 2012 {
 		keep if year >=2012
 	}
 	
-	keep g_ln_del_sum_pix_area g_ln_sum_light_dmsp_div_area g_ln_sum_pix_area ///
-	g_ln_PWT_pc g_ln_WDI_pc g_ln_del_sum_pix_pc g_ln_sum_pix_pc ///
-	g_ln_sum_light_dmsp_pc cat_iso3c ln_PWT_pc_1992 ln_PWT_pc_2012 cat_income`year' year
+	keep g_ln_gdp_gold g_ln_WDI_ppp_pc g_ln_del_sum_pix_pc g_ln_sum_pix_pc ///
+	g_ln_sum_light_dmsp_pc ///
+	mean_g_ln_lights_gold g_ln_gdp_gold g_ln_sumoflights_gold_pc ///
+	cat_iso3c ln_WDI_ppp_pc_1992 ln_WDI_ppp_pc_2012 cat_income`year' year
 	
+	ds
+	local varlist `r(varlist)'
+	local excluded cat_iso3c cat_income`year'
+	local varlist : list varlist - excluded 
+
 	include "$root/HF_measures/code/copylabels.do"
-	collapse (mean) g* ln*, by(cat_iso3c cat_income`year')
+	collapse (mean) `varlist', by(cat_iso3c cat_income`year')
 	include "$root/HF_measures/code/attachlabels.do"
 	save "angrist_goldberg_`year'.dta", replace
 	restore	
@@ -193,18 +222,17 @@ foreach year in 1992 2012 {
 // run regressions:
 foreach year in 1992 2012 {
 	use angrist_goldberg_`year'.dta, clear
-	foreach base_gdp_var in ln_PWT_pc_`year' {
-		foreach outcome_growth_var in g_ln_del_sum_pix_area g_ln_sum_pix_area ///
-		g_ln_sum_light_dmsp_div_area g_ln_PWT_pc g_ln_WDI_pc g_ln_del_sum_pix_pc ///
-		g_ln_sum_pix_pc g_ln_sum_light_dmsp_pc {
-			capture regress `outcome_growth_var' `base_gdp_var', robust
+	foreach x_var in g_ln_del_sum_pix_pc g_ln_sum_pix_pc g_ln_sum_light_dmsp_pc ///
+	mean_g_ln_lights_gold g_ln_sumoflights_gold_pc {
+		foreach y_var in g_ln_WDI_ppp_pc {
+			capture regress `y_var' `x_var', robust
 			capture outreg2 using "$full_gold", append label dec(4)
 			
-			capture regress `outcome_growth_var' `base_gdp_var' i.cat_income`year' ///
-				c.`base_gdp_var'##cat_income`year', robust
-			capture outreg2 using "$full_gold", append label dec(4)
+// 			capture regress `y_var' `x_var' i.cat_income`year' ///
+// 				c.`x_var'##cat_income`year', robust
+// 			capture outreg2 using "$full_gold", append label dec(4)
 		}
-	}	
+	}
 }
 
 // regression on overlaps Goldberg ------------------------------------
