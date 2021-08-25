@@ -210,7 +210,7 @@ cd "$hf_input"
 	rename rgdpna pwt_rgdpna
 	save "$hf_input/imf_pwt_GDP_annual.dta", replace
 	
-*** Import WDI dataset on real GDP (LCU) -------------------------------------
+*** Import WDI dataset on real GDP (LCU) & 	WDI real GDP per capita, **PPP** -------------------
 	
 	clear
 	wbopendata, clear nometadata long indicator(NY.GDP.MKTP.KN) year(1990:2021)
@@ -223,8 +223,21 @@ cd "$hf_input"
 	tempfile wdi_gdp
 	save `wdi_gdp'
 	
+	clear
+	wbopendata, clear nometadata long indicator(NY.GDP.MKTP.PP.KD) year(1990:2021)
+	drop if regionname == "Aggregates"
+	keep countrycode year ny_gdp_mktp_pp_kd
+	rename (countrycode ny_gdp_mktp_pp_kd) (iso3c WDI_ppp)
+	fillin iso3c year
+	drop _fillin
+	sort iso3c year
+	tempfile wdi_gdp_ppp
+	save `wdi_gdp_ppp'
+	
 	use "$hf_input/imf_pwt_GDP_annual.dta", clear
 	mmerge iso3c year using `wdi_gdp'
+	drop _m
+	mmerge iso3c year using `wdi_gdp_ppp'
 	drop _m
 	
 	*** make sure we only have 1 country-year pairs:
@@ -322,7 +335,7 @@ number of rows at the end */
 	
 	save "$hf_input/NTL_GDP_month_ADM2.dta", replace
 	
-// We have 5 GDP variables: PWT, WDI, Oxford, IMF WEO, and IMF-quarterly.
+// We have 6 GDP variables: PWT, WDI, WDI_ppp, Oxford, IMF WEO, and IMF-quarterly.
 // IMF quarterly has terrible coverage, so within the other 4, Oxford, IMF WEO, 
 // and WDI are based on LCU, where they use different base years. 
 // All 4 of these PWT, WDI, Oxford-LCU, IMF-LCU are in real terms.

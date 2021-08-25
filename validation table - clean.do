@@ -22,17 +22,17 @@ local del "delete not_delete"
 foreach i in `del' {
 	use "$hf_input/NTL_GDP_month_ADM2.dta", clear
 	keep iso3c gid_2 mean_pix sum_pix year quarter month pol_area pwt_rgdpna ///
-	WDI ox_rgdp_lcu
+	WDI WDI_ppp ox_rgdp_lcu
 	if ("`i'" == "delete") {
 		drop if sum_pix < 0	    
 	}
 	rename pol_area sum_area
-	collapse (sum) sum_area sum_pix (mean) pwt_rgdpna WDI ///
+	collapse (sum) sum_area sum_pix (mean) pwt_rgdpna WDI WDI_ppp ///
 	ox_rgdp_lcu, by(year quarter iso3c)
-	rename (ox_rgdp_lcu pwt_rgdpna WDI) (Oxford PWT WDI)
+	rename (ox_rgdp_lcu pwt_rgdpna WDI WDI_ppp) (Oxford PWT WDI WDI_ppp)
 	sort iso3c year
 	collapse (sum) sum_area sum_pix Oxford ///
-	(mean) PWT WDI, by(year iso3c)
+	(mean) PWT WDI WDI_ppp, by(year iso3c)
 	replace Oxford = . if Oxford  == 0
 	duplicates tag iso3c year, gen(dup)
 	assert dup == 0
@@ -48,7 +48,7 @@ foreach i in `del' {
 	save "collapsed_dataset_`i'.dta", replace
 }
 
-tempfile viirs dmsp dmsp_hender
+tempfile viirs dmsp dmsp_hender dmsp_goldberg
 
 use "collapsed_dataset_delete.dta", clear
 rename (sum_area sum_pix) (del_sum_area del_sum_pix)
@@ -67,10 +67,12 @@ bysort iso3c: egen sum_area_repx = max(sum_area)
 replace sum_area = sum_area_repx
 drop sum_area_repx
 
+// in STATA (and in math) sum of empty set is 0, but here we want it to be missing.
 foreach i in del_sum_area del_sum_pix sum_area sum_pix {
 	replace `i' = . if `i' ==0
 }
 
+// per area variables:
 gen del_sum_pix_area = del_sum_pix / del_sum_area
 gen sum_pix_area = sum_pix / sum_area
 
@@ -129,6 +131,25 @@ drop if income == ""
 rename colnames iso3c
 save "historical_wb_income_classifications.dta", replace
 
+
+// Goldberg DMSP data --------------------------------------------------
+
+use "$hf_input/Angrist JEP replication/Data/Processed Data/master.dta", clear
+// keep if year >= 1992 & year <= 2012
+
+// average
+foreach var in g_ln_survey g_ln_gdp g_ln_lights {
+bys code: egen mean_`var' = mean(`var')
+bys code: egen sd_`var' = sd(`var')
+}
+
+keep code year mean_g_ln_lights mean_g_ln_gdp _gdppercap_constant_ppp lightpercap ln_gdp sumoflights
+rename (code year mean_g_ln_lights mean_g_ln_gdp _gdppercap_constant_ppp ///
+lightpercap ln_gdp sumoflights) (iso3c year mean_g_ln_lights_gold mean_g_ln_gdp_gold ///
+_gdppercap_constant_ppp_gold lightpercap_gold ln_gdp_gold sumoflights_gold)
+
+save `dmsp_goldberg', replace
+
 // ---------------------------------------------------------------------
 // Merge ---------------------------------------------------------------
 // ---------------------------------------------------------------------
@@ -139,9 +160,11 @@ mmerge iso3c year using `dmsp'
 drop _m
 mmerge iso3c year using `dmsp_hender'
 drop _m
+mmerge iso3c year using `dmsp_goldberg'
+drop _m
 mmerge iso3c year using historical_wb_income_classifications.dta
 drop _m
-mmerge iso3c year using un_pop_estimates_cleaned.dta
+mmerge iso3c year using wb_pop_estimates_cleaned.dta
 drop _m
 
 // get balanced panel
@@ -171,6 +194,7 @@ label variable del_sum_pix "VIIRS (cleaned) sum of pixels"
 label variable Oxford "Oxford real GDP LCU"
 label variable PWT "PWT real GDP PPP"
 label variable WDI "WDI real GDP LCU"
+label variable WDI_ppp "WDI real GDP PPP"
 label variable sum_area "lights (raw) polygon area"
 label variable sum_pix "VIIRS (raw) sum of pixels"
 label variable sum_pix_area "VIIRS (raw) sum of pixels / area"
@@ -182,9 +206,15 @@ label variable exp_hws_wdi "WDI real GDP LCU (original)"
 label variable income "WB historical income classification"
 label variable poptotal "population (UN)"
 label variable sum_light_dmsp_div_area "DMSP sum of pixels / area"
+label variable mean_g_ln_lights_gold "Mean Growth in DMSP sum of pixels per capita (Goldberg)"
+label variable _gdppercap_constant_ppp_gold "WB real GDP PPP per capita (Goldberg)"
+label variable mean_g_ln_gdp_gold "Mean Growth in Log WB real GDP PPP per capita (Goldberg)"
+label variable lightpercap_gold "DMSP sum of pixels per capita (Goldberg)"
+label variable ln_gdp_gold "Log real GDP PPP per capita (WB, Goldberg)"
+label variable sumoflights_gold "DMSP sum of pixels (Goldberg)"
 
 // measure vars
-local measure_vars "Oxford PWT WDI del_sum_pix sum_pix sum_light_dmsp del_sum_pix_area sum_light_dmsp_div_area sum_pix_area"
+local measure_vars "Oxford PWT WDI WDI_ppp del_sum_pix sum_pix sum_light_dmsp del_sum_pix_area sum_light_dmsp_div_area sum_pix_area sumoflights_gold"
 
 // per capita values
 foreach i in `measure_vars' {
@@ -228,7 +258,7 @@ drop yr
 
 // get BASE year for growth regressions:
 
-foreach i in PWT {
+foreach i in PWT WDI_ppp {
 	foreach year_base in 1992 2012 {
 		gen base_ln_`i'_pc_`year_base' = ln_`i'_pc if year == `year_base'
 		bysort iso3c: egen ln_`i'_pc_`year_base' = max(base_ln_`i'_pc_`year_base')
@@ -246,8 +276,8 @@ foreach year_base in 1992 2012 {
 	label value cat_income`year_base' income
 	label variable cat_income`year_base' "WB income group, `year_base'"
 }
-	
-save clean_validation_base.dta, replace
+
+save "clean_validation_base.dta", replace
 
 
 

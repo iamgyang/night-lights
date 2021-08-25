@@ -103,8 +103,7 @@ if ("`install_user_defined_functions'" == "Yes") {
 
 // 	b.	City-level comparisons:
 
-// This is very preliminary, and we're still erroneously doing log(1+% growth)
-// We're also merging city GDP w/ ADM2 night lights---
+//      This is very preliminary
 
 // 		i.	Clean city-level GDP measures for Indonesia
 			do "$code/clean city GDP.do"
@@ -149,7 +148,7 @@ if ("`install_user_defined_functions'" == "Yes") {
 	do "$code/data list variable labels in LSMS.do"
 
 //	c.	Clean Colombia dataset
-// 		This file does a few things: 
+// 		These files do a few things: 
 // 			 - converts txt files to dta files 
 // 			 - appends all the colombia datasets together 
 // 			 - converts spanish datasets to english
