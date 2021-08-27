@@ -1,3 +1,4 @@
+clear all
 // Macros ---------------------------------------------------------------------
 foreach user in "`c(username)'" {
 	global root "C:/Users/`user'/Dropbox/CGD GlobalSat/"
@@ -37,57 +38,68 @@ save "vars_hender.dta", replace
 // ======================================================================
 // HENDERSON ============================================================
 // ======================================================================
-{
+
 // full regression Henderson ------------------------------------
 use clean_validation_base.dta, clear
 
-foreach light_var in lndn ln_sum_light_dmsp_div_area ln_del_sum_pix_area ln_sum_pix_area {
-foreach gdp_var in ln_WDI ln_PWT {
-		di "`gdp_var' `light_var'"
-		// bare henderson regression: country & year fixed effects
-		quietly capture {
-			reghdfe `gdp_var' `light_var', absorb(cat_iso3c cat_yr) vce(cluster cat_iso3c)
-			outreg2 using "$full_hender", append ///
-				label dec(3) keep (`light_var') ///
+program run_henderson_full_regression
+	args outfile
+	foreach light_var in lndn ln_sum_light_dmsp_div_area ln_del_sum_pix_area ln_sum_pix_area {
+	foreach gdp_var in ln_WDI {
+			di "`gdp_var' `light_var'"
+			// bare henderson regression: country & year fixed effects
+			quietly capture {
+				reghdfe `gdp_var' `light_var', absorb(cat_iso3c cat_yr) vce(cluster cat_iso3c)
+				outreg2 using "`outfile'", append ///
+					label dec(3) keep (`light_var') ///
+					bdec(3) addstat(Countries, e(N_clust), ///
+					Adjusted Within R-squared, e(r2_a_within), ///
+					Within R-squared, e(r2_within))
+			}
+	}
+	}
+
+	foreach light_var in lndn ln_sum_light_dmsp_div_area ln_del_sum_pix_area ln_sum_pix_area {
+	foreach gdp_var in ln_WDI {
+			// with income interaction & income dummy (maintain country-year FE)
+			if (inlist("`light_var'", "ln_del_sum_pix_area", "ln_sum_pix_area")) {
+					local year 2012
+			}
+			else if (inlist("`light_var'", "lndn", "ln_sum_light_dmsp_div_area")) {
+					local year 1992
+			}
+			
+			reghdfe `gdp_var' `light_var' c.`light_var'#i.cat_income`year', ///
+				absorb(cat_iso3c cat_yr) vce(cluster cat_iso3c)
+			outreg2 using "`outfile'", append ///
+				label dec(3) ///
 				bdec(3) addstat(Countries, e(N_clust), ///
 				Adjusted Within R-squared, e(r2_a_within), ///
 				Within R-squared, e(r2_within))
-		}
-}
-}
-
-foreach light_var in lndn ln_sum_light_dmsp_div_area ln_del_sum_pix_area ln_sum_pix_area {
-foreach gdp_var in ln_WDI ln_PWT {
-		// with income interaction & income dummy (maintain country-year FE)
-		
-		quietly capture {
-		reghdfe `gdp_var' i.cat_income c.`light_var'##cat_income, ///
-			absorb(cat_iso3c cat_yr) vce(cluster cat_iso3c)
-		outreg2 using "$full_hender", append ///
-			label dec(3) ///
-			bdec(3) addstat(Countries, e(N_clust), ///
-			Adjusted Within R-squared, e(r2_a_within), ///
-			Within R-squared, e(r2_within))
-		}
-}
-}
+	}
+	}
+	end
+	
+run_henderson_full_regression "$full_hender"
 
 // regression on overlaps Henderson ------------------------------------
-use clean_validation_base.dta, clear
+use "clean_validation_base.dta", clear
 
 keep if year == 2012 | year == 2013
 
-foreach var in ln_sum_light_dmsp_div_area ln_del_sum_pix_area ln_sum_pix_area ln_WDI ln_PWT {
-	drop if `var' == .
+keep ln_sum_light_dmsp_div_area ln_del_sum_pix_area ln_sum_pix_area ln_WDI cat_income2012 cat_iso3c iso3c
+
+foreach var of varlist _all{
+	drop if missing(`var')
 }
 
-save clean_validation_overlap.dta, replace
+save "clean_validation_overlap.dta", replace
 
 foreach light_var in ln_sum_light_dmsp_div_area ln_del_sum_pix_area ln_sum_pix_area {
-foreach gdp_var in ln_WDI ln_PWT {
+foreach gdp_var in ln_WDI {
 		di "`gdp_var' `light_var'"
 		// bare henderson regression: country & year fixed effects
-		quietly capture {
+		{
 			reghdfe `gdp_var' `light_var', absorb(cat_iso3c) vce(cluster cat_iso3c)
 			outreg2 using "$overlaps_hender", append ///
 				label dec(3) keep (`light_var') ///
@@ -99,11 +111,11 @@ foreach gdp_var in ln_WDI ln_PWT {
 }
 
 foreach light_var in ln_sum_light_dmsp_div_area ln_del_sum_pix_area ln_sum_pix_area {
-foreach gdp_var in ln_WDI ln_PWT {
+foreach gdp_var in ln_WDI {
 		// with income interaction & income dummy (maintain country-year FE)
-		
-		quietly capture {
-		reghdfe `gdp_var' i.cat_income c.`light_var'##cat_income, ///
+		di "`gdp_var' `light_var'"
+		{
+		reghdfe `gdp_var' `light_var' c.`light_var'#i.cat_income2012, ///
 			absorb(cat_iso3c) vce(cluster cat_iso3c)
 		outreg2 using "$overlaps_hender", append ///
 			label dec(3) ///
@@ -115,10 +127,11 @@ foreach gdp_var in ln_WDI ln_PWT {
 }
 
 // full regression Henderson on same sample as overlapping ------------------------------------
-use clean_validation_overlap.dta, clear
+
+use "clean_validation_overlap.dta", clear
 levelsof iso3c, local(countries_in_overlap)
 
-use clean_validation_base.dta, clear
+use "clean_validation_base.dta", clear
 gen tokeep = "no"
 foreach country_code in `countries_in_overlap' {
 	replace tokeep = "yes" if iso3c == "`country_code'"
@@ -133,145 +146,102 @@ assert `length_after' == `length_before'
 
 drop tokeep
 
-// run regressions:
-foreach light_var in lndn ln_sum_light_dmsp_div_area ln_del_sum_pix_area ln_sum_pix_area {
-foreach gdp_var in ln_WDI ln_PWT {
-		di "`gdp_var' `light_var'"
-		// bare henderson regression: country & year fixed effects
-		quietly capture {
-			reghdfe `gdp_var' `light_var', absorb(cat_iso3c cat_yr) vce(cluster cat_iso3c)
-			outreg2 using "$full_same_sample_hender", append ///
-				label dec(3) keep (`light_var') ///
-				bdec(3) addstat(Countries, e(N_clust), ///
-				Adjusted Within R-squared, e(r2_a_within), ///
-				Within R-squared, e(r2_within))
-		}
-}
-}
-
-foreach light_var in lndn ln_sum_light_dmsp_div_area ln_del_sum_pix_area ln_sum_pix_area {
-foreach gdp_var in ln_WDI ln_PWT {
-		// with income interaction & income dummy (maintain country-year FE)
-		
-		quietly capture {
-		reghdfe `gdp_var' i.cat_income c.`light_var'##cat_income, ///
-			absorb(cat_iso3c cat_yr) vce(cluster cat_iso3c)
-		outreg2 using "$full_same_sample_hender", append ///
-			label dec(3) ///
-			bdec(3) addstat(Countries, e(N_clust), ///
-			Adjusted Within R-squared, e(r2_a_within), ///
-			Within R-squared, e(r2_within))
-		}
-}
-}
+run_henderson_full_regression "$full_same_sample_hender"
 
 
-}
-
+// ======================================================================
+// Goldberg ============================================================
+// ======================================================================
 
 // full regression Goldberg ------------------------------------
-use clean_validation_base.dta, replace
+use "clean_validation_base.dta", replace
 
-// regression of mean log first difference in GDP ~ mean log first difference in lights
-// regression of mean log first difference in GDP ~ mean log first difference in lights + income + lights::income
+program run_goldberg_full_regression
+	args out_file
 
-keep g_ln_gdp_gold g_ln_WDI_ppp_pc g_ln_del_sum_pix_pc g_ln_sum_pix_pc ///
-g_ln_sum_light_dmsp_pc ///
-mean_g_ln_lights_gold g_ln_gdp_gold g_ln_sumoflights_gold_pc ///
-cat_iso3c ln_WDI_ppp_pc_1992 ln_WDI_ppp_pc_2012 cat_income1992 year
-
-ds
-local varlist `r(varlist)'
-local excluded cat_iso3c cat_income`year'
-local varlist : list varlist - excluded 
-
-include "$root/HF_measures/code/copylabels.do"
-collapse (mean) `varlist', by(cat_iso3c cat_income`year')
-include "$root/HF_measures/code/attachlabels.do"
-
-save "angrist_goldberg_collapsed.dta", replace
-	
-// define 2 datasets: 1 that is collapsed from 1992 - 2012; another collapsed from 2012-2021
-foreach year in 1992 2012 {
-	preserve
-	
-	if `year' == 1992 {
-		keep if year >=1992 & year<=2012
+	// define 2 datasets: 1 that is collapsed from 1992 - 2012; another collapsed from 2012-2021
+	foreach year in 1992 2012 {
+		preserve
+		
+		if `year' == 1992 {
+			keep if year >=1992 & year<=2012
+		}
+		else if `year' == 2012 {
+			keep if year >=2012
+		}
+		
+		keep g_ln_gdp_gold g_ln_WDI_ppp_pc g_ln_del_sum_pix_pc g_ln_sum_pix_pc ///
+		g_ln_sum_light_dmsp_pc ///
+		mean_g_ln_lights_gold g_ln_gdp_gold g_ln_sumoflights_gold_pc ///
+		cat_iso3c ln_WDI_ppp_pc_`year' ln_WDI_ppp_pc_`year' cat_income`year' year
+		
+		ds
+		local varlist `r(varlist)'
+		local excluded cat_iso3c cat_income`year'
+		local varlist : list varlist - excluded 
+		
+// 		include "$root/HF_measures/code/copylabels.do"
+		collapse (mean) `varlist', by(cat_iso3c cat_income`year')
+// 		include "$root/HF_measures/code/attachlabels.do"
+		save "angrist_goldberg_`year'.dta", replace
+		restore	
 	}
-	else if `year' == 2012 {
-		keep if year >=2012
-	}
 	
-	keep g_ln_gdp_gold g_ln_WDI_ppp_pc g_ln_del_sum_pix_pc g_ln_sum_pix_pc ///
-	g_ln_sum_light_dmsp_pc ///
-	mean_g_ln_lights_gold g_ln_gdp_gold g_ln_sumoflights_gold_pc ///
-	cat_iso3c ln_WDI_ppp_pc_1992 ln_WDI_ppp_pc_2012 cat_income`year' year
-	
-	ds
-	local varlist `r(varlist)'
-	local excluded cat_iso3c cat_income`year'
-	local varlist : list varlist - excluded 
-
-	include "$root/HF_measures/code/copylabels.do"
-	collapse (mean) `varlist', by(cat_iso3c cat_income`year')
-	include "$root/HF_measures/code/attachlabels.do"
-	save "angrist_goldberg_`year'.dta", replace
-	restore	
-}
-
-// run regressions:
-foreach year in 1992 2012 {
-	use angrist_goldberg_`year'.dta, clear
+	// run regressions:
 	foreach x_var in g_ln_del_sum_pix_pc g_ln_sum_pix_pc g_ln_sum_light_dmsp_pc ///
-	mean_g_ln_lights_gold g_ln_sumoflights_gold_pc {
+	mean_g_ln_lights_gold {
+		if (inlist("`x_var'", "g_ln_del_sum_pix_pc", "g_ln_sum_pix_pc")) {
+			local year 2012
+		}
+		else if (inlist("`x_var'", "g_ln_sum_light_dmsp_pc", "mean_g_ln_lights_gold")) {
+			local year 1992
+		}
+		use angrist_goldberg_`year'.dta, clear
 		foreach y_var in g_ln_WDI_ppp_pc {
-			capture regress `y_var' `x_var', robust
-			capture outreg2 using "$full_gold", append label dec(4)
+			regress `y_var' `x_var', robust
+			outreg2 using "`out_file'", append label dec(4)
 			
-// 			capture regress `y_var' `x_var' i.cat_income`year' ///
-// 				c.`x_var'##cat_income`year', robust
-// 			capture outreg2 using "$full_gold", append label dec(4)
+			regress `y_var' `x_var' i.cat_income`year' ///
+				c.`x_var'##i.cat_income`year', robust
+			outreg2 using "`out_file'", append label dec(4)
 		}
 	}
-}
+end
+
+run_goldberg_full_regression "$full_gold"
+
 
 // regression on overlaps Goldberg ------------------------------------
-use clean_validation_base.dta, replace
+use "clean_validation_base.dta", replace
 
 keep if year == 2013
-
-keep ln_PWT_pc_2012 g_ln_del_sum_pix_area g_ln_sum_pix_area ///
-g_ln_sum_light_dmsp_div_area g_ln_PWT_pc g_ln_WDI_pc g_ln_del_sum_pix_pc ///
-g_ln_sum_pix_pc g_ln_sum_light_dmsp_pc iso3c year cat_income2012
+keep g_ln_del_sum_pix_pc g_ln_sum_pix_pc g_ln_sum_light_dmsp_pc g_ln_WDI_ppp_pc ///
+cat_iso3c ln_WDI_ppp_pc_2012 cat_income2012 cat_income1992 year iso3c
 
 ds, has(type numeric)
-
 foreach var of varlist `r(varlist)' {
 	drop if `var' == .
 }
-
-save clean_validation_overlap_gold.dta, replace
-
+save "clean_validation_overlap_gold.dta", replace
 
 // run regressions:
-foreach base_gdp_var in ln_PWT_pc_2012 {
-foreach outcome_growth_var in g_ln_del_sum_pix_area g_ln_sum_pix_area ///
-g_ln_sum_light_dmsp_div_area g_ln_PWT_pc g_ln_WDI_pc g_ln_del_sum_pix_pc ///
-g_ln_sum_pix_pc g_ln_sum_light_dmsp_pc {
-	capture regress `outcome_growth_var' `base_gdp_var', robust
+foreach x_var in g_ln_del_sum_pix_pc g_ln_sum_pix_pc g_ln_sum_light_dmsp_pc {
+foreach y_var in g_ln_WDI_ppp_pc {
+	capture regress `y_var' `x_var', robust
 	capture outreg2 using "$overlaps_gold", append label dec(4)
 	
-	capture regress `outcome_growth_var' `base_gdp_var' i.cat_income2012 ///
-	c.`base_gdp_var'##cat_income2012, robust
+	capture regress `y_var' `x_var' i.cat_income2012 ///
+	c.`x_var'##i.cat_income2012, robust
 	capture outreg2 using "$overlaps_gold", append label dec(4)
 }
 }
 
 // full regression Goldberg on same sample as overlapping ------------------------------------
-use clean_validation_overlap_gold.dta, clear
+use "clean_validation_overlap_gold.dta", clear
 levelsof iso3c, local(countries_in_overlap)
 
-use clean_validation_base.dta, clear
+// restrict sample:
+use "clean_validation_base.dta", clear
 gen tokeep = "no"
 foreach country_code in `countries_in_overlap' {
 	replace tokeep = "yes" if iso3c == "`country_code'"
@@ -286,44 +256,8 @@ assert `length_after' == `length_before'
 
 drop tokeep
 
-// define 2 datasets: 1 that is collapsed from 1992 - 2012; another collapsed from 2012-2021
-foreach year in 1992 2012 {
-	preserve
-	
-	if `year' == 1992 {
-		keep if year >= 1992 & year <= 2012		
-	}
-	else if `year' == 2012 {
-		keep if year >= 2012
-	}
-		
-	keep g_ln_del_sum_pix_area g_ln_sum_light_dmsp_div_area g_ln_sum_pix_area ///
-	g_ln_PWT_pc g_ln_WDI_pc g_ln_del_sum_pix_pc g_ln_sum_pix_pc ///
-	g_ln_sum_light_dmsp_pc cat_iso3c ln_PWT_pc_1992 ln_PWT_pc_2012 cat_income`year'
-	include "$root/HF_measures/code/copylabels.do"
-	collapse (mean) g* ln*, by(cat_iso3c cat_income)
-	include "$root/HF_measures/code/attachlabels.do"
-	save "angrist_goldberg_`year'_full_overlap.dta", replace
-	restore	
-}
-
-// run regressions:
-foreach year in 1992 2012 {
-	use "angrist_goldberg_`year'_full_overlap.dta", clear
-	foreach base_gdp_var in ln_PWT_pc_`year' {
-	foreach outcome_growth_var in g_ln_del_sum_pix_area g_ln_sum_pix_area ///
-	g_ln_sum_light_dmsp_div_area g_ln_PWT_pc g_ln_WDI_pc g_ln_del_sum_pix_pc ///
-	g_ln_sum_pix_pc g_ln_sum_light_dmsp_pc {
-		capture regress `outcome_growth_var' `base_gdp_var', robust
-		capture outreg2 using "$full_same_sample_gold", append label dec(4)
-		
-		capture regress `outcome_growth_var' `base_gdp_var' i.cat_income`year' ///
-		c.`base_gdp_var'##cat_income`year', robust
-		capture outreg2 using "$full_same_sample_gold", append label dec(4)
-		
-	}
-	}	
-}
+// run regressions
+run_goldberg_full_regression "$full_same_sample_gold"
 
 
 // Excel macro for cleaning the finalized spreadsheet: ------------------------------------
@@ -430,6 +364,23 @@ Sub clean_hender()
     ActiveWindow.SmallScroll Down:=-42
     Range("I7").Select
 End Sub
+
+
+// IGNORE THE GREEN ARROW THINGS IN XLS
+
+Sub IgnoreNumsAsText()
+    Dim current As Range
+    For Each current In ActiveSheet.UsedRange.Cells
+        With current
+            If .Errors.Item(xlNumberAsText).Value = True Then
+                .Errors.Item(xlNumberAsText).Ignore = True
+            End If
+        End With
+    Next current
+End Sub
+
+
+
 }
 
 
