@@ -93,6 +93,11 @@ rename iso3v10 iso3c
 sort iso3c year
 gen exp_hws_wdi = exp(lngdpwdilocal)
 
+// WB statistical capacity
+gen wbdqcat_3 = "bad" if wbdqtotal<3.5
+replace wbdqcat_3 = "ok" if wbdqtotal>3.5 & wbdqtotal<6.5
+replace wbdqcat_3 = "good" if wbdqtotal>6.5
+
 save `dmsp_hender'
 
 // WB historical income classifications --------------
@@ -249,7 +254,11 @@ gen yr = year
 tostring yr, replace
 label define income 1 "LIC" 2 "LMIC" 3 "UMIC" 4 "HIC"
 encode income, generate(cat_income) label(income) 
-foreach i in iso3c yr {
+
+label define wbdqcat_3 1 "bad" 2 "ok" 3 "good"
+encode wbdqcat_3, generate(cat_wbdqcat_3) label(wbdqcat_3) 
+
+foreach i in iso3c yr wbdqcat {
 	di "`i'"
 	encode `i', gen(cat_`i')
 }
@@ -276,6 +285,11 @@ foreach year_base in 1992 2012 {
 	label value cat_income`year_base' income
 	label variable cat_income`year_base' "WB income group, `year_base'"
 }
+
+bysort cat_iso3c:  fillmissing cat_wbdqcat_3, with(mean)
+gen check = mod(cat_wbdqcat_3, 1)
+assert check == 0 | check == .
+drop check
 
 save "clean_validation_base.dta", replace
 
