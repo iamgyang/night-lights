@@ -88,7 +88,7 @@ save `dmsp'
 
 // DMSP Henderson --------------------
 use "$hf_input/HWS AER replication/hsw_final_tables_replication/global_total_dn_uncal.dta", clear
-keep year iso3v10 country lngdpwdilocal lndn
+keep year iso3v10 country lngdpwdilocal lndn wbdqtotal wbdqcat
 rename iso3v10 iso3c
 sort iso3c year
 gen exp_hws_wdi = exp(lngdpwdilocal)
@@ -278,34 +278,5 @@ foreach year_base in 1992 2012 {
 }
 
 save "clean_validation_base.dta", replace
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
