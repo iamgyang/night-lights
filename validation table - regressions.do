@@ -69,7 +69,7 @@ program run_henderson_full_regression
 					local year 1992
 			}
 			
-			reghdfe `gdp_var' `light_var' c.`light_var'#i.cat_income`year', ///
+			reghdfe `gdp_var' `light_var' c.`light_var'#i.cat_wbdqcat_3, ///
 				absorb(cat_iso3c cat_yr) vce(cluster cat_iso3c)
 			outreg2 using "`outfile'", append ///
 				label dec(3) ///
@@ -87,7 +87,7 @@ use "clean_validation_base.dta", clear
 
 keep if year == 2012 | year == 2013
 
-keep ln_sum_light_dmsp_div_area ln_del_sum_pix_area ln_sum_pix_area ln_WDI cat_income2012 cat_iso3c iso3c
+keep ln_sum_light_dmsp_div_area ln_del_sum_pix_area ln_sum_pix_area ln_WDI cat_wbdqcat_3 cat_iso3c iso3c
 
 foreach var of varlist _all{
 	drop if missing(`var')
@@ -115,7 +115,7 @@ foreach gdp_var in ln_WDI {
 		// with income interaction & income dummy (maintain country-year FE)
 		di "`gdp_var' `light_var'"
 		{
-		reghdfe `gdp_var' `light_var' c.`light_var'#i.cat_income2012, ///
+		reghdfe `gdp_var' `light_var' c.`light_var'#i.cat_wbdqcat_3, ///
 			absorb(cat_iso3c) vce(cluster cat_iso3c)
 		outreg2 using "$overlaps_hender", append ///
 			label dec(3) ///
@@ -173,15 +173,15 @@ program run_goldberg_full_regression
 		keep g_ln_gdp_gold g_ln_WDI_ppp_pc g_ln_del_sum_pix_pc g_ln_sum_pix_pc ///
 		g_ln_sum_light_dmsp_pc ///
 		mean_g_ln_lights_gold g_ln_gdp_gold g_ln_sumoflights_gold_pc ///
-		cat_iso3c ln_WDI_ppp_pc_`year' ln_WDI_ppp_pc_`year' cat_income`year' year
+		cat_iso3c ln_WDI_ppp_pc_`year' ln_WDI_ppp_pc_`year' cat_wbdqcat_3 year
 		
 		ds
 		local varlist `r(varlist)'
-		local excluded cat_iso3c cat_income`year'
+		local excluded cat_iso3c cat_wbdqcat_3
 		local varlist : list varlist - excluded 
 		
 // 		include "$root/HF_measures/code/copylabels.do"
-		collapse (mean) `varlist', by(cat_iso3c cat_income`year')
+		collapse (mean) `varlist', by(cat_iso3c cat_wbdqcat_3)
 // 		include "$root/HF_measures/code/attachlabels.do"
 		save "angrist_goldberg_`year'.dta", replace
 		restore	
@@ -201,8 +201,8 @@ program run_goldberg_full_regression
 			regress `y_var' `x_var', robust
 			outreg2 using "`out_file'", append label dec(4)
 			
-			regress `y_var' `x_var' i.cat_income`year' ///
-				c.`x_var'##i.cat_income`year', robust
+			regress `y_var' `x_var' i.cat_wbdqcat_3 ///
+				c.`x_var'##i.cat_wbdqcat_3, robust
 			outreg2 using "`out_file'", append label dec(4)
 		}
 	}
@@ -216,7 +216,7 @@ use "clean_validation_base.dta", replace
 
 keep if year == 2013
 keep g_ln_del_sum_pix_pc g_ln_sum_pix_pc g_ln_sum_light_dmsp_pc g_ln_WDI_ppp_pc ///
-cat_iso3c ln_WDI_ppp_pc_2012 cat_income2012 cat_income1992 year iso3c
+cat_iso3c ln_WDI_ppp_pc_2012 cat_wbdqcat_3 year iso3c
 
 ds, has(type numeric)
 foreach var of varlist `r(varlist)' {
@@ -230,8 +230,8 @@ foreach y_var in g_ln_WDI_ppp_pc {
 	capture regress `y_var' `x_var', robust
 	capture outreg2 using "$overlaps_gold", append label dec(4)
 	
-	capture regress `y_var' `x_var' i.cat_income2012 ///
-	c.`x_var'##i.cat_income2012, robust
+	capture regress `y_var' `x_var' i.cat_wbdqcat_3 ///
+	c.`x_var'##i.cat_wbdqcat_3, robust
 	capture outreg2 using "$overlaps_gold", append label dec(4)
 }
 }
