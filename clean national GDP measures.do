@@ -1,23 +1,38 @@
-// Macros ---------------------------------------------------------------------
-foreach user in "`c(username)'" {
-	global root "C:/Users/`user'/Dropbox/CGD GlobalSat/"
-	global hf_input "$root/HF_measures/input/"
-	global ntl_input "$hf_input/NTL Extracted Data 2012-2020/"
-}
-set more off 
-cd "$hf_input"
+// Macros ----------------------------------------------------------------
 
-	global outreg_file_natl_yr "$hf_input/natl_reg_9.xls"
-	global outreg_file_natl_quart "$hf_input/natl_reg_9.xls"
+	clear all 
+	set more off
+	set varabbrev off
+	set scheme s1mono
+	set type double, perm
 
-	clear all
-	
+	// CHANGE THIS!! --- Define your own directories:
+	foreach user in "`c(username)'" {
+		global root "C:/Users/`user'/Dropbox/CGD GlobalSat/"
+	}
+
+	global code        "$root/HF_measures/code"
+	global input       "$root/HF_measures/input"
+	global output      "$root/HF_measures/output"
+	global raw_data    "$root/raw-data"
+	global ntl_input   "$root/raw-data/VIIRS NTL Extracted Data 2012-2020"
+
+	// CHANGE THIS!! --- Do we want to install user-defined functions?
+	loc install_user_defined_functions "No"
+
+	if ("`install_user_defined_functions'" == "Yes") {
+		foreach i in rangestat wbopendata kountry mmerge outreg2 somersd ///
+		asgen moss reghdfe ftools fillmissing {
+			ssc install `i'
+		}
+	}
+
 *** QUATERLY =================================================================
 
 ***	Import Oxford Econ Quarterly --------------------------------------------
-
+	
 *** Import Dataset.
-	use "$hf_input/National Accounts/oxford_econ_full.dta", clear
+	use "$raw_data/National Accounts/oxford_econ_full.dta", clear
 	keep if indicator == "GDP, real, LCU"
 	
 *** this indicator seems to have the most observations
@@ -50,11 +65,11 @@ cd "$hf_input"
 	rename scale base_year_oxford
 	tempfile ox_econ_data2
 	save `ox_econ_data2'
-
+	
 *** Import IMF quarterly real GDP --------------------------------------------
-
+	
 *** Import dataset
-	import excel "$hf_input/National Accounts/imf_national_gdp.xlsx", ///
+	import excel "$raw_data/National Accounts/imf_national_gdp.xlsx", ///
 	sheet("Nominal Quarterly") cellrange(B7:AH85) clear
 
 *** replace first row to be the variable names
@@ -63,15 +78,15 @@ cd "$hf_input"
 	  rename `var' `=strtoname("x"+`var'[1])'
 	  
 	}
-
+	
 *** drop 1st row
 	drop in 1
 	destring x*, replace
-
+	
 *** rename everything to lower
 	rename *, lower
 	rename xcountry country
-
+	
 *** get iso3c codes:
 	kountry country, from(other) stuck
 	ren(_ISO3N_) (temp)
@@ -116,7 +131,7 @@ cd "$hf_input"
 	drop if ny_gdp_defl_zs ==.
 	rename (countrycode ny_gdp_defl_zs) (iso3c deflator)
 	mmerge iso3c year using `quarterly_nominal_gdp'
-	keep if inlist(_m, 2,3)
+	keep if inlist(_merge, 2,3)
 	
 /*  make the base year 2016: (won't really make a difference if all we do is 
 	growth regressions, but if we do something else, want to have this comparable) */
@@ -136,8 +151,8 @@ cd "$hf_input"
 	drop deflator_3
 
 *** done with cleaning GDP data:
-	save "$hf_input/imf_real_gdp.dta", replace
-	use "$hf_input/imf_real_gdp", clear
+	save "$input/imf_real_gdp.dta", replace
+	use "$input/imf_real_gdp.dta", clear
 	
 	gen year = year(dofq(yq))
 	gen quarter = quarter(dofq(yq))
@@ -145,7 +160,7 @@ cd "$hf_input"
 	fillin iso3c year quarter
 	drop _fillin
 	mmerge iso3c year quarter using `ox_econ_data2'
-	drop _m
+	drop _merge
 
 *** make sure that we have no duplicated ISO3c, year, and quarters:
 	preserve
@@ -159,12 +174,12 @@ cd "$hf_input"
 	sort iso3c year quarter
 	label variable nom_gdp "IMF nominal GDP, quarterly, national, billions" 
 	label variable rgdp "IMF real GDP, quarterly, national, billions" 
-	save "$hf_input/imf_oxf_GDP_quarter.dta", replace
+	save "$input/imf_oxf_GDP_quarter.dta", replace
 	
 *** ANNUAL =================================================================
 
 *** Import IMF WEO dataset on real GDP (LCU) -------------------------------
-	import delimited "$hf_input/National Accounts/WEOApr2021all.txt", clear
+	import delimited "$raw_data/National Accounts/WEOApr2021all.txt", clear
 	keep if subjectdescriptor == "Gross domestic product, constant prices"
 	keep if units == "National currency"
 	rename (v10 v11 v12 v13 v14 v15 v16 v17 v18 v19 v20 v21 v22 v23 v24 v25 v26 v27 v28 v29 v30 v31 v32 v33 v34 v35 v36 v37 v38 v39 v40 v41 v42 v43 v44 v45 v46 v47 v48 v49 v50 v51 v52 v53 v54 v55 v56) (x1980 x1981 x1982 x1983 x1984 x1985 x1986 x1987 x1988 x1989 x1990 x1991 x1992 x1993 x1994 x1995 x1996 x1997 x1998 x1999 x2000 x2001 x2002 x2003 x2004 x2005 x2006 x2007 x2008 x2009 x2010 x2011 x2012 x2013 x2014 x2015 x2016 x2017 x2018 x2019 x2020 x2021 x2022 x2023 x2024 x2025 x2026)
@@ -185,7 +200,7 @@ cd "$hf_input"
 	restore
 	
 *** Import PWT dataset on real GDP (PPP) -----------------------------------
-	use "$hf_input/National Accounts/pwt100.dta", clear
+	use "$raw_data/National Accounts/pwt100.dta", clear
 	keep rgdpna year countrycode
 	drop if rgdpna == . 
 // 	drop if year < 2012
@@ -206,11 +221,12 @@ cd "$hf_input"
 	
 *** Merge IMF and PWT real GDP -----------------------------------------------
 	mmerge iso3c year using `weo_levels'
-	drop _m
+	drop _merge
 	rename rgdpna pwt_rgdpna
-	save "$hf_input/imf_pwt_GDP_annual.dta", replace
+	save "$input/imf_pwt_GDP_annual.dta", replace
 	
-*** Import WDI dataset on real GDP (LCU) & 	WDI real GDP per capita, **PPP** -------------------
+*** Import WDI dataset on real GDP (LCU) & 	
+*** WDI real GDP per capita, **PPP** -----------------------------------------
 	
 	clear
 	wbopendata, clear nometadata long indicator(NY.GDP.MKTP.KN) year(1990:2021)
@@ -234,11 +250,11 @@ cd "$hf_input"
 	tempfile wdi_gdp_ppp
 	save `wdi_gdp_ppp'
 	
-	use "$hf_input/imf_pwt_GDP_annual.dta", clear
+	use "$input/imf_pwt_GDP_annual.dta", clear
 	mmerge iso3c year using `wdi_gdp'
-	drop _m
+	drop _merge
 	mmerge iso3c year using `wdi_gdp_ppp'
-	drop _m
+	drop _merge
 	
 	*** make sure we only have 1 country-year pairs:
 		preserve
@@ -252,7 +268,7 @@ cd "$hf_input"
 		replace WDI = WDI / (10^9)
 		label variable WDI "WDI GDP, constant LCU, billions"
 	
-	save "$hf_input/imf_pwt_GDP_annual.dta", replace
+	save "$input/imf_pwt_GDP_annual.dta", replace
 	
 *** Import WDI dataset on electricity access --------------------------------
 	clear
@@ -276,8 +292,8 @@ cd "$hf_input"
 		}
 	}
 	mmerge iso3c year using `electricity'
-	assert _m == 3
-	drop _m
+	assert _merge == 3
+	drop _merge
 	
 	*** make sure we only have 1 country-year pairs:
 		preserve
@@ -293,10 +309,10 @@ cd "$hf_input"
 		label var ln_pwr_consum "Log(Power Consumption, kwh per capita)"
 		label var ln_elec_access "Log(% Electricity Access)"
 	
-	save "$hf_input/electricity.dta", replace
+	save "$input/electricity.dta", replace
 	
 *** Create a monthly NTL - GDP dataset: =======================================
-	use "$hf_input/NTL_appended.dta", clear
+	use "$input/NTL_appended.dta", clear
 	gen year = year(date2)
 	gen month = month(date2)
 	gen quarter = quarter(date2)
@@ -308,13 +324,13 @@ number of rows at the end */
 	drop n
 
 *** Merge with GDP data:
-	mmerge iso3c year using "$hf_input/imf_pwt_GDP_annual.dta"
-//  	keep if inlist(_m, 1, 3)
-	drop _m
+	mmerge iso3c year using "$input/imf_pwt_GDP_annual.dta"
+//  	keep if inlist(_merge, 1, 3)
+	drop _merge
 
-	mmerge iso3c year quarter using "$hf_input/imf_oxf_GDP_quarter.dta"
-//  	keep if inlist(_m, 1, 3)
-	drop _m
+	mmerge iso3c year quarter using "$input/imf_oxf_GDP_quarter.dta"
+//  	keep if inlist(_merge, 1, 3)
+	drop _merge
 	
 	rename (nom_gdp rgdp) (imf_quart_nom_gdp imf_quart_rgdp)
 	
@@ -333,41 +349,19 @@ number of rows at the end */
 	assert dup == 1
 	restore
 	
-	save "$hf_input/NTL_GDP_month_ADM2.dta", replace
+	save "$input/NTL_GDP_month_ADM2.dta", replace
 	
 // We have 6 GDP variables: PWT, WDI, WDI_ppp, Oxford, IMF WEO, and IMF-quarterly.
 // IMF quarterly has terrible coverage, so within the other 4, Oxford, IMF WEO, 
 // and WDI are based on LCU, where they use different base years. 
 // All 4 of these PWT, WDI, Oxford-LCU, IMF-LCU are in real terms.
 // Only Oxford amongst these 4 is at quarterly level, rest are at annual level.
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
+
+
+
+
+
+
+
+
+
