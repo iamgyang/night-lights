@@ -124,14 +124,14 @@ global import_nightlights "yes"
 			
 // 		iii. Produce regressions
 			do "$code/regression city nightlights.do"
-
+			
 			
 // c.  China subnational data:
-
+			
 //		i.	Clean Chinese subnational data
 			do "$code/clean china.do"
-
-
+			
+			
 // d.  Angrist, Goldberg, Jolliffe using the same data
 
 // 		i.	data prep
