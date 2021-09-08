@@ -47,6 +47,8 @@ set type double, perm
 foreach user in "`c(username)'" {
 	global root "C:/Users/`user'/Dropbox/CGD GlobalSat/HF_measures"
 	global code "$root/code"
+	global raw_data "C:/Users/`user'/Dropbox/CGD GlobalSat/raw-data"
+	global input "/Users/`user'/Dropbox/CGD GlobalSat/HF_measures/input/"
 }
 
 // CHANGE THIS!! --- Do we want to install user-defined functions?
@@ -54,7 +56,7 @@ foreach user in "`c(username)'" {
 
 if ("`install_user_defined_functions'" == "Yes") {
 	foreach i in rangestat wbopendata kountry mmerge outreg2 somersd ///
-	asgen moss reghdfe ftools {
+	asgen moss reghdfe ftools fillmissing {
 		ssc install `i'
 	}
 }
@@ -200,13 +202,3 @@ if ("`install_user_defined_functions'" == "Yes") {
 //			
 //
 
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
