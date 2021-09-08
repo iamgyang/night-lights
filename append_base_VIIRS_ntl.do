@@ -1,14 +1,35 @@
-// Macros -----------------------------------------------------------------
-	foreach user in "`c(username)'" {
-		global root "C:/Users/`user'/Dropbox/CGD GlobalSat/"
-		global hf_input "$root/HF_measures/input/"
-		global ntl_input "$hf_input/NTL Extracted Data 2012-2020/"
-	}
+// Macros ----------------------------------------------------------------
 
+clear all 
+set more off
+set varabbrev off
+set scheme s1mono
+set type double, perm
+
+// CHANGE THIS!! --- Define your own directories:
+foreach user in "`c(username)'" {
+	global root "C:/Users/`user'/Dropbox/CGD GlobalSat/"
+}
+
+global code        "$root/HF_measures/code"
+global input       "$root/HF_measures/input"
+global output      "$root/HF_measures/output"
+global raw_data    "$root/raw-data"
+global ntl_input   "$root/raw-data/VIIRS NTL Extracted Data 2012-2020"
+
+// CHANGE THIS!! --- Do we want to install user-defined functions?
+loc install_user_defined_functions "No"
+
+if ("`install_user_defined_functions'" == "Yes") {
+	foreach i in rangestat wbopendata kountry mmerge outreg2 somersd ///
+	asgen moss reghdfe ftools fillmissing {
+		ssc install `i'
+	}
+}
+
+// CHANGE THIS!! --- Do we want to import nightlights from the tabular raw data? 
+// (takes a long time)
 global import_nightlights "yes"
-	
-clear all
-set more off 
 
 // Code ------------------------------------------------------------------
 if ("$import_nightlights" == "yes") {
@@ -50,26 +71,26 @@ if ("$import_nightlights" == "yes") {
 	restore
 }
 else if ("$import_nightlights" != "yes") {
-	use "$hf_input/NTL_appended.dta", clear
+	use "$input/NTL_appended.dta", clear
 }
 
 // Clean up: 
-drop v1
-replace gadmid = "" if gadmid == "NA"
-replace iso = "" if iso == "NA"
-replace gid_2 = "" if gid_2 == "NA"
-replace gid_1 = "" if gid_1 == "NA"
-replace name_0 = "" if name_0 == "NA"
-replace iso3c = "" if iso3c == "NA"
-replace name_1 = "" if name_1 == "NA"
+	drop v1
+	replace gadmid = ""  if gadmid  == "NA"
+	replace iso = ""     if iso     == "NA"
+	replace gid_2 = ""   if gid_2   == "NA"
+	replace gid_1 = ""   if gid_1   == "NA"
+	replace name_0 = ""  if name_0  == "NA"
+	replace iso3c = ""   if iso3c 	== "NA"
+	replace name_1 = ""  if name_1 	== "NA"
 
 // Some ISO codes are in the ISO variable, as opposed to the ISO3C variable. 
 // Similarly, we are missing some GADM codes
-replace iso3c = iso if (iso != "" & iso3c == "")
-replace gid_2 = "gadm" + gadmid if (gid_2 == "" & gadmid!="")
+	replace iso3c = iso if (iso != "" & iso3c == "")
+	replace gid_2 = "gadm" + gadmid if (gid_2 == "" & gadmid!="")
 
 // save
-save "$hf_input/NTL_appended.dta", replace
+	save "$hf_input/NTL_appended.dta", replace
 	
 
 

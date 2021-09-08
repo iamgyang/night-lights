@@ -1,7 +1,6 @@
 // For the Columbia folder, Dropbox, IF want to rewind, do it to 11:59 AM 7/22/2021
 // C:\Users\`user'\Dropbox\CGD GlobalSat\HF_measures\input\Household Surveys\Colombia
 
-
 /*
 Summary:
 
@@ -28,7 +27,8 @@ Summary:
 	e.	Comprehensive Table of Findings		
 		
 2.	Household Surveys:
-	a.	Get the list of variables from all the dta files in the Colombia surveys
+	a.	Get the list of variabl
+es from all the dta files in the Colombia surveys
 	b.	Get the list of variables from all the dta files in the LSMS surveys
 	c.	Clean Colombia dataset
 
@@ -39,20 +39,24 @@ Summary:
 // 0. Preliminaries
 
 clear all 
-set more off 
+set more off
+set varabbrev off
 set scheme s1mono
-// use up more computer memory for the sake of accurate numbers:
 set type double, perm
 
+// CHANGE THIS!! --- Define your own directories:
 foreach user in "`c(username)'" {
-	global root "C:/Users/`user'/Dropbox/CGD GlobalSat/HF_measures"
-	global code "$root/code"
-	global raw_data "C:/Users/`user'/Dropbox/CGD GlobalSat/raw-data"
-	global input "/Users/`user'/Dropbox/CGD GlobalSat/HF_measures/input/"
+	global root "C:/Users/`user'/Dropbox/CGD GlobalSat/"
 }
 
+global code        "$root/HF_measures/code"
+global input       "$root/HF_measures/input"
+global output      "$root/HF_measures/output"
+global raw_data    "$root/raw-data"
+global ntl_input   "$root/raw-data/NTL Extracted Data 2012-2020"
+
 // CHANGE THIS!! --- Do we want to install user-defined functions?
-	loc install_user_defined_functions "No"
+loc install_user_defined_functions "No"
 
 if ("`install_user_defined_functions'" == "Yes") {
 	foreach i in rangestat wbopendata kountry mmerge outreg2 somersd ///
@@ -60,6 +64,11 @@ if ("`install_user_defined_functions'" == "Yes") {
 		ssc install `i'
 	}
 }
+
+// CHANGE THIS!! --- Do we want to import nightlights from the tabular raw data? 
+// (takes a long time)
+global import_nightlights "yes"
+
 
 // =========================================================================
 

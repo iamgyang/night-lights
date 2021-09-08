@@ -1,17 +1,39 @@
-// Macros ---------------------------------------------------------------------
+// Macros ----------------------------------------------------------------
+
+clear all 
+set more off
+set varabbrev off
+set scheme s1mono
+set type double, perm
+
+// CHANGE THIS!! --- Define your own directories:
 foreach user in "`c(username)'" {
 	global root "C:/Users/`user'/Dropbox/CGD GlobalSat/"
-	global hf_input "$root/HF_measures/input/"
-	global ntl_input "$hf_input/NTL Extracted Data 2012-2020/"
 }
-set more off 
-cd "$hf_input"
 
-// -------------------------------------------------------------------------
+global code        "$root/HF_measures/code"
+global input       "$root/HF_measures/input"
+global output      "$root/HF_measures/output"
+global raw_data    "$root/raw-data"
+global ntl_input   "$root/raw-data/VIIRS NTL Extracted Data 2012-2020"
+
+// CHANGE THIS!! --- Do we want to install user-defined functions?
+loc install_user_defined_functions "No"
+
+if ("`install_user_defined_functions'" == "Yes") {
+	foreach i in rangestat wbopendata kountry mmerge outreg2 somersd ///
+	asgen moss reghdfe ftools fillmissing {
+		ssc install `i'
+	}
+}
+
+// =========================================================================
+
+cd "$input"
 
 // VIIRS cleaned & raw -----------------
 // By cleaned, we mean NTL with deletions and without month-ADM2 deletions
-use "$hf_input/imf_pwt_GDP_annual.dta", clear
+use "$input/imf_pwt_GDP_annual.dta", clear
 keep iso3c year pwt_rgdpna WDI
 rename (pwt_rgdpna WDI) (pwt_rgdpna_check WDI_check)
 tempfile pwt_wdi_check
@@ -20,7 +42,7 @@ save `pwt_wdi_check'
 local del "delete not_delete"
 
 foreach i in `del' {
-	use "$hf_input/NTL_GDP_month_ADM2.dta", clear
+	use "$input/NTL_GDP_month_ADM2.dta", clear
 	keep iso3c gid_2 mean_pix sum_pix year quarter month pol_area pwt_rgdpna ///
 	WDI WDI_ppp ox_rgdp_lcu
 	if ("`i'" == "delete") {
@@ -43,7 +65,7 @@ foreach i in `del' {
 	mmerge iso3c year using `pwt_wdi_check'
 	assert (abs(pwt_rgdpna_check - PWT) < 0.1) | (pwt_rgdpna_check==. & PWT==.)
 	assert (abs(WDI_check - WDI) < 0.1) | (WDI_check==. & WDI==.)
-	drop *_check _m
+	drop *_check _merge
 	
 	save "collapsed_dataset_`i'.dta", replace
 }
@@ -53,8 +75,8 @@ tempfile viirs dmsp dmsp_hender dmsp_goldberg
 use "collapsed_dataset_delete.dta", clear
 rename (sum_area sum_pix) (del_sum_area del_sum_pix)
 mmerge iso3c year using "collapsed_dataset_not_delete.dta"
-assert _m == 3
-drop _m
+assert _merge == 3
+drop _merge
 
 // convert from billions:
 foreach i in Oxford PWT WDI {
@@ -78,8 +100,8 @@ gen sum_pix_area = sum_pix / sum_area
 
 save `viirs'
 
-// DMSP --------------------
-import delimited "$hf_input/Nighttime_Lights_ADM2_1992_2013.csv", clear
+// DMSP from Australian website --------------------
+import delimited "$raw_data/Other/Nighttime_Lights_ADM2_1992_2013.csv", clear
 collapse (sum) sum_light, by(countrycode year)
 rename (countrycode sum_light) (iso3c sum_light_dmsp)
 keep iso3c year sum_light_dmsp
@@ -87,13 +109,13 @@ keep iso3c year sum_light_dmsp
 save `dmsp'
 
 // DMSP Henderson --------------------
-use "$hf_input/HWS AER replication/hsw_final_tables_replication/global_total_dn_uncal.dta", clear
+use "$raw_data/HWS AER replication/hsw_final_tables_replication/global_total_dn_uncal.dta", clear
 keep year iso3v10 country lngdpwdilocal lndn wbdqtotal wbdqcat
 rename iso3v10 iso3c
 sort iso3c year
 gen exp_hws_wdi = exp(lngdpwdilocal)
 
-// WB statistical capacity
+// WB statistical capacity from Henderson
 gen wbdqcat_3 = "bad" if wbdqtotal<3.5
 replace wbdqcat_3 = "ok" if wbdqtotal>3.5 & wbdqtotal<6.5
 replace wbdqcat_3 = "good" if wbdqtotal>6.5
@@ -101,7 +123,8 @@ replace wbdqcat_3 = "good" if wbdqtotal>6.5
 save `dmsp_hender'
 
 // WB historical income classifications --------------
-import excel "OGHIST_historical_WB_country_income_classification.xls", ///
+import excel ///
+"$raw_data/Other/OGHIST_historical_WB_country_income_classification.xls", ///
 sheet("Country Analytical History") allstring clear
 gen rownum = _n
 replace A = "colnames" if rownum == 5
@@ -139,7 +162,7 @@ save "historical_wb_income_classifications.dta", replace
 
 // Goldberg DMSP data --------------------------------------------------
 
-use "$hf_input/Angrist JEP replication/Data/Processed Data/master.dta", clear
+use "$raw_data/Angrist JEP replication/Data/Processed Data/master.dta", clear
 // keep if year >= 1992 & year <= 2012
 
 // average
@@ -156,21 +179,21 @@ _gdppercap_constant_ppp_gold lightpercap_gold ln_gdp_gold sumoflights_gold)
 save `dmsp_goldberg', replace
 
 // ---------------------------------------------------------------------
-// Merge ---------------------------------------------------------------
+// Merge 
 // ---------------------------------------------------------------------
 
 clear
 use `viirs'
 mmerge iso3c year using `dmsp'
-drop _m
+drop _merge
 mmerge iso3c year using `dmsp_hender'
-drop _m
+drop _merge
 mmerge iso3c year using `dmsp_goldberg'
-drop _m
+drop _merge
 mmerge iso3c year using historical_wb_income_classifications.dta
-drop _m
+drop _merge
 mmerge iso3c year using wb_pop_estimates_cleaned.dta
-drop _m
+drop _merge
 
 // get balanced panel
 fillin iso3c year
@@ -186,7 +209,7 @@ assert dup == 1
 drop _fillin dup
 
 // -------------------------------------------------------------------------
-// Extra variables after merging -------------------------------------------
+// Extra variables after merging 
 // -------------------------------------------------------------------------
 
 // lights per area for DMSP

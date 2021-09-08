@@ -1,16 +1,39 @@
-clear all
-// Macros ---------------------------------------------------------------------
+// Macros ----------------------------------------------------------------
+
+clear all 
+set more off
+set varabbrev off
+set scheme s1mono
+set type double, perm
+
+// CHANGE THIS!! --- Define your own directories:
 foreach user in "`c(username)'" {
 	global root "C:/Users/`user'/Dropbox/CGD GlobalSat/"
-	global hf_input "$root/HF_measures/input/"
-	global ntl_input "$hf_input/NTL Extracted Data 2012-2020/"
 }
-set more off 
-cd "$hf_input"
+
+global code        "$root/HF_measures/code"
+global input       "$root/HF_measures/input"
+global output      "$root/HF_measures/output"
+global raw_data    "$root/raw-data"
+global ntl_input   "$root/raw-data/VIIRS NTL Extracted Data 2012-2020"
+
+// CHANGE THIS!! --- Do we want to install user-defined functions?
+loc install_user_defined_functions "No"
+
+if ("`install_user_defined_functions'" == "Yes") {
+	foreach i in rangestat wbopendata kountry mmerge outreg2 somersd ///
+	asgen moss reghdfe ftools fillmissing {
+		ssc install `i'
+	}
+}
+
+// ==========================================================================
+
+cd "$input"
 
 foreach i in full_hender overlaps_hender full_same_sample_hender ///
 full_gold overlaps_gold full_same_sample_gold {
-	global `i' "$hf_input/`i'.xls"
+	global `i' "$input/`i'.xls"
 	noisily capture erase "`i'.xls"
 	noisily capture erase "`i'.txt"
 }
@@ -18,7 +41,7 @@ full_gold overlaps_gold full_same_sample_gold {
 // ------------------------------------------------------------------------
 // Confirming that we have the same dataset with the original Henderson variables:
 
-use "$hf_input/HWS AER replication/hsw_final_tables_replication/global_total_dn_uncal.dta", clear
+use "$input/HWS AER replication/hsw_final_tables_replication/global_total_dn_uncal.dta", clear
 keep year iso3v10 lndn lngdpwdilocal
 drop if lndn == . | lngdpwdilocal == . 
 rename (lndn lngdpwdilocal iso3v10) (lndn_orig lngdpwdilocal_orig iso3c)
@@ -35,9 +58,9 @@ assert lngdpwdilocal == lngdpwdilocal_orig
 
 save "vars_hender.dta", replace
 
-// ======================================================================
-// HENDERSON ============================================================
-// ======================================================================
+// ---------------------------------------------------------------------
+// HENDERSON 
+// ---------------------------------------------------------------------
 
 // full regression Henderson ------------------------------------
 use clean_validation_base.dta, clear
@@ -149,9 +172,9 @@ drop tokeep
 run_henderson_full_regression "$full_same_sample_hender"
 
 
-// ======================================================================
-// Goldberg ============================================================
-// ======================================================================
+// ---------------------------------------------------------------------
+// Goldberg 
+// ---------------------------------------------------------------------
 
 // full regression Goldberg ------------------------------------
 use "clean_validation_base.dta", replace
@@ -260,7 +283,7 @@ drop tokeep
 run_goldberg_full_regression "$full_same_sample_gold"
 
 
-// Excel macro for cleaning the finalized spreadsheet: ------------------------------------
+// Excel macro for cleaning the finalized spreadsheet: -----------------------
 
 if (1==0) {
 
