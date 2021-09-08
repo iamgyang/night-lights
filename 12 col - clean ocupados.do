@@ -46,14 +46,14 @@ clear
 // Convert files to have Spanish Accents --------------------------------------
 
 // get all the file names from a directory
-filelist , dir("$hf_input/Household Surveys/Colombia/") pattern(*.dta)
+filelist , dir("$raw_data/Household Surveys/Colombia/") pattern(*.dta)
 keep dirname
 levelsof dirname, local(dirs_toloop)
 
 foreach dir in `dirs_toloop' {
 	clear
 	cd "`dir'"
-	filelist , dir("$hf_input/Household Surveys/Colombia/") pattern(*.dta) norecur
+	filelist , dir("$raw_data/Household Surveys/Colombia/") pattern(*.dta) norecur
 	levelsof filename, local(files_toloop)
 
 		// convert the files in the directory to have Spanish accents
@@ -71,7 +71,7 @@ foreach dir in `dirs_toloop' {
 // For 2013-2016, remove all '.dta' files, as files are in txt format --------
 
 foreach x of numlist 2013/2016 {
-filelist , dir("$hf_input/Household Surveys/Colombia/`x'") pattern(*Ocupados*)
+filelist , dir("$raw_data/Household Surveys/Colombia/`x'") pattern(*Ocupados*)
 // norecur
 gen fullname = dirname + "/" + filename
 keep fullname
@@ -116,7 +116,7 @@ program dir_convert_2_dta
 end
 
 // get all the file names from a directory
-filelist , dir("$hf_input/Household Surveys/Colombia/") pattern(*Ocupados*)
+filelist , dir("$raw_data/Household Surveys/Colombia/") pattern(*Ocupados*)
 // norecur
 gen fullname = dirname + "/" + filename
 keep fullname
@@ -132,7 +132,7 @@ dir_convert_2_dta `obs' "`files'"
 // Append all the Ocupados files by year: --------------------------
 clear
 foreach x of numlist 2013/2021 {
-	filelist , dir("$hf_input/Household Surveys/Colombia/`x'") pattern(*Ocupados*dta)
+	filelist , dir("$raw_data/Household Surveys/Colombia/`x'") pattern(*Ocupados*dta)
 	// norecur
 	gen fullname = dirname + "/" + filename
 	keep fullname
@@ -143,7 +143,7 @@ foreach x of numlist 2013/2021 {
 		di "`file'"
 		append using "`file'", force
 	}
-	save "$hf_input/`x'appended.dta", replace
+	save "$input/`x'appended.dta", replace
 }
 
 // Clean the resulting appended files -----------------------------------------
@@ -196,23 +196,23 @@ foreach x of numlist 2013/2021 {
 	}
 	
 	// save file
-	save "$hf_input/colombia`x'cleaned.dta", replace
+	save "$input/colombia`x'cleaned.dta", replace
 }
 
 
 // append all the years
-use "$hf_input/colombia2020cleaned.dta", clear
+use "$input/colombia2020cleaned.dta", clear
 foreach x of numlist 2013/2021 {
-	append using "$hf_input/colombia`x'cleaned.dta", force
+	append using "$input/colombia`x'cleaned.dta", force
 }
 // Convert variables to non-numeric:
 tostring regis clase mes dpto, replace
-save "$hf_input/cleaned_colombia_full.dta", replace
+save "$input/cleaned_colombia_full.dta", replace
 
 // convert to have Spanish accents
 clear
 capture noisily unicode erasebackups, badidea
-cd "$hf_input"
+cd "$input"
 unicode analyze cleaned_colombia_full.dta
 unicode encoding set "latin1"
 unicode translate cleaned_colombia_full.dta
