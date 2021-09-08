@@ -1,64 +1,64 @@
-+---HF_measures		
+|+---HF_measures		
 
-|   +---code	| --- 	STATA and R code. STATA code is organized in a STATA project file. Open that file first to get bearings. 
+|   |+---code	| --- 	STATA and R code. STATA code is organized in a STATA project file. Open that file first to get bearings. 
 
-|   +---input	| --- 	Intermediate input that are derivations of the raw data
+|   |+---input	| --- 	Intermediate input that are derivations of the raw data
 
 |   \---output		
 
-+---logistics	| --- 	Logistics, mostly for grant for reporting
+|+---logistics	| --- 	Logistics, mostly for grant for reporting
 
-+---paper		
+|+---paper		
 
 \---raw-data	| --- 	Read-only. Contains the original datasets used to construct "input" and "output" folders
 
-    +---Angrist JEP replication		
+    |+---Angrist JEP replication		
 
-    |   +---Data		
+    |   |+---Data		
 
-    |   +---Do Files		
+    |   |+---Do Files		
 
-    |   +---Figures		
+    |   |+---Figures		
 
     |   \---Tables		
 
-    +---Facebook Social Connectedness		
+    |+---Facebook Social Connectedness		
 
-    +---Household Surveys		
+    |+---Household Surveys		
 
-    |   +---Bolivia		
+    |   |+---Bolivia		
 
-    |   +---CEDLAS	| --- 	CEDLAS dataset (mostly national, but some subnational)
+    |   |+---CEDLAS	| --- 	CEDLAS dataset (mostly national, but some subnational)
 
-    |   +---Chile		
+    |   |+---Chile		
 
-    |   +---Colombia	| --- 	Colombia dataset obtained from gov't, mostly on wealth metrics, but also including income & unemployment
+    |   |+---Colombia	| --- 	Colombia dataset obtained from gov't, mostly on wealth metrics, but also including income & unemployment
 
-    |   +---LSMS		
+    |   |+---LSMS		
 
     |   \---SHRUG		
 
-    +---HWS AER replication		
+    |+---HWS AER replication		
 
-    |   +---af_grumpv1_ppoints_csv		
+    |   |+---af_grumpv1_ppoints_csv		
 
-    |   +---F152008.v4		
+    |   |+---F152008.v4		
 
-    |   +---gl_gpwv3_pcount_00_wrk_25		
+    |   |+---gl_gpwv3_pcount_00_wrk_25		
 
-    |   +---gl_grumpv1_area_ascii_30		
+    |   |+---gl_grumpv1_area_ascii_30		
 
-    |   +---hsw_all_other_files		
+    |   |+---hsw_all_other_files		
 
-    |   +---hsw_final_tables_replication		
+    |   |+---hsw_final_tables_replication		
 
     |   \---hsw_full_tabular_replication		
 
-    +---National Accounts		
+    |+---National Accounts		
 
-    +---Other		
+    |+---Other		
 
-    +---relative-wealth-index-april-2021		
+    |+---relative-wealth-index-april-2021		
 
     \---VIIRS NTL Extracted Data 2012-2020	| --- 	Raw data extracted from AWS night lights
 
