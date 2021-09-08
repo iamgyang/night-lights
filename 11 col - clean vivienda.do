@@ -33,7 +33,7 @@ cd "$input"
 
 // Capture session to record what happens ------------------------------------
 
-cd "$hf_input"
+cd "$input"
 capture log close
 set logtype text
 
@@ -171,18 +171,18 @@ foreach x of numlist 2013/2021 {
 
 
 // append all the years
-use "$hf_input/colombia2020cleaned.dta", clear
+use "$input/colombia2020cleaned.dta", clear
 foreach x of numlist 2013/2019 2021 {
-	append using "$hf_input/colombia`x'cleaned.dta", force
+	append using "$input/colombia`x'cleaned.dta", force
 }
 // Convert variables to non-numeric:
 tostring regis clase mes dpto, replace
-save "$hf_input/cleaned_colombia_full.dta", replace
+save "$input/cleaned_colombia_full.dta", replace
 
 // convert to have Spanish accents
 clear
 capture noisily unicode erasebackups, badidea
-cd "$hf_input"
+cd "$input"
 unicode analyze cleaned_colombia_full.dta
 unicode encoding set "latin1"
 unicode translate cleaned_colombia_full.dta
