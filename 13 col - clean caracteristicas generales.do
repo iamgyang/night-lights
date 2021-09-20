@@ -1,3 +1,6 @@
+// 13 col - clean caracteristicas generales
+
+
 // Macros ----------------------------------------------------------------
 
 clear all 
@@ -43,64 +46,26 @@ display c(current_time)
 version 10.1
 clear
 
-// Convert files to have Spanish Accents --------------------------------------
+// Grab all the Características generales (Personas) from the folder ----------------------------
 
 // get all the file names from a directory
-filelist , dir("$raw_data/Household Surveys/Colombia/") pattern(*.dta)
-keep dirname
-levelsof dirname, local(dirs_toloop)
-
-foreach dir in `dirs_toloop' {
-	clear
-	cd "`dir'"
-	filelist , dir("$raw_data/Household Surveys/Colombia/") pattern(*.dta) norecur
-	levelsof filename, local(files_toloop)
-
-		// convert the files in the directory to have Spanish accents
-		foreach file in `files_toloop' {
-			clear
-
-			//	make all the accents appear in the STATA file:
-			unicode analyze "`file'"
-			unicode encoding set "latin1"
-			unicode translate "`file'"
-		}
-	
-}
-
-// For 2013-2016, remove all '.dta' files, as files are in txt format --------
-
-foreach x of numlist 2013/2016 {
-filelist , dir("$raw_data/Household Surveys/Colombia/`x'") pattern(*Vivienda y Hogares*)
-// norecur
-gen fullname = dirname + "/" + filename
-keep fullname
-gen ext = substr(fullname, length(fullname)-2, 3)
-keep if ext == "dta"
-levelsof fullname, local(files_toloop)
-	foreach file in `files_toloop' {
- 		erase "`file'"
-	}
-}
-
-// Grab all the Vivienda y Hogares from the folder ----------------------------
-
-// get all the file names from a directory
-filelist , dir("$raw_data/Household Surveys/Colombia/") pattern(*Vivienda y Hogares*)
+filelist , dir("$raw_data/Household Surveys/Colombia/") pattern(*Características generales (Personas)*)
 // norecur
 gen fullname = dirname + "/" + filename
 keep fullname
 gen ext = substr(fullname, length(fullname)-2, 3)
 keep if ext == "dta" | ext == "txt"
-levelsof fullname, local(files_toloop)
+tempfile files
+save "`files'"
+local obs = _N
 
 // convert the files in the directory to be DTA files:
-dir_convert_2_dta `files_toloop'
+dir_convert_2_dta `obs' "`files'"
 
-// Append all the Vivienda y Hogares files by year: --------------------------
+// Append all the Características generales (Personas) files by year: --------------------------
 clear
 foreach x of numlist 2013/2021 {
-	filelist , dir("$raw_data/Household Surveys/Colombia/`x'") pattern(*Vivienda y Hogares*dta)
+	filelist , dir("$raw_data/Household Surveys/Colombia/`x'") pattern(*Características generales (Personas)*dta)
 	// norecur
 	gen fullname = dirname + "/" + filename
 	keep fullname
@@ -111,14 +76,13 @@ foreach x of numlist 2013/2021 {
 		di "`file'"
 		append using "`file'", force
 	}
-	save "$input/viv_`x'appended.dta", replace
+	save "$input/`x'appended.dta", replace
 }
-
 
 // Clean the resulting appended files -----------------------------------------
 
 foreach x of numlist 2013/2021 {
-	use "$input/viv_`x'appended.dta", clear
+	use "C:/Users/user/Dropbox/CGD GlobalSat/HF_measures/input/`x'appended.dta", clear
 	
 	// use the file extension to create strings that portray the year, month, 
 	// and city type:
@@ -136,7 +100,7 @@ foreach x of numlist 2013/2021 {
 	// this function does a string search BACKWARDS
 	gen x3 = strrpos(file_name, "/") 
 	gen location_type = substr(file_name, x3+1, length(file_name))
-	replace location_type = subinstr(location_type, " - Vivienda y Hogares", "",.)
+	replace location_type = subinstr(location_type, " - Características generales (Personas)", "",.)
 	replace location_type = subinstr(location_type, ".dta", "",.)
 	quietly forval j = 0/9 {
 		replace location_type = subinstr(location_type, "`j'", "", .)
@@ -171,29 +135,29 @@ foreach x of numlist 2013/2021 {
 
 // append all the years
 use "$input/colombia2020cleaned.dta", clear
-foreach x of numlist 2013/2019 2021 {
+foreach x of numlist 2013/2021 {
 	append using "$input/colombia`x'cleaned.dta", force
 }
 // Convert variables to non-numeric:
 tostring regis clase mes dpto, replace
-save "$input/cleaned_colombia_vivienda.dta", replace
+save "$input/cleaned_colombia_caracteristicas.dta", replace
 
 // convert to have Spanish accents
 clear
 capture noisily unicode erasebackups, badidea
 cd "$input"
-unicode analyze cleaned_colombia_vivienda.dta
+unicode analyze cleaned_colombia_caracteristicas.dta
 unicode encoding set "latin1"
-unicode translate cleaned_colombia_vivienda.dta
+unicode translate cleaned_colombia_caracteristicas.dta
 clear
 
-use cleaned_colombia_vivienda.dta
+use cleaned_colombia_caracteristicas.dta
 destring regis clase mes dpto, replace
-save cleaned_colombia_vivienda.dta, replace
+save cleaned_colombia_caracteristicas.dta, replace
 
 // Perform checks ------------------------------------------------------------
 
-use cleaned_colombia_vivienda.dta
+use cleaned_colombia_caracteristicas.dta
 
 // directorio == household ID
 // fex == weights
