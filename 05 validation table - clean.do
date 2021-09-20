@@ -43,14 +43,14 @@ local del "delete not_delete"
 
 foreach i in `del' {
 	use "$input/NTL_GDP_month_ADM2.dta", clear
-	keep iso3c gid_2 mean_pix sum_pix year quarter month pol_area pwt_rgdpna ///
+	keep iso3c gid_2 mean_pix sum_pix year pol_area pwt_rgdpna ///
 	WDI WDI_ppp ox_rgdp_lcu
 	if ("`i'" == "delete") {
 		drop if sum_pix < 0	    
 	}
 	rename pol_area sum_area
 	collapse (sum) sum_area sum_pix (mean) pwt_rgdpna WDI WDI_ppp ///
-	ox_rgdp_lcu, by(year quarter iso3c)
+	ox_rgdp_lcu, by(year iso3c)
 	rename (ox_rgdp_lcu pwt_rgdpna WDI WDI_ppp) (Oxford PWT WDI WDI_ppp)
 	sort iso3c year
 	collapse (sum) sum_area sum_pix Oxford ///
