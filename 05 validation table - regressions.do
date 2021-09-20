@@ -65,6 +65,7 @@ save "vars_hender.dta", replace
 // full regression Henderson ------------------------------------
 use clean_validation_base.dta, clear
 
+capture program drop run_henderson_full_regression
 program run_henderson_full_regression
 	args outfile
 	foreach light_var in lndn ln_sum_light_dmsp_div_area ln_del_sum_pix_area ln_sum_pix_area {
@@ -179,6 +180,7 @@ run_henderson_full_regression "$full_same_sample_hender"
 // full regression Goldberg ------------------------------------
 use "clean_validation_base.dta", replace
 
+capture program drop run_goldberg_full_regression
 program run_goldberg_full_regression
 	args out_file
 
