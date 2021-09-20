@@ -90,7 +90,7 @@ else if ("$import_nightlights" != "yes") {
 	replace gid_2 = "gadm" + gadmid if (gid_2 == "" & gadmid!="")
 
 // save
-	save "$hf_input/NTL_appended.dta", replace
+	save "$input/NTL_appended.dta", replace
 	
 
 

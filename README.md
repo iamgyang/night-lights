@@ -2,7 +2,7 @@
 |   +---code	| --- 	STATA and R code. STATA code is organized in a STATA project file. Open that file first to get bearings. 
 |   +---input	| --- 	Intermediate input that are derivations of the raw data
 |   \---output		
-+---logistics	| --- 	Logistics, mostly for grant for reporting
++---logistics	| --- 	Logistics, mostly for grant reporting
 +---paper		
 \---raw-data	| --- 	Read-only. Contains the original datasets used to construct "input" and "output" folders
     +---Angrist JEP replication		

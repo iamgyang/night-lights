@@ -95,7 +95,7 @@ global import_nightlights "yes"
 	drop if pwt_rgdpna==. | imf_rgdp_lcu==.
 	
 *** get implied growth rate for these yrs
-	drop WDI_ppp
+	drop WDI WDI_ppp
 	reshape wide pwt_rgdpna imf_rgdp_lcu, i(iso3c) j(year)
 	gen avg_gr_pwt = (pwt_rgdpna2019/pwt_rgdpna2012)^(1/(2019-2012)) -1
 	gen avg_gr_imf = (imf_rgdp_lcu2019/imf_rgdp_lcu2012)^(1/(2019-2013+1)) -1

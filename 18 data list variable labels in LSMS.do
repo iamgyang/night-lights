@@ -77,7 +77,8 @@ local cdir = "`c(pwd)'"
 clear
 * store the directories of the dta files in a local macro:
 set maxvar 32767
-dirlist, fromdir("`cdir'") pattern("*dta") save("allfiles.dta") replace
+sleep 2000
+dirlist, fromdir("`cdir'") pattern("*dta") save("$input/allfiles.dta") replace
 qui: levelsof fname, local(dir_names_toloop)
 
 clear
@@ -98,7 +99,7 @@ foreach x of local dir_names_toloop {
 	describe, replace clear
 	gen location = "`x'"
 	append using `variables'
-	save `variables', replace	
+	save `variables', replace
 }
 use `variables', clear
 
