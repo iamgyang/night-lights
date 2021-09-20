@@ -312,7 +312,8 @@
 	save "$input/electricity.dta", replace
 	
 *** Create a monthly NTL - GDP dataset: =======================================
-	use "$input/NTL_appended.dta", clear
+	use "$input/NTL_appended2.dta", clear
+	drop year
 	gen year = year(date2)
 	gen month = month(date2)
 	gen quarter = quarter(date2)
