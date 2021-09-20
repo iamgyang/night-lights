@@ -32,7 +32,7 @@ if ("`install_user_defined_functions'" == "Yes") {
 
 cd "$input"
 	
-*** Gross Regional Product -------------------------------------------------
+*** Gross Regional Product ---------------------------------
 import excel "$raw_data/National Accounts/China_GRP_Quarterly_Province.xlsx", ///
 	sheet("Gross_Regional_Product") cellrange(A2:AG35) firstrow clear
 
@@ -51,7 +51,7 @@ drop dup
 
 save "$input/grp_china_adm1.dta", replace
 
-// Household Consumption -----------------------------------------------------
+// Household Consumption --------------------------------------
 import excel "$raw_data/National Accounts/China_GRP_Quarterly_Province.xlsx", ///
 	sheet("Household_Living_Condition2") firstrow clear
 destring quarter year, replace

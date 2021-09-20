@@ -1,3 +1,8 @@
+// NOTE: 
+// This code is no longer running well after the newest version of 
+// the NTL data was produced. We probably need to extract finer NTL 
+// anyways, as this was merging city GDP to ADM1 NTL.
+
 // Macros ----------------------------------------------------------------
 
 clear all 
@@ -45,8 +50,8 @@ if ("`install_user_defined_functions'" == "Yes") {
 	mmerge metro country using `adm_codes'
 	
 // 	13 cities were not matched because they lied on the EDGE of an object ID polygon
-	keep if _m == 3
-	drop _m
+	keep if _merge == 3
+	drop _merge
 	save "$input/city_ntl_merge_long.dta", replace
 	
 // merge with the night light data
@@ -88,7 +93,7 @@ if ("`install_user_defined_functions'" == "Yes") {
 		rename year yrend
 		
 	//  So, the change in NL from 2014-2016 should equal 2015 * 2016 change in NTL
-		gen one_delt = delt + 1
+		gen one_delt = delt_mean_pix + 1
 		bysort objectid mo: gen lag_one_delt = one_delt[_n-1]
 		replace delt_`func_var' = one_delt*lag_one_delt-1 if yrend == 2016
 		drop one_delt lag_one_delt
@@ -96,11 +101,11 @@ if ("`install_user_defined_functions'" == "Yes") {
 		save "$input/annual_change_ntl_long_`func_var'.dta", replace
 
 	//	merge the datasets:
-		mmerge objectid yrend using "$hf_input/city_ntl_merge_long.dta"
-		assert inlist(_m, 1, 3)
-		keep if _m == 3
+		mmerge objectid yrend using "$input/city_ntl_merge_long.dta"
+		assert inlist(_merge, 1, 3)
+		keep if _merge == 3
 		
-		keep objectid metro country delt* gid_0 gid_1 gid_2 yrend mo
+		keep objectid metro country delt_mean_pix* gid_0 gid_1 gid_2 yrend mo
 		save "$input/city_ntl_merge_long_`func_var'.dta", replace
 		use "$input/city_ntl_merge_long_`func_var'.dta", clear
 		
@@ -128,8 +133,8 @@ if ("`install_user_defined_functions'" == "Yes") {
 		duplicates drop
 		reshape wide delt_gdppc, i(objectid gid_0) j(yr, string)
 		mmerge objectid using `ntl_`func_var'_wide'
-		assert _m == 3
-		drop _m
+		assert _merge == 3
+		drop _merge
 		
 		save "$input/city_ntl_merge_wide_`func_var'.dta", replace
 

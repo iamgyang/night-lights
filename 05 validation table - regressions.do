@@ -41,7 +41,7 @@ full_gold overlaps_gold full_same_sample_gold {
 // ------------------------------------------------------------------------
 // Confirming that we have the same dataset with the original Henderson variables:
 
-use "$input/HWS AER replication/hsw_final_tables_replication/global_total_dn_uncal.dta", clear
+use "$raw_data/HWS AER replication/hsw_final_tables_replication/global_total_dn_uncal.dta", clear
 keep year iso3v10 lndn lngdpwdilocal
 drop if lndn == . | lngdpwdilocal == . 
 rename (lndn lngdpwdilocal iso3v10) (lndn_orig lngdpwdilocal_orig iso3c)

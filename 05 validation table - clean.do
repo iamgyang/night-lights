@@ -166,7 +166,7 @@ use "$raw_data/Angrist JEP replication/Data/Processed Data/master.dta", clear
 // keep if year >= 1992 & year <= 2012
 
 // average
-foreach var in g_ln_survey g_ln_gdp g_ln_lights {
+foreach var in g_ln_survey_fill g_ln_gdp g_ln_lights {
 bys code: egen mean_`var' = mean(`var')
 bys code: egen sd_`var' = sd(`var')
 }
