@@ -207,24 +207,24 @@ foreach x of numlist 2013/2021 {
 }
 // Convert variables to non-numeric:
 tostring regis clase mes dpto, replace
-save "$input/cleaned_colombia_full.dta", replace
+save "$input/cleaned_colombia_ocupados.dta", replace
 
 // convert to have Spanish accents
 clear
 capture noisily unicode erasebackups, badidea
 cd "$input"
-unicode analyze cleaned_colombia_full.dta
+unicode analyze cleaned_colombia_ocupados.dta
 unicode encoding set "latin1"
-unicode translate cleaned_colombia_full.dta
+unicode translate cleaned_colombia_ocupados.dta
 clear
 
-use cleaned_colombia_full.dta
+use cleaned_colombia_ocupados.dta
 destring regis clase mes dpto, replace
-save cleaned_colombia_full.dta, replace
+save cleaned_colombia_ocupados.dta, replace
 
 // Perform checks ------------------------------------------------------------
 
-use cleaned_colombia_full.dta
+use cleaned_colombia_ocupados.dta
 
 // directorio == household ID
 // fex == weights
