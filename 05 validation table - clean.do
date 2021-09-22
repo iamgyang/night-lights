@@ -266,6 +266,7 @@ foreach i in `measure_vars' {
 
 // first differences on the logged variables
 foreach var of varlist ln_* {
+	sort iso3c year
     generate g_`var' = `var' - `var'[_n-1] if iso3c==iso3c[_n-1]
 	loc lab: variable label `var'
 	di "`lab'"
@@ -315,5 +316,47 @@ assert check == 0 | check == .
 drop check
 
 save "clean_validation_base.dta", replace
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
