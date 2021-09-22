@@ -80,6 +80,25 @@ collapse (mean) sum_pix, by(month year)
 twoway (line sum_pix month if year == 2019) (line sum_pix month if year == 2020), legend(order(1 "2019" 2 "2020"))
 graph export "$input/line_pix_vs_month.png", replace
 
+// DISCONTINUITY ---------------------------
+
+use "$input/adm2_month_derived.dta", clear
+
+drop if objectid == ""
+check_dup_id "objectid year month"
+
+keep if year == 2020 | year == 2019
+
+#delimit ;
+tw scatter ln_sum_pix_area month ||
+	lpoly ln_sum_pix_area month if month < 3 & year == 2020 ||
+	lpoly ln_sum_pix_area month if month >= 3  & year == 2020 ||
+	lpoly ln_sum_pix_area month if month < 3 & year == 2019 ||
+	lpoly ln_sum_pix_area month if month >= 3  & year == 2019
+	;
+#delimit cr
+graph export "$input/dot_log_pix_area_vs_month.png", replace
+
 // SCATTERPLOT MATRIX PLOT -----------------------
 use "$input/clean_validation_monthly_base.dta", clear
 
