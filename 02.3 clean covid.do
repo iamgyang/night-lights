@@ -1,4 +1,3 @@
-// ================================================================
 
 // Coronanet COVID data ------------------------------------------------
 
@@ -15,12 +14,12 @@ drop date_policy
 drop high_est low_est sd_est
 
 // refactor modtype
-replace modtype = "business" if modtype == "Business Restrictions"
-replace modtype = "health_monitor" if modtype == "Health Monitoring"
+replace modtype = "business"        if modtype == "Business Restrictions"
+replace modtype = "health_monitor"  if modtype == "Health Monitoring"
 replace modtype = "health_resource" if modtype == "Health Resources"
-replace modtype = "mask" if modtype == "Mask Policies"
-replace modtype = "school" if modtype == "School Restrictions"
-replace modtype = "social_dist" if modtype == "Social Distancing"
+replace modtype = "mask"            if modtype == "Mask Policies"
+replace modtype = "school"          if modtype == "School Restrictions"
+replace modtype = "social_dist"     if modtype == "Social Distancing"
 
 // reshape wide
 reshape wide med_est, i(country year month day) j(modtype, string)
@@ -45,6 +44,7 @@ drop country
 save "$input/covid_coronanet_cleaned.dta", replace
 
 // Oxford COVID Data ---------------------------------------------------------
+
 import delimited "$raw_data/Oxford-Covid/OxCGRT_latest.csv", clear
 keep if jurisdiction == "NAT_TOTAL"
 assert regionname == "" & regioncode == ""

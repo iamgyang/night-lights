@@ -1,8 +1,7 @@
-// Please run "00 master.do" to establish global macros prior.
-
-// File appends all VIIRS night lights files into 1 file. 
 
 // ================================================================
+// File appends all VIIRS night lights files into 1 file. 
+
 if ("$import_nightlights" == "yes") {
 	import delimited "$ntl_input/NTL_adm2_2012.csv", encoding(UTF-8) clear 
 	tempfile ntl_append
