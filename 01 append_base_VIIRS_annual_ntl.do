@@ -1,3 +1,4 @@
+// Please run "00 master.do" to establish global macros prior.
 	
 // NEW VIIRS (annual) ----------------------------------------------------
 
