@@ -2,7 +2,8 @@
 
 cd "$input"
 
-// VIIRS cleaned & raw -----------------
+// VIIRS ----------------------------------------------------------
+
 // By cleaned, we mean NTL with deletions and without month-ADM2 deletions
 use "$input/imf_pwt_GDP_annual.dta", clear
 keep iso3c year pwt_rgdpna WDI
@@ -10,44 +11,20 @@ rename (pwt_rgdpna WDI) (pwt_rgdpna_check WDI_check)
 tempfile pwt_wdi_check
 save `pwt_wdi_check'
 
-local del "delete not_delete"
+collapse (sum) sum_area sum_pix (mean) pwt_rgdpna WDI WDI_ppp ///
+ox_rgdp_lcu, by(year quarter iso3c)
+rename (ox_rgdp_lcu pwt_rgdpna WDI WDI_ppp) (Oxford PWT WDI WDI_ppp)
+sort iso3c year
+collapse (sum) sum_area sum_pix Oxford (mean) PWT WDI WDI_ppp, by(year iso3c)
+replace Oxford = . if Oxford  == 0
+check_dup_id "iso3c year"
 
-foreach i in `del' {
-	use "$input/NTL_GDP_month_ADM2.dta", clear
-	keep iso3c gid_2 mean_pix sum_pix year quarter month pol_area pwt_rgdpna ///
-	WDI WDI_ppp ox_rgdp_lcu
-	if ("`i'" == "delete") {
-		drop if sum_pix < 0	    
-	}
-	rename pol_area sum_area
-	collapse (sum) sum_area sum_pix (mean) pwt_rgdpna WDI WDI_ppp ///
-	ox_rgdp_lcu, by(year quarter iso3c)
-	rename (ox_rgdp_lcu pwt_rgdpna WDI WDI_ppp) (Oxford PWT WDI WDI_ppp)
-	sort iso3c year
-	collapse (sum) sum_area sum_pix Oxford ///
-	(mean) PWT WDI WDI_ppp, by(year iso3c)
-	replace Oxford = . if Oxford  == 0
-	duplicates tag iso3c year, gen(dup)
-	assert dup == 0
-	drop dup
-	
-	// merging back in PWT by year-iso3c should give the exact same results 
-	// after collapsing by mean as before collapsing by mean
-	mmerge iso3c year using `pwt_wdi_check'
-	assert (abs(pwt_rgdpna_check - PWT) < 0.1) | (pwt_rgdpna_check==. & PWT==.)
-	assert (abs(WDI_check - WDI) < 0.1) | (WDI_check==. & WDI==.)
-	drop *_check _merge
-	
-	save "collapsed_dataset_`i'.dta", replace
-}
-
-tempfile viirs dmsp dmsp_hender dmsp_goldberg
-
-use "collapsed_dataset_delete.dta", clear
-rename (sum_area sum_pix) (del_sum_area del_sum_pix)
-mmerge iso3c year using "collapsed_dataset_not_delete.dta"
-assert _merge == 3
-drop _merge
+// merging back in PWT by year-iso3c should give the exact same results 
+// after collapsing by mean as before collapsing by mean
+mmerge iso3c year using `pwt_wdi_check'
+assert (abs(pwt_rgdpna_check - PWT) < 0.1) | (pwt_rgdpna_check==. & PWT==.)
+assert (abs(WDI_check - WDI) < 0.1) | (WDI_check==. & WDI==.)
+drop *_check _merge
 
 // convert from billions:
 foreach i in Oxford PWT WDI {
@@ -65,7 +42,7 @@ foreach i in del_sum_area del_sum_pix sum_area sum_pix {
 	replace `i' = . if `i' ==0
 }
 
-
+tempfile viirs
 save `viirs'
 
 
