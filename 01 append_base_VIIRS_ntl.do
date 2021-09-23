@@ -78,6 +78,7 @@ foreach i in `vars' {
 end
 
 // ================================================================
+
 if ("$import_nightlights" == "yes") {
 	import delimited "$ntl_input/NTL_adm2_2012.csv", encoding(UTF-8) clear 
 	tempfile ntl_append
