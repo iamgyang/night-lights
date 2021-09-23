@@ -64,6 +64,7 @@ args country_var
 	ren (_ISO3C_) (iso)
 end
 
+// create a group of logged variables
 quietly capture program drop create_logvars
 program create_logvars
 args vars
@@ -75,7 +76,6 @@ foreach i in `vars' {
 	label variable ln_`i' "Log `lab'"
 }
 end
-
 
 // ================================================================
 // 1. National Accounts 
