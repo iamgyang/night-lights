@@ -1,3 +1,5 @@
+// Please run "00 master.do" to establish global macros prior.
+
 *** QUATERLY =================================================================
 
 ***	Import Oxford Econ Quarterly --------------------------------------------
