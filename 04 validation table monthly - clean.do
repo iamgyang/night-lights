@@ -1,5 +1,4 @@
-
-// Macros ----------------------------------------------------------------
+// 0. Preliminaries
 
 clear all 
 set more off
@@ -28,7 +27,57 @@ if ("`install_user_defined_functions'" == "Yes") {
 	}
 }
 
-// =========================================================================
+// CHANGE THIS!! --- Do we want to import nightlights from the tabular raw data? 
+// (takes a long time)
+global import_nightlights "yes"
+
+// PERSONAL PROGRAMS ----------------------------------------------
+
+// checks if IDs are duplicated
+quietly capture program drop check_dup_id
+program check_dup_id
+	args id_vars
+	preserve
+	keep `id_vars'
+	sort `id_vars'
+    quietly by `id_vars':  gen dup = cond(_N==1,0,_n)
+	assert dup == 0
+	restore
+	end
+
+// drops all missing observations
+quietly capture program drop naomit
+program naomit
+	foreach var of varlist _all {
+		drop if missing(`var')
+	}
+	end
+
+// creates new variable of ISO3C country codes
+quietly capture program drop conv_ccode
+program conv_ccode
+args country_var
+	kountry `country_var', from(other) stuck
+	ren(_ISO3N_) (temp)
+	kountry temp, from(iso3n) to(iso3c)
+	drop temp
+	ren (_ISO3C_) (iso3c)
+end
+
+// create a group of logged variables
+quietly capture program drop create_logvars
+program create_logvars
+args vars
+
+foreach i in `vars' {
+    gen ln_`i' = ln(`i')
+	loc lab: variable label `i'
+	di "`lab'"
+	label variable ln_`i' "Log `lab'"
+}
+end
+
+// ================================================================
 
 cd "$input"
 
@@ -64,6 +113,62 @@ save `ntl_clean'
 clear
 use `ntl_clean'
 mmerge iso3c year month using `ntl_raw'
+drop _merge
+
+gen sum_pix_area = 
+
+label variable sum_pix "Sum of VIIRS (raw)"
+label variable del_sum_pix "Sum of VIIRS (clean)"
+
+
+
+
+
+
+foreach i of varlist *sum_pix* {
+    gen ln_`i' = ln(`i')
+}
+
+
+
+
+
+
+
+
+
+
+// first differences on the logged variables
+// before taking first differences, HAVE TO have all years, months, etc.
+drop _merge
+fillin objectid year month
+check_dup_id "objectid year month"
+drop _fillin
+
+foreach var of varlist ln_* {
+	sort objectid year month
+    generate g_`var' = `var' - `var'[_n-1] if ///
+		objectid==objectid[_n-1]
+	loc lab: variable label `var'
+	di "`lab'"
+	label variable g_`var' "Diff. `lab'"
+}
+
+foreach var of varlist ln_* {
+	sort objectid month year
+    generate g_an_`var' = `var' - `var'[_n-1] if ///
+		objectid==objectid[_n-1] & (year - 1) == (year[_n-1])
+	loc lab: variable label `var'
+	di "`lab'"
+	label variable g_an_`var' "Diff. annual `lab'"
+}
+
+
+
+
+
+
+
 
 // merge: ---------------------------------------------------------------------
 keep if year == 2020
@@ -78,17 +183,17 @@ drop _merge
 
 // make extra variables: ----------------------------------------------------
 
-foreach i of varlist *sum_pix* {
-    gen ln_`i' = ln(`i')
-}
-
 // average restriction
 egen restr_avg = rowmean(restr_business restr_health_monitor restr_health_resource restr_mask restr_school restr_social_dist)
 
 // categorical variables
 tostring month, replace
 gen iso3c_month = iso3c + "_m" + month
-foreach i in iso3c month iso3c_month {
+
+label define month 1 "1" 2 "2" 3 "3" 4 "4" 5 "5" 6 "6" 7 "7" 8 "8" 9 "9" 10 "10" 11 "11" 12 "12"
+encode month, generate(cat_month) label(month) 
+
+foreach i in iso3c iso3c_month {
 	di "`i'"
 	encode `i', gen(cat_`i')
 }
@@ -107,14 +212,35 @@ label variable oxcgrtstringency "composite stringency index (Oxford)"
 label variable oxcgrtgovernmentresponse "government response index (Oxford)"
 label variable oxcgrtcontainmenthealth "health containment index (Oxford)"
 label variable oxcgrteconomicsupport "economic support index (Oxford)"
-label variable ln_sum_pix "Log Sum of VIIRS (raw)"
-label variable ln_del_sum_pix "Log Sum of VIIRS (clean)"
+
 
 save "$input/clean_validation_monthly_base.dta", replace
 
 
 // ------------------------------------------------------------------------
 // ADM2-MONTH DATASET WITH LAGGED & OTHER DERIVED VARIABLES -----------
+
+
+
+
+
+
+
+
+mmerge year month iso3c using "$input/covid_coronanet_cleaned.dta"
+mmerge year month iso3c using `ox'
+
+
+
+
+
+
+
+
+
+
+
+
 
 // NTL ------------
 use "$input/NTL_GDP_month_ADM2.dta", clear
@@ -166,16 +292,32 @@ foreach i in `measure_vars' {
 }
 
 // first differences on the logged variables
+// before taking first differences, HAVE TO have all years, months, etc.
+drop _merge
+fillin objectid year month
+check_dup_id "objectid year month"
+drop _fillin
+
 foreach var of varlist ln_* {
 	sort objectid year month
-    generate g_`var' = `var' - `var'[_n-1] if objectid==objectid[_n-1]
+    generate g_`var' = `var' - `var'[_n-1] if ///
+		objectid==objectid[_n-1]
 	loc lab: variable label `var'
 	di "`lab'"
 	label variable g_`var' "Diff. `lab'"
 }
 
+foreach var of varlist ln_* {
+	sort objectid month year
+    generate g_an_`var' = `var' - `var'[_n-1] if ///
+		objectid==objectid[_n-1] & (year - 1) == (year[_n-1])
+	loc lab: variable label `var'
+	di "`lab'"
+	label variable g_an_`var' "Diff. annual `lab'"
+}
 
 // encode categorical variables
+
 tostring (year month), gen(yr mo)
 
 foreach i in objectid yr mo  {
@@ -183,7 +325,7 @@ foreach i in objectid yr mo  {
 	encode `i', gen(cat_`i')
 }
 
-drop yr mo _merge
+drop yr mo
 
 gen after_march = 1 if month >= 3
 replace after_march = 0 if month < 3
