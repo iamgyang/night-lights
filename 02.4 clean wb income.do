@@ -35,3 +35,7 @@ replace year = 2000 + year if year < 50
 drop if income == ""
 rename colnames iso3c
 save "historical_wb_income_classifications.dta", replace
+
+
+
+
