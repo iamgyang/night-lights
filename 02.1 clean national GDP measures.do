@@ -1,4 +1,3 @@
-// Please run "00 master.do" to establish global macros prior.
 
 *** QUATERLY =================================================================
 
@@ -122,7 +121,8 @@
 	sort iso3c yq
 	gen rgdp = nom_gdp / deflator_3
 	drop deflator_3
-
+	rename (nom_gdp rgdp) (imf_quart_nom_gdp imf_quart_rgdp)
+	
 *** done with cleaning GDP data:
 	save "$input/imf_real_gdp.dta", replace
 	use "$input/imf_real_gdp.dta", clear
