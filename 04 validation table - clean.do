@@ -65,89 +65,9 @@ foreach i in del_sum_area del_sum_pix sum_area sum_pix {
 	replace `i' = . if `i' ==0
 }
 
-// per area variables:
-gen del_sum_pix_area = del_sum_pix / del_sum_area
-gen sum_pix_area = sum_pix / sum_area
 
 save `viirs'
 
-// DMSP from Australian website --------------------
-import delimited "$raw_data/Other/Nighttime_Lights_ADM2_1992_2013.csv", clear
-collapse (sum) sum_light, by(countrycode year)
-rename (countrycode sum_light) (iso3c sum_light_dmsp)
-keep iso3c year sum_light_dmsp
-
-save `dmsp'
-
-// DMSP Henderson --------------------
-use "$raw_data/HWS AER replication/hsw_final_tables_replication/global_total_dn_uncal.dta", clear
-keep year iso3v10 country lngdpwdilocal lndn wbdqtotal wbdqcat
-rename iso3v10 iso3c
-sort iso3c year
-gen exp_hws_wdi = exp(lngdpwdilocal)
-
-// WB statistical capacity from Henderson
-gen wbdqcat_3 = "bad" if wbdqtotal<3.5
-replace wbdqcat_3 = "ok" if wbdqtotal>3.5 & wbdqtotal<6.5
-replace wbdqcat_3 = "good" if wbdqtotal>6.5
-
-save `dmsp_hender'
-
-// WB historical income classifications --------------
-import excel ///
-"$raw_data/Other/OGHIST_historical_WB_country_income_classification.xls", ///
-sheet("Country Analytical History") allstring clear
-gen rownum = _n
-replace A = "colnames" if rownum == 5
-drop if A == ""
-drop rownum
-unab varlist : *
-capture quietly foreach v of local varlist {
-    local value = `v'[1]
-    local vname = strtoname(`"`value'"')
-    rename `v' `vname'
-    label var `vname' `"`value'"'
-}
-drop in 1
-keep colnames FY*
-capture quietly drop FY
-foreach i of varlist * {
-    replace `i' = "" if `i' == ".."
-	replace `i' = "LIC" if `i' == "L"
-	replace `i' = "LMIC" if `i' == "LM"
-	replace `i' = "LMIC" if `i' == "LM*"
-	replace `i' = "UMIC" if `i' == "UM"
-	replace `i' = "HIC" if `i' == "H"
-}
-reshape long FY, i(colnames) j(year, string)
-rename FY income
-destring year, replace
-
-// since it gives 2 digit fiscal years, we conver to 4 digit fiscal years
-replace year = 1900 + year if year >= 50
-replace year = 2000 + year if year < 50
-drop if income == ""
-rename colnames iso3c
-save "historical_wb_income_classifications.dta", replace
-
-
-// Goldberg DMSP data --------------------------------------------------
-
-use "$raw_data/Angrist JEP replication/Data/Processed Data/master.dta", clear
-// keep if year >= 1992 & year <= 2012
-
-// average
-foreach var in g_ln_survey_fill g_ln_gdp g_ln_lights {
-bys code: egen mean_`var' = mean(`var')
-bys code: egen sd_`var' = sd(`var')
-}
-
-keep code year mean_g_ln_lights mean_g_ln_gdp _gdppercap_constant_ppp lightpercap ln_gdp sumoflights
-rename (code year mean_g_ln_lights mean_g_ln_gdp _gdppercap_constant_ppp ///
-lightpercap ln_gdp sumoflights) (iso3c year mean_g_ln_lights_gold mean_g_ln_gdp_gold ///
-_gdppercap_constant_ppp_gold lightpercap_gold ln_gdp_gold sumoflights_gold)
-
-save `dmsp_goldberg', replace
 
 // ---------------------------------------------------------------------
 // Merge 
@@ -155,15 +75,11 @@ save `dmsp_goldberg', replace
 
 clear
 use `viirs'
-mmerge iso3c year using `dmsp'
+mmerge iso3c year using "$input/all_dmsp.dta"
 drop _merge
-mmerge iso3c year using `dmsp_hender'
+mmerge iso3c year using "$input/historical_wb_income_classifications.dta"
 drop _merge
-mmerge iso3c year using `dmsp_goldberg'
-drop _merge
-mmerge iso3c year using historical_wb_income_classifications.dta
-drop _merge
-mmerge iso3c year using wb_pop_estimates_cleaned.dta
+mmerge iso3c year using "$input/wb_pop_estimates_cleaned.dta"
 drop _merge
 
 // get balanced panel
@@ -183,7 +99,9 @@ drop _fillin dup
 // Extra variables after merging 
 // -------------------------------------------------------------------------
 
-// lights per area for DMSP
+// per area variables:
+gen del_sum_pix_area = del_sum_pix / del_sum_area
+gen sum_pix_area = sum_pix / sum_area
 gen sum_light_dmsp_div_area = sum_light_dmsp / sum_area
 label variable sum_light_dmsp_div_area "DMSP lights divided / polygon area"
 
