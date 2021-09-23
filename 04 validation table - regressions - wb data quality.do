@@ -15,7 +15,7 @@ global code        "$root/HF_measures/code"
 global input       "$root/HF_measures/input"
 global output      "$root/HF_measures/output"
 global raw_data    "$root/raw-data"
-global ntl_input   "$root/raw-data/VIIRS NTL Extracted Data 2012-2020"
+global ntl_input   "$root/raw-data/NTL Extracted Data 2012-2020"
 
 // CHANGE THIS!! --- Do we want to install user-defined functions?
 loc install_user_defined_functions "No"
@@ -61,7 +61,7 @@ args country_var
 	ren(_ISO3N_) (temp)
 	kountry temp, from(iso3n) to(iso3c)
 	drop temp
-	ren (_ISO3C_) (iso3c)
+	ren (_ISO3C_) (iso)
 end
 
 // create a group of logged variables
@@ -335,54 +335,6 @@ drop tokeep
 run_goldberg_full_regression "$full_same_sample_gold"
 
 
-// Excel macro for cleaning the finalized spreadsheet: -----------------------
-
-if (1==0) {
-
-
-Sub MergeExcelFiles()
-    Dim fnameList, fnameCurFile As Variant
-    Dim countFiles, countSheets As Integer
-    Dim wksCurSheet As Worksheet
-    Dim wbkCurBook, wbkSrcBook As Workbook
- 
-    fnameList = Application.GetOpenFilename(FileFilter:="Microsoft Excel Workbooks (*.xls;*.xlsx;*.xlsm),*.xls;*.xlsx;*.xlsm", Title:="Choose Excel files to merge", MultiSelect:=True)
- 
-    If (vbBoolean <> VarType(fnameList)) Then
- 
-        If (UBound(fnameList) > 0) Then
-            countFiles = 0
-            countSheets = 0
- 
-            Application.ScreenUpdating = False
-            Application.Calculation = xlCalculationManual
- 
-            Set wbkCurBook = ActiveWorkbook
- 
-            For Each fnameCurFile In fnameList
-                countFiles = countFiles + 1
- 
-                Set wbkSrcBook = Workbooks.Open(Filename:=fnameCurFile)
- 
-                For Each wksCurSheet In wbkSrcBook.Sheets
-                    countSheets = countSheets + 1
-                    wksCurSheet.Copy after:=wbkCurBook.Sheets(wbkCurBook.Sheets.Count)
-                Next
- 
-                wbkSrcBook.Close SaveChanges:=False
- 
-            Next
- 
-            Application.ScreenUpdating = True
-            Application.Calculation = xlCalculationAutomatic
- 
-            MsgBox "Processed " & countFiles & " files" & vbCrLf & "Merged " & countSheets & " worksheets", Title:="Merge Excel files"
-        End If
- 
-    Else
-        MsgBox "No files selected", Title:="Merge Excel files"
-    End If
-End Sub
 
 
 
@@ -390,73 +342,6 @@ End Sub
 
 
 
-
-
-
-
-
-
-Sub clean_hender()
-'
-' clean_hender Macro
-'
-' Keyboard Shortcut: Ctrl+d
-'
-    Cells.Replace What:="lndn", Replacement:= _
-        "Log DMSP pixels / area (original)", LookAt:=xlPart, SearchOrder:=xlByRows _
-        , MatchCase:=False, SearchFormat:=False, ReplaceFormat:=False, _
-        FormulaVersion:=xlReplaceFormula2
-    Cells.Replace What:="ln_sum_light_dmsp_div_area", Replacement:= _
-        "Log DMSP sum of pixels / area", LookAt:=xlPart, SearchOrder:=xlByRows, _
-        MatchCase:=False, SearchFormat:=False, ReplaceFormat:=False, _
-        FormulaVersion:=xlReplaceFormula2
-    Cells.Replace What:="ln_del_sum_pix_area", Replacement:= _
-        "Log VIIRS (cleaned) pixels / area", LookAt:=xlPart, SearchOrder:=xlByRows _
-        , MatchCase:=False, SearchFormat:=False, ReplaceFormat:=False, _
-        FormulaVersion:=xlReplaceFormula2
-    Cells.Replace What:="ln_sum_pix_area", Replacement:= _
-        "Log VIIRS (raw) sum of pixels / area", LookAt:=xlPart, SearchOrder:= _
-        xlByRows, MatchCase:=False, SearchFormat:=False, ReplaceFormat:=False, _
-        FormulaVersion:=xlReplaceFormula2
-    Cells.Replace What:="1b.cat_income", Replacement:="LIC", LookAt:=xlPart, _
-        SearchOrder:=xlByRows, MatchCase:=False, SearchFormat:=False, _
-        ReplaceFormat:=False, FormulaVersion:=xlReplaceFormula2
-    Cells.Replace What:="2.cat_income", Replacement:="LMIC", LookAt:=xlPart, _
-        SearchOrder:=xlByRows, MatchCase:=False, SearchFormat:=False, _
-        ReplaceFormat:=False, FormulaVersion:=xlReplaceFormula2
-    Cells.Replace What:="3.cat_income", Replacement:="UMIC", LookAt:=xlPart, _
-        SearchOrder:=xlByRows, MatchCase:=False, SearchFormat:=False, _
-        ReplaceFormat:=False, FormulaVersion:=xlReplaceFormula2
-    Cells.Replace What:="4.cat_income", Replacement:="HIC", LookAt:=xlPart, _
-        SearchOrder:=xlByRows, MatchCase:=False, SearchFormat:=False, _
-        ReplaceFormat:=False, FormulaVersion:=xlReplaceFormula2
-    Cells.Replace What:="#c.", Replacement:=" :: ", LookAt:=xlPart, _
-        SearchOrder:=xlByRows, MatchCase:=False, SearchFormat:=False, _
-        ReplaceFormat:=False, FormulaVersion:=xlReplaceFormula2
-    Cells.Replace What:="#co.", Replacement:=" :: ", LookAt:=xlPart, _
-        SearchOrder:=xlByRows, MatchCase:=False, SearchFormat:=False, _
-        ReplaceFormat:=False, FormulaVersion:=xlReplaceFormula2
-    ActiveWindow.SmallScroll Down:=-42
-    Range("I7").Select
-End Sub
-
-
-// IGNORE THE GREEN ARROW THINGS IN XLS
-
-Sub IgnoreNumsAsText()
-    Dim current As Range
-    For Each current In ActiveSheet.UsedRange.Cells
-        With current
-            If .Errors.Item(xlNumberAsText).Value = True Then
-                .Errors.Item(xlNumberAsText).Ignore = True
-            End If
-        End With
-    Next current
-End Sub
-
-
-
-}
 
 
 
