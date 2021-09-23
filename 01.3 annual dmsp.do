@@ -25,7 +25,6 @@ save `dmsp_hender'
 // Goldberg DMSP data --------------------------------------------------
 
 use "$raw_data/Angrist JEP replication/Data/Processed Data/master.dta", clear
-// keep if year >= 1992 & year <= 2012
 
 // average
 foreach var in g_ln_survey_fill g_ln_gdp g_ln_lights {
