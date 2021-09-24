@@ -151,10 +151,10 @@ foreach i in covid_response2 {
 	global `i' "$input/`i'.xls"
 	noisily capture erase "`i'.xls"
 	noisily capture erase "`i'.txt"
+	noisily capture erase "`i'.tex"
 }
 
 forval percentile = 0(20)80 { 
-local percentile 73
 use "$input/adm2_month_derived.dta", replace
 keep ln_del_sum_pix_area g_an_ln_del_sum_pix_area after_march cat_objectid cat_yr cat_objectid
 naomit
