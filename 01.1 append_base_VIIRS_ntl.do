@@ -1,6 +1,5 @@
 
-// ================================================================
-// File appends all VIIRS night lights files into 1 file. 
+// Appends all VIIRS night lights files into 1 file. 
 
 if ("$import_nightlights" == "yes") {
 	import delimited "$ntl_input/NTL_adm2_2012.csv", encoding(UTF-8) clear 
