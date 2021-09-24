@@ -15,12 +15,12 @@ drop _merge
 mmerge iso3c year quarter using "$input/imf_oxf_GDP_quarter.dta"
 drop _merge
 
-foreach i in objectid year month {
-    assert !missing(`i')
-}
-check_dup_iso "objectid year month"
+// foreach i in iso3c year month {
+//     assert !missing(`i')
+// }
+// check_dup_iso "objectid year month"
 
-save "adm2_month_allvars.dta", replace
+save "$input/adm2_month_allvars.dta", replace
 
 
 
