@@ -145,8 +145,8 @@
 	
 *** export to dta:
 	sort iso3c year quarter
-	label variable nom_gdp "IMF nominal GDP, quarterly, national, billions" 
-	label variable rgdp "IMF real GDP, quarterly, national, billions" 
+	label variable imf_quart_nom_gdp "IMF nominal GDP, quarterly, national, billions" 
+	label variable imf_quart_rgdp "IMF real GDP, quarterly, national, billions" 
 	save "$input/imf_oxf_GDP_quarter.dta", replace
 	
 *** ANNUAL =================================================================
