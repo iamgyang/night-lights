@@ -15,7 +15,7 @@ global code        "$root/HF_measures/code"
 global input       "$root/HF_measures/input"
 global output      "$root/HF_measures/output"
 global raw_data    "$root/raw-data"
-global ntl_input   "$root/raw-data/NTL Extracted Data 2012-2020"
+global ntl_input   "$root/raw-data/VIIRS NTL Extracted Data 2012-2020"
 
 // CHANGE THIS!! --- Do we want to install user-defined functions?
 loc install_user_defined_functions "No"
