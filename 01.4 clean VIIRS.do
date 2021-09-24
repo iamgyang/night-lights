@@ -38,19 +38,12 @@ foreach viirs_file_type in NTL_appended NTL_appended2 {
 
 	check_dup_id "objectid year month"
 
-	// per area variables
-	gen del_sum_pix_area = del_sum_pix / del_sum_area
-	gen sum_pix_area = sum_pix / sum_area
-
 	// label variables
 	label variable del_sum_area "VIIRS (cleaned) polygon area"
 	label variable del_sum_pix "VIIRS (cleaned) sum of pixels"
 	label variable sum_area "lights (raw) polygon area"
 	label variable std_pix "VIIRS (raw) standard deviation of pixels"
-	label variable del_std_pix "VIIRS (cleaned) standard deviation of pixels"
 	label variable sum_pix "VIIRS (raw) sum of pixels"
-	label variable sum_pix_area "VIIRS (raw) sum of pixels / area"
-	label variable del_sum_pix_area "VIIRS (cleaned) pixels / area"
 
 	// list all variables except ID variables & rename them
 	ds
@@ -82,6 +75,7 @@ check_dup_id "objectid year month quarter"
 
 destring std_pix, replace force
 foreach i in iso3c name_0 gid_1 name_1 gid_2 sum_area {
+	replace `i' = `i'_new if missing(`i')
 	drop `i'_new
 }
 
