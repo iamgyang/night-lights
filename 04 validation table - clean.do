@@ -11,12 +11,11 @@ rename (pwt_rgdpna WDI) (pwt_rgdpna_check WDI_check)
 tempfile pwt_wdi_check
 save `pwt_wdi_check'
 
+use "adm2_month_allvars.dta", clear
 collapse (sum) sum_area sum_pix (mean) pwt_rgdpna WDI WDI_ppp ///
 ox_rgdp_lcu, by(year quarter iso3c)
 rename (ox_rgdp_lcu pwt_rgdpna WDI WDI_ppp) (Oxford PWT WDI WDI_ppp)
-sort iso3c year
 collapse (sum) sum_area sum_pix Oxford (mean) PWT WDI WDI_ppp, by(year iso3c)
-replace Oxford = . if Oxford  == 0
 check_dup_id "iso3c year"
 
 // merging back in PWT by year-iso3c should give the exact same results 
@@ -38,7 +37,7 @@ replace sum_area = sum_area_repx
 drop sum_area_repx
 
 // in STATA (and in math) sum of empty set is 0, but here we want it to be missing.
-foreach i in del_sum_area del_sum_pix sum_area sum_pix {
+foreach i in del_sum_area del_sum_pix sum_area sum_pix Oxford {
 	replace `i' = . if `i' ==0
 }
 
