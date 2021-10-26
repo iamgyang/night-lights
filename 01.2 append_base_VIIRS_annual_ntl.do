@@ -1,5 +1,4 @@
-// Please run "00 master.do" to establish global macros prior.
-	
+
 // NEW VIIRS (annual) ----------------------------------------------------
 
 import delimited "$raw_data/VIIRS NTL Extracted Data 2 2012-2020/VIIRS_annual2.csv", clear

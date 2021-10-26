@@ -43,7 +43,7 @@ save `dmsp_goldberg', replace
 
 clear
 use `dmsp'
-drop _merge
+capture quietly drop _merge
 mmerge iso3c year using `dmsp_hender'
 drop _merge
 mmerge iso3c year using `dmsp_goldberg'
