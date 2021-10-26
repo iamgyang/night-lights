@@ -1,6 +1,8 @@
 // This file cleans VIIRS (i.e. creates a unified dataset with the negatives deleted for VIIRS
 
 foreach viirs_file_type in NTL_appended NTL_appended2 {
+	
+	
 	use "$input/`viirs_file_type'.dta", clear
 // 	gen n = _n
 // 	keep if n <= 10
@@ -18,7 +20,7 @@ foreach viirs_file_type in NTL_appended NTL_appended2 {
 
 	use `base_viirs'
 	keep if !missing(sum_pix)
-	rename (sum_pix pol_area) (del_sum_pix del_sum_area)
+	rename (sum_pix pol_area) (sum_pix sum_area)
 	tempfile ntl_raw
 	save `ntl_raw'
 
@@ -26,7 +28,7 @@ foreach viirs_file_type in NTL_appended NTL_appended2 {
 	keep if !missing(sum_pix)
 	// key difference between the cleaned and not cleaned VIIRS is that we delete here.
 	drop if sum_pix<0
-	rename (sum_pix pol_area) (sum_pix sum_area)
+	rename (sum_pix pol_area) (del_sum_pix del_sum_area)
 	tempfile ntl_clean
 	save `ntl_clean'
 	
@@ -58,13 +60,13 @@ foreach viirs_file_type in NTL_appended NTL_appended2 {
 			label variable `i'_new "`lab' New Ann. Series"
 		}
 	}
-	
 	// checks
 	foreach i in objectid year month quarter {
 		assert !missing(`i')
 	}
 	check_dup_id "objectid year month quarter"
 	
+	local viirs_file_type "NTL_appended2"
 	save "$input/`viirs_file_type'_cleaned.dta", replace
 }
 
@@ -74,6 +76,11 @@ drop _merge
 check_dup_id "objectid year month quarter"
 
 destring std_pix, replace force
+
+g diff_sum_area = sum_area/sum_area_new - 1
+assert abs(diff_sum_area)<0.001 if (!missing(diff_sum_area) & !missing(sum_area))
+drop diff_sum_area
+
 foreach i in iso3c name_0 gid_1 name_1 gid_2 sum_area {
 	replace `i' = `i'_new if missing(`i')
 	drop `i'_new
