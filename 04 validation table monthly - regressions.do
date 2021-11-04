@@ -1,96 +1,3 @@
-// 0. Preliminaries
-
-clear all 
-set more off
-set varabbrev off
-set scheme s1mono
-set type double, perm
-
-// CHANGE THIS!! --- Define your own directories:
-foreach user in "`c(username)'" {
-	global root "C:/Users/`user'/Dropbox/CGD GlobalSat/"
-}
-
-global code        "$root/HF_measures/code"
-global input       "$root/HF_measures/input"
-global output      "$root/HF_measures/output"
-global raw_data    "$root/raw-data"
-global ntl_input   "$root/raw-data/VIIRS NTL Extracted Data 2012-2020"
-
-// CHANGE THIS!! --- Do we want to install user-defined functions?
-loc install_user_defined_functions "No"
-
-if ("`install_user_defined_functions'" == "Yes") {
-	foreach i in rangestat wbopendata kountry mmerge outreg2 somersd ///
-	asgen moss reghdfe ftools fillmissing {
-		ssc install `i'
-	}
-}
-
-// CHANGE THIS!! --- Do we want to import nightlights from the tabular raw data? 
-// (takes a long time)
-global import_nightlights "yes"
-
-// PERSONAL PROGRAMS ----------------------------------------------
-
-// checks if IDs are duplicated
-quietly capture program drop check_dup_id
-program check_dup_id
-	args id_vars
-	preserve
-	keep `id_vars'
-	sort `id_vars'
-    quietly by `id_vars':  gen dup = cond(_N==1,0,_n)
-	assert dup == 0
-	restore
-	end
-
-// drops all missing observations
-quietly capture program drop naomit
-program naomit
-	foreach var of varlist _all {
-		drop if missing(`var')
-	}
-	end
-
-// creates new variable of ISO3C country codes
-quietly capture program drop conv_ccode
-program conv_ccode
-args country_var
-	kountry `country_var', from(other) stuck
-	ren(_ISO3N_) (temp)
-	kountry temp, from(iso3n) to(iso3c)
-	drop temp
-	ren (_ISO3C_) (iso3c)
-end
-
-// create a group of logged variables
-quietly capture program drop create_logvars
-program create_logvars
-args vars
-
-foreach i in `vars' {
-    gen ln_`i' = ln(`i')
-	loc lab: variable label `i'
-	di "`lab'"
-	label variable ln_`i' "Log `lab'"
-}
-end
-
-// ================================================================
-
-cd "$input"
-
-foreach i in covid_response {
-	global `i' "$input/`i'.xls"
-	noisily capture erase "`i'.xls"
-	noisily capture erase "`i'.txt"
-}
-
-// Regressions ----------------------------------------------------
-
-// Country-month regressions: -------------------------------------
-
 use "$input/sample_iso3c_month_allvars.dta", clear
 rename pwt_rgdpna PWT
 foreach i in sum_pix sum_area del_sum_pix del_sum_area {
@@ -258,8 +165,8 @@ label define income 1 "LIC" 2 "LMIC" 3 "UMIC" 4 "HIC"
 encode income, generate(cat_income) label(income) 
 
 // WB data quality index
-label define wbdqcat_3 1 "bad" 2 "ok" 3 "good"
-encode wbdqcat_3, generate(cat_wbdqcat_3) label(wbdqcat_3) 
+// label define wbdqcat_3 1 "bad" 2 "ok" 3 "good"
+// encode wbdqcat_3, generate(cat_wbdqcat_3) label(wbdqcat_3) 
 
 // month has to be ordered
 gen str_month = string(month)
@@ -288,304 +195,419 @@ foreach year_base in 1992 2012 {
 }
 
 // Fill in missing world bank quality index years with the average of the WB quality index:
-bysort cat_iso3c:  fillmissing cat_wbdqcat_3, with(mean)
-gen check = mod(cat_wbdqcat_3, 1)
-assert check == 0 | check == .
-drop check
+// bysort cat_iso3c:  fillmissing cat_wbdqcat_3, with(mean)
+// gen check = mod(cat_wbdqcat_3, 1)
+// assert check == 0 | check == .
+// drop check
 
 save "$input/month_iso3c_cleaned.dta", replace
 
+// adjusted this 
 use "$input/month_iso3c_cleaned.dta", clear
 
-gen date = mdy(month, 1, year)
-format date %dM,_CY
+rename *del_* *XXX*
+
+// swapped cleaned and uncleaned VIIRS versions:
+rename sum_pix del_sum_pix
+rename sum_area del_sum_area
+rename sum_pix_new del_sum_pix_new
+rename sum_pix_area del_sum_pix_area
+rename sum_pix_pc del_sum_pix_pc
+rename ln_sum_pix ln_del_sum_pix
+rename ln_sum_pix_area ln_del_sum_pix_area
+rename ln_sum_pix_pc ln_del_sum_pix_pc
+rename g_ln_sum_pix g_ln_del_sum_pix
+rename g_ln_sum_pix_area g_ln_del_sum_pix_area
+rename g_ln_sum_pix_pc g_ln_del_sum_pix_pc
+rename g_an_ln_sum_pix g_an_ln_del_sum_pix
+rename g_an_ln_sum_pix_area g_an_ln_del_sum_pix_area
+rename g_an_ln_sum_pix_pc g_an_ln_del_sum_pix_pc
+
+rename *XXX* **
+assert del_sum_pix >= sum_pix
+
+save "$input/month_iso3c_cleaned.dta", replace
+
+exit 
+
+// EVENT STUDY START ========================================================
+
+use "$input/month_iso3c_cleaned.dta", clear
+
+mmerge iso3c using "$raw_data/WorldPop/pop_density_90.dta"
 
 // Cutoff for COVID stringency:
-// We want to find the location in the data, such that when we split the data up 
-// at that point, taking the difference between an average of stringency of the PRE period and the POST 
-// period is the GREATEST. A good proxy for this is finding the cutoff where we had a sudden JUMP in stringency.
-foreach i of varlist oxcgrt* cornet* {
-		di "`i'"
-		
-		// first differences
-		sort iso3c year month
-		by iso3c: gen d_`i' = `i' - `i'[_n-1] if iso3c == iso3c[_n-1]
-		
-		// max of first differences
-		by iso3c: egen mx_d_`i' = max(d_`i')
-		
-		// post-covid period is 1 if after or equal to the max of first differences
-		gen pcov_`i' = 0
-		replace pcov_`i' = 1 if d_`i' == mx_d_`i' & !missing(mx_d_`i') & !missing(d_`i')
-		gen mo_pcov_`i' = month if pcov_`i' == 1
-		gen yr_pcov_`i' = year if pcov_`i' == 1
-		
-		sort iso3c year month
-		by iso3c: fillmissing mo_pcov_`i'
-		sort iso3c year month
-		by iso3c: fillmissing yr_pcov_`i'
-		
-		replace pcov_`i' = 1 if (month >= mo_pcov_`i' & year == yr_pcov_`i') | (year > yr_pcov_`i')
-		
-		g ttt_`i' = 12*(year - yr_pcov_`i') + (month-mo_pcov_`i')
-		
-		// label variable
-		loc lab: variable label `i'
-		di "`lab'"
-		label variable pcov_`i' "Post-Covid, according to `lab'"
-}
+// We set a cutoff for COVID stringency as above 40 on the Oxford index.
 
-drop d_* mx_* mo_pcov_* yr_pcov_*
+gen tr = 1 if oxcgrtstringency > 50
+replace tr = 0 if oxcgrtstringency <= 50
+replace tr = . if missing(oxcgrtstringency)
 
-foreach i of varlist oxcgrt* cornet* {
-	assert pcov_`i' == 0 if year <= 2019
-}
+// countries treated:
+bys iso3c: egen tr_at_all = max(tr)
+drop if missing(tr_at_all)
 
-save "$input/month_iso3c_cleaned.dta", replace
+// get treatment start date
+bys iso3c: egen tr_year = min(year) if tr == 1
+bys iso3c: egen tr_month = min(month) if tr == 1
+assert tr_year == . if tr_at_all == .
+assert tr_month == . if tr_at_all == .
 
-use "$input/month_iso3c_cleaned.dta", clear
+// each country should only have 1 treatment start date
+preserve
+keep iso3c tr_year tr_month
+duplicates drop
+drop if mi(tr_year) & mi(tr_month)
+check_dup_id "iso3c"
+restore
 
-// generate datasets to be used for graphs:
-foreach i of varlist oxcgrt* cornet* {
-	use "$input/month_iso3c_cleaned.dta", clear
-	keep if ttt_`i' >= -3 & ttt_`i' <= 2
-	keep ttt_`i' ln_del_sum_pix_area g_an_ln_del_sum_pix_area iso3c year month `i'
-	sort iso3c year month
-	collapse (mean) ln_del_sum_pix_area g_an_ln_del_sum_pix_area, by(iso3c ttt_`i')
-	naomit
-	g index = "`i'"
-	rename ttt* ttt
-	save "$input/graphs_pre_post_peak_`i'_diff.dta", replace
-}
+bys iso3c: fillmissing tr_year tr_month
+br iso3c year month tr tr_year tr_month
+assert tr_year != . if tr_at_all == 1
+assert tr_month != . if tr_at_all == 1
 
-clear
-use "$input/month_iso3c_cleaned.dta", clear
-drop if year < 1000000000000
-foreach i of varlist oxcgrt* cornet* {
-	append using "$input/graphs_pre_post_peak_`i'_diff.dta", force
-}
-keep ttt ln_del_sum_pix_area g_an_ln_del_sum_pix_area iso3c index
-save "$input/event_study_ntl_covid.dta", replace
+keep ln_del_sum_pix_area iso3c year month tr tr_year tr_month tr_at_all cat_year cat_month cat_iso3c
+g ttt = 12*(year - tr_year) + (month-tr_month)
+drop if mi(ln_del_sum_pix_area)
+
+gen post_tr = 1 if ttt >= 0
+replace post_tr = 0 if ttt < 0
+
+label variable iso3c "country"
+label variable year "year"
+label variable month "month"
+label variable ln_del_sum_pix_area "Log VIIRS (cleaned) / area"
+label variable tr "Whether the country was above this lockdown threshold in this month"
+label variable tr_at_all "Did the country experience lockdown at all?"
+label variable tr_year "Year of lockdown"
+label variable tr_month "Month of lockdown"
+label variable ttt "Time to lockdown (months)"
+label variable post_tr "Is this after lockdown?"
+br
+save "$input/ox_event_study.dta", replace
+
+// merge in built population density NTL:
+
+use "$raw_data/WorldPop/pop_density_90.dta", clear
+keep iso3c year month pol_area pos_sumpx
+check_dup_id "iso3c year month"
+assert pos_sumpx>=0
+assert pol_area>=0
+gen ln_del_sum_pix_area_90_cut = ln(pos_sumpx/pol_area)
+keep ln_del_sum_pix_area_90_cut iso3c year month
+naomit
+
+mmerge iso3c year month using "$input/ox_event_study.dta"
+drop _merge
+save "$input/ox_event_study.dta", replace
 
 
+// RUN REGRESSIONS --------------------------------
 
-// RUN REGRESSIONS ----------------------------------------------------------
-
-foreach i in covid_response_1 covid_response_2 covid_response_3 {
+foreach i in covid_response_3 {
 	global `i' "$input/`i'.xls"
 	noisily capture erase "`i'.xls"
 	noisily capture erase "`i'.txt"
 	noisily capture erase "`i'.tex"
 }
 
-// mean across all:
-use "$input/month_iso3c_cleaned.dta", clear
+use "$input/ox_event_study.dta", clear
 
-collapse (mean) cornet* oxcgrt* g_an_ln_del_sum_pix_area, by(iso3c year)
-naomit
-reg g_an_ln_del_sum_pix_area cornet* oxcgrt*, vce(hc3)
-outreg2 using "covid_response_1.tex", append label dec(3)
-foreach y in g_an_ln_del_sum_pix_area {
-	foreach x of varlist cornet* oxcgrt* {
-		reg `y' `x', vce(hc3)
-		outreg2 using "covid_response_1.tex", append label dec(3)
-	}
-}
+#delimit ;
+	eventdd ln_del_sum_pix_area, hdfe absorb(i.cat_year i.cat_iso3c i.cat_month) 
+	timevar(ttt) ci(rcap) cluster(cat_iso3c) inrange lags(10) leads(40) 
+	graph_op(ytitle("Log Lights / Area") xlabel(-40(5)10));
+#delimit cr
+gr_edit .style.editstyle declared_xsize(50) editcopy
+gr_edit .style.editstyle declared_ysize(50) editcopy
+graph export "$output/event_study_CI.pdf", replace
+	
+outreg2 using "covid_response_3.tex", append ///
+	label dec(3) ///
+	bdec(3) addstat(Countries, e(N_clust), ///
+	Adjusted Within R-squared, e(r2_a_within), ///
+	Within R-squared, e(r2_within))
 
+reghdfe ln_del_sum_pix_area post_tr, absorb(i.cat_year i.cat_iso3c i.cat_month) vce(cluster cat_iso3c)
+outreg2 using "covid_response_3.tex", append ///
+	label dec(3) keep (post_tr) ///
+	bdec(3) addstat(Countries, e(N_clust), ///
+	Adjusted Within R-squared, e(r2_a_within), ///
+	Within R-squared, e(r2_within))
 
-// country fixed effects:
+////////////////
+#delimit ;
+	eventdd ln_del_sum_pix_area_90_cut, hdfe absorb(i.cat_year i.cat_iso3c i.cat_month) 
+	timevar(ttt) ci(rcap) cluster(cat_iso3c) inrange lags(10) leads(40) 
+	graph_op(ytitle("Log Lights / Area") xlabel(-40(5)10));
+#delimit cr
+gr_edit .style.editstyle declared_xsize(50) editcopy
+gr_edit .style.editstyle declared_ysize(50) editcopy
+graph export "$output/event_study_CI.pdf", replace
 
-use "$input/month_iso3c_cleaned.dta", clear
-reghdfe g_an_ln_del_sum_pix_area cornet* oxcgrt*, absorb(cat_iso3c) vce(cluster cat_iso3c)
+outreg2 using "covid_response_3.tex", append ///
+	label dec(3) ///
+	bdec(3) addstat(Countries, e(N_clust), ///
+	Adjusted Within R-squared, e(r2_a_within), ///
+	Within R-squared, e(r2_within))
 
-outreg2 using "covid_response_2.tex", append ///
-label dec(3) keep (`x') ///
-bdec(3) addstat(Countries, e(N_clust), ///
-Adjusted Within R-squared, e(r2_a_within), ///
-Within R-squared, e(r2_within))
+reghdfe ln_del_sum_pix_area_90_cut post_tr, absorb(i.cat_year i.cat_iso3c i.cat_month) vce(cluster cat_iso3c)
+outreg2 using "covid_response_3.tex", append ///
+	label dec(3) keep (post_tr) ///
+	bdec(3) addstat(Countries, e(N_clust), ///
+	Adjusted Within R-squared, e(r2_a_within), ///
+	Within R-squared, e(r2_within))
+	
 
-foreach y in g_an_ln_del_sum_pix_area {
-	foreach x of varlist cornet* oxcgrt* {
-		reghdfe `y' `x', absorb(cat_iso3c) vce(cluster cat_iso3c)
-		
-		outreg2 using "covid_response_2.tex", append ///
-		label dec(3) keep (`x') ///
-		bdec(3) addstat(Countries, e(N_clust), ///
-		Adjusted Within R-squared, e(r2_a_within), ///
-		Within R-squared, e(r2_within))
-	}
-}
+exit
+// =============================================================================
 
-// robust OLS: 
-
-use "$input/month_iso3c_cleaned.dta", clear
-reg g_an_ln_del_sum_pix_area cornet* oxcgrt*, vce(hc3)
-outreg2 using "covid_response_3.tex", append label dec(3)
-
-foreach y in g_an_ln_del_sum_pix_area {
-	foreach x of varlist cornet* oxcgrt* {
-		reg `y' `x', vce(hc3)
-		outreg2 using "covid_response_3.tex", append label dec(3)
-	}
-}
-
-
-
-
-// -------------------------------------------------------------------------
-// -------------------------------------------------------------------------
-// at the country-month-level, are there associations between lights and covid indicators?
-
-use "$input/clean_validation_monthly_base.dta", clear
-
-// reghdfe ln_sum_pix cornet* oxcgrt*, absorb(cat_iso3c cat_month) vce(cluster cat_iso3c)
-// outreg2 using "covid_response.xls", append ///
-// 		label dec(3) keep (cornet* oxcgrt*) ///
+// ARCHIVED OLD CODE
+//
+//
+// use "$input/month_iso3c_cleaned.dta", clear
+//
+// // generate datasets to be used for graphs:
+// foreach i of varlist oxcgrt* cornet* {
+// 	use "$input/month_iso3c_cleaned.dta", clear
+// 	keep if ttt_`i' >= -3 & ttt_`i' <= 2
+// 	keep ttt_`i' ln_del_sum_pix_area g_an_ln_del_sum_pix_area iso3c year month `i'
+// 	sort iso3c year month
+// 	collapse (mean) ln_del_sum_pix_area g_an_ln_del_sum_pix_area, by(iso3c ttt_`i')
+// 	naomit
+// 	g index = "`i'"
+// 	rename ttt* ttt
+// 	save "$input/graphs_pre_post_peak_`i'_diff.dta", replace
+// }
+//
+// clear
+// use "$input/month_iso3c_cleaned.dta", clear
+// drop if year < 1000000000000
+// foreach i of varlist oxcgrt* cornet* {
+// 	append using "$input/graphs_pre_post_peak_`i'_diff.dta", force
+// }
+// keep ttt ln_del_sum_pix_area g_an_ln_del_sum_pix_area iso3c index
+// save "$input/event_study_ntl_covid.dta", replace
+//
+//
+//
+// // RUN REGRESSIONS ----------------------------------------------------------
+//
+// foreach i in covid_response_1 covid_response_2 covid_response_3 {
+// 	global `i' "$input/`i'.xls"
+// 	noisily capture erase "`i'.xls"
+// 	noisily capture erase "`i'.txt"
+// 	noisily capture erase "`i'.tex"
+// }
+//
+// // mean across all:
+// use "$input/month_iso3c_cleaned.dta", clear
+//
+// collapse (mean) cornet* oxcgrt* g_an_ln_del_sum_pix_area, by(iso3c year)
+// naomit
+// reg g_an_ln_del_sum_pix_area cornet* oxcgrt*, vce(hc3)
+// outreg2 using "covid_response_1.tex", append label dec(3)
+// foreach y in g_an_ln_del_sum_pix_area {
+// 	foreach x of varlist cornet* oxcgrt* {
+// 		reg `y' `x', vce(hc3)
+// 		outreg2 using "covid_response_1.tex", append label dec(3)
+// 	}
+// }
+//
+//
+// // country fixed effects:
+//
+// use "$input/month_iso3c_cleaned.dta", clear
+// reghdfe g_an_ln_del_sum_pix_area cornet* oxcgrt*, absorb(cat_iso3c) vce(cluster cat_iso3c)
+//
+// outreg2 using "covid_response_2.tex", append ///
+// label dec(3) keep (`x') ///
+// bdec(3) addstat(Countries, e(N_clust), ///
+// Adjusted Within R-squared, e(r2_a_within), ///
+// Within R-squared, e(r2_within))
+//
+// foreach y in g_an_ln_del_sum_pix_area {
+// 	foreach x of varlist cornet* oxcgrt* {
+// 		reghdfe `y' `x', absorb(cat_iso3c) vce(cluster cat_iso3c)
+//		
+// 		outreg2 using "covid_response_2.tex", append ///
+// 		label dec(3) keep (`x') ///
 // 		bdec(3) addstat(Countries, e(N_clust), ///
 // 		Adjusted Within R-squared, e(r2_a_within), ///
 // 		Within R-squared, e(r2_within))
-
-reghdfe g_an_ln_del_sum_pix_area cornet* oxcgrt*, absorb(cat_iso3c cat_month) vce(cluster cat_iso3c)
-
-outreg2 using "covid_response.tex", append ///
-	label dec(3) keep (`x') ///
-	bdec(3) addstat(Countries, e(N_clust), ///
-	Adjusted Within R-squared, e(r2_a_within), ///
-	Within R-squared, e(r2_within))
-
-outreg2 using "covid_response.xls", append ///
-	label dec(3) keep (cornet* oxcgrt*) ///
-	bdec(3) addstat(Countries, e(N_clust), ///
-	Adjusted Within R-squared, e(r2_a_within), ///
-	Within R-squared, e(r2_within))
-
-foreach y in g_an_ln_del_sum_pix_area { //ln_sum_pix {
-	foreach x of varlist cornet* oxcgrt* {
-		reghdfe `y' `x', absorb(cat_iso3c cat_month) vce(cluster cat_iso3c)
-		
-		outreg2 using "covid_response.xls", append ///
-		label dec(3) keep (`x') ///
-		bdec(3) addstat(Countries, e(N_clust), ///
-		Adjusted Within R-squared, e(r2_a_within), ///
-		Within R-squared, e(r2_within))
-		
-		outreg2 using "covid_response.tex", append ///
-		label dec(3) keep (`x') ///
-		bdec(3) addstat(Countries, e(N_clust), ///
-		Adjusted Within R-squared, e(r2_a_within), ///
-		Within R-squared, e(r2_within))
-		
-// 		// -------------------------------------------------
-// 		regress `y' `x' i.cat_iso3c##i.cat_month, robust
+// 	}
+// }
+//
+// // robust OLS: 
+//
+// use "$input/month_iso3c_cleaned.dta", clear
+// reg g_an_ln_del_sum_pix_area cornet* oxcgrt*, vce(hc3)
+// outreg2 using "covid_response_3.tex", append label dec(3)
+//
+// foreach y in g_an_ln_del_sum_pix_area {
+// 	foreach x of varlist cornet* oxcgrt* {
+// 		reg `y' `x', vce(hc3)
+// 		outreg2 using "covid_response_3.tex", append label dec(3)
+// 	}
+// }
+//
+//
+//
+//
+// // -------------------------------------------------------------------------
+// // -------------------------------------------------------------------------
+// // at the country-month-level, are there associations between lights and covid indicators?
+//
+// use "$input/clean_validation_monthly_base.dta", clear
+//
+// // reghdfe ln_sum_pix cornet* oxcgrt*, absorb(cat_iso3c cat_month) vce(cluster cat_iso3c)
+// // outreg2 using "covid_response.xls", append ///
+// // 		label dec(3) keep (cornet* oxcgrt*) ///
+// // 		bdec(3) addstat(Countries, e(N_clust), ///
+// // 		Adjusted Within R-squared, e(r2_a_within), ///
+// // 		Within R-squared, e(r2_within))
+//
+// reghdfe g_an_ln_del_sum_pix_area cornet* oxcgrt*, absorb(cat_iso3c cat_month) vce(cluster cat_iso3c)
+//
+// outreg2 using "covid_response.tex", append ///
+// 	label dec(3) keep (`x') ///
+// 	bdec(3) addstat(Countries, e(N_clust), ///
+// 	Adjusted Within R-squared, e(r2_a_within), ///
+// 	Within R-squared, e(r2_within))
+//
+// outreg2 using "covid_response.xls", append ///
+// 	label dec(3) keep (cornet* oxcgrt*) ///
+// 	bdec(3) addstat(Countries, e(N_clust), ///
+// 	Adjusted Within R-squared, e(r2_a_within), ///
+// 	Within R-squared, e(r2_within))
+//
+// foreach y in g_an_ln_del_sum_pix_area { //ln_sum_pix {
+// 	foreach x of varlist cornet* oxcgrt* {
+// 		reghdfe `y' `x', absorb(cat_iso3c cat_month) vce(cluster cat_iso3c)
 //		
 // 		outreg2 using "covid_response.xls", append ///
-// 		label dec(3) keep (`x' i.cat_month) ///
-// 		bdec(3) 
-	}
-}
-
-// Diff in Diff -------------------------------------------------------------
-
-// Is there a drop in NTL after March at the ADM2 level?
-
-cd "$input"
-
-foreach i in covid_response2 {
-	global `i' "$input/`i'.xls"
-	noisily capture erase "`i'.xls"
-	noisily capture erase "`i'.txt"
-	noisily capture erase "`i'.tex"
-}
-
-forval percentile = 0(20)80 { 
-use "$input/adm2_month_derived.dta", replace
-keep ln_del_sum_pix_area g_an_ln_del_sum_pix_area after_march cat_objectid cat_yr cat_objectid
-naomit
-centile ln_del_sum_pix_area, centile(`percentile')
-local perc `r(c_1)'
-drop if cat_yr <= 3
-drop if ln_del_sum_pix_area < `perc'
-
-reghdfe g_an_ln_del_sum_pix_area c.after_march##i.cat_yr, absorb(cat_objectid) vce(cluster cat_objectid)
-outreg2 using "covid_response2.tex", append ///
-	label dec(3) keep (c.after_march##i.cat_yr) ///
-	bdec(3) addstat("ADM2 Regions", e(N_clust), ///
-	Adjusted Within R-squared, e(r2_a_within), ///
-	Within R-squared, e(r2_within)) ///
-	title("`percentile'")
-
-}
-
-// Table:
-// Create table of differences at different *quantiles* of NTL
-
-tempfile difftable
-	clear
-	set obs 1
-	gen year = 0
-	gen premar = 0
-	gen postmar = 0
-	gen dd = 0
-save `difftable'
-
-forval percentile = 0(20)80 { 
-use "$input/adm2_month_derived.dta", replace
-keep ln_del_sum_pix_area g_an_ln_del_sum_pix_area after_march cat_objectid cat_yr cat_objectid
-naomit
-centile ln_del_sum_pix_area, centile(`percentile')
-local perc `r(c_1)'
-drop if cat_yr <= 3
-drop if ln_del_sum_pix_area < `perc'
-
-collapse (mean) g_an_ln_del_sum_pix_area, by(cat_yr after_march)
-reshape wide g_an_ln_del_sum_pix_area, i(cat_yr) j(after_march)
-rename (g_an_ln_del_sum_pix_area0 g_an_ln_del_sum_pix_area1) (premar postmar)
-gen dd = postmar - premar
-decode cat_yr, gen(year)
-destring year, replace
-drop cat_yr
-gen percentile = `percentile'
-
-append using `difftable'
-save `difftable', replace
-}
-
-clear
-use `difftable'
-sort percentile year
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+// 		label dec(3) keep (`x') ///
+// 		bdec(3) addstat(Countries, e(N_clust), ///
+// 		Adjusted Within R-squared, e(r2_a_within), ///
+// 		Within R-squared, e(r2_within))
+//		
+// 		outreg2 using "covid_response.tex", append ///
+// 		label dec(3) keep (`x') ///
+// 		bdec(3) addstat(Countries, e(N_clust), ///
+// 		Adjusted Within R-squared, e(r2_a_within), ///
+// 		Within R-squared, e(r2_within))
+//		
+// // 		// -------------------------------------------------
+// // 		regress `y' `x' i.cat_iso3c##i.cat_month, robust
+// //		
+// // 		outreg2 using "covid_response.xls", append ///
+// // 		label dec(3) keep (`x' i.cat_month) ///
+// // 		bdec(3) 
+// 	}
+// }
+//
+// // Diff in Diff -------------------------------------------------------------
+//
+// // Is there a drop in NTL after March at the ADM2 level?
+//
+// cd "$input"
+//
+// foreach i in covid_response2 {
+// 	global `i' "$input/`i'.xls"
+// 	noisily capture erase "`i'.xls"
+// 	noisily capture erase "`i'.txt"
+// 	noisily capture erase "`i'.tex"
+// }
+//
+// forval percentile = 0(20)80 { 
+// use "$input/adm2_month_derived.dta", replace
+// keep ln_del_sum_pix_area g_an_ln_del_sum_pix_area after_march cat_objectid cat_yr cat_objectid
+// naomit
+// centile ln_del_sum_pix_area, centile(`percentile')
+// local perc `r(c_1)'
+// drop if cat_yr <= 3
+// drop if ln_del_sum_pix_area < `perc'
+//
+// reghdfe g_an_ln_del_sum_pix_area c.after_march##i.cat_yr, absorb(cat_objectid) vce(cluster cat_objectid)
+// outreg2 using "covid_response2.tex", append ///
+// 	label dec(3) keep (c.after_march##i.cat_yr) ///
+// 	bdec(3) addstat("ADM2 Regions", e(N_clust), ///
+// 	Adjusted Within R-squared, e(r2_a_within), ///
+// 	Within R-squared, e(r2_within)) ///
+// 	title("`percentile'")
+//
+// }
+//
+// // Table:
+// // Create table of differences at different *quantiles* of NTL
+//
+// tempfile difftable
+// 	clear
+// 	set obs 1
+// 	gen year = 0
+// 	gen premar = 0
+// 	gen postmar = 0
+// 	gen dd = 0
+// save `difftable'
+//
+// forval percentile = 0(20)80 { 
+// use "$input/adm2_month_derived.dta", replace
+// keep ln_del_sum_pix_area g_an_ln_del_sum_pix_area after_march cat_objectid cat_yr cat_objectid
+// naomit
+// centile ln_del_sum_pix_area, centile(`percentile')
+// local perc `r(c_1)'
+// drop if cat_yr <= 3
+// drop if ln_del_sum_pix_area < `perc'
+//
+// collapse (mean) g_an_ln_del_sum_pix_area, by(cat_yr after_march)
+// reshape wide g_an_ln_del_sum_pix_area, i(cat_yr) j(after_march)
+// rename (g_an_ln_del_sum_pix_area0 g_an_ln_del_sum_pix_area1) (premar postmar)
+// gen dd = postmar - premar
+// decode cat_yr, gen(year)
+// destring year, replace
+// drop cat_yr
+// gen percentile = `percentile'
+//
+// append using `difftable'
+// save `difftable', replace
+// }
+//
+// clear
+// use `difftable'
+// sort percentile year
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
