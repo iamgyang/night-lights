@@ -65,6 +65,9 @@ mmerge objectid using "$raw_data/WorldPop/world_pop_2015_16.dta"
 drop _merge
 mmerge 
 
+save "$input/adm2_month_allvars.dta", replace
+
+
 
 // MERGE IN WAR DATA
 
@@ -72,7 +75,40 @@ mmerge
 // MERGE IN GOOGLE MOBILITY
 
 
+// CODE FOR FINAL 11/09/2021: (annual-country-level): -------------
+clear
+input str70 datasets
+	"$input/all_dmsp.dta"
+	"$input/wb_pop_estimates_cleaned.dta"
+	"$input/historical_wb_income_classifications.dta"
+	"$input/imf_pwt_GDP_annual.dta"
+end
+levelsof datasets, local(datasets)
+
+use "$input/iso3c_year_viirs_new.dta", replace
+foreach i in `datasets' {
+	di "`i'"
+	mmerge iso3c year using "`i'"
+	drop _merge
+}
+
+keep if year >= 1992 & year <= 2020
+drop country
+save "$input/iso3c_year_base.dta", replace
 
 
-save "$input/adm2_month_allvars.dta", replace
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
