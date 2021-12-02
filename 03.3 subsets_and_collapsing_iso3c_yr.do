@@ -28,30 +28,36 @@ foreach i in del_sum_pix del_sum_area {
     replace `i' = . if `i' == 0
 }
 
+// make GDP values dollars (not billions or anything)
+// convert from billions:
+foreach i in PWT WDI {
+    replace `i' = `i' * (10^9)
+}
+
 // per area variables:
 bys iso3c: fillmissing sum_area
 gen del_sum_pix_area = del_sum_pix / del_sum_area
 gen sum_light_dmsp_div_area = sum_light_dmsp / sum_area
 
 // label variables
-label variable _gdppercap_constant_ppp_gold "WB real GDP PPP per capita (Goldberg)"
+label variable _gdppercap_constant_ppp_gold "WB real GDP PPP per capita (AGJ)"
 label variable del_sum_area "VIIRS (cleaned) polygon area"
-label variable del_sum_pix "VIIRS (cleaned) sum of pixels"
+label variable del_sum_pix "VIIRS (cleaned) pixels"
 label variable del_sum_pix_area "VIIRS (cleaned) pixels / area"
-label variable exp_hws_wdi "WDI real GDP LCU (original)"
+label variable exp_hws_wdi "WDI real GDP LCU (HSW)"
 label variable income "WB historical income classification"
-label variable lightpercap_gold "DMSP sum of pixels per capita (Goldberg)"
-label variable ln_gdp_gold "Log real GDP PPP per capita (WB, Goldberg)"
-label variable lndn "Log DMSP pixels / area (original)"
-label variable lngdpwdilocal "Log WDI real GDP LCU (original)"
-label variable mean_g_ln_gdp_gold "Mean Growth in Log WB real GDP PPP per capita (Goldberg)"
-label variable mean_g_ln_lights_gold "Mean Growth in DMSP sum of pixels per capita (Goldberg)"
+label variable lightpercap_gold "DMSP pixels per capita (AGJ)"
+label variable ln_gdp_gold "Log real GDP PPP per capita (WB, AGJ)"
+label variable lndn "Log DMSP pixels / area (HSW)"
+label variable lngdpwdilocal "Log WDI real GDP LCU (HSW)"
+label variable mean_g_ln_gdp_gold "Mean Growth in Log WB real GDP PPP per capita (AGJ)"
+label variable mean_g_ln_lights_gold "Mean Growth in DMSP pixels per capita (AGJ)"
 label variable poptotal "population (UN)"
 label variable PWT "PWT real GDP PPP"
 label variable sum_area "lights (raw) polygon area"
-label variable sum_light_dmsp "DMSP sum of pixels"
-label variable sum_light_dmsp_div_area "DMSP sum of pixels / area"
-label variable sumoflights_gold "DMSP sum of pixels (Goldberg)"
+label variable sum_light_dmsp "DMSP pixels (HR)"
+label variable sum_light_dmsp_div_area "DMSP pixels / area (HR)"
+label variable sumoflights_gold "DMSP pixels (AGJ)"
 label variable WDI "WDI real GDP LCU"
 label variable WDI_ppp "WDI real GDP PPP"
 
@@ -190,6 +196,9 @@ bysort cat_iso3c:  fillmissing cat_wbdqcat_3, with(mean)
 gen check = mod(cat_wbdqcat_3, 1)
 assert check == 0 | check == .
 drop check
+
+// label WB data quality
+label variable cat_wbdqcat_3 "WB data quality"
 
 save "$input/sample_`area'_`time'_pop_den_`pop_den'_allvars2.dta", replace
 
