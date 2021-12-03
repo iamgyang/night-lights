@@ -7,13 +7,11 @@ set scheme s1mono
 set type double, perm
 
 // CHANGE THIS!! --- Define your own directories:
-foreach user in "`c(username)'" {
-	global root "C:/Users/`user'/Dropbox/CGD GlobalSat/"
-}
-
+global root        "C:/Users/`c(username)'/Dropbox/CGD GlobalSat/"
 global code        "$root/HF_measures/code"
 global input       "$root/HF_measures/input"
 global output      "$root/HF_measures/output"
+global overleaf	   "C:/Users/`c(username)'/Dropbox/Apps/Overleaf/Night Lights"
 global raw_data    "$root/raw-data"
 global ntl_input   "$root/raw-data/VIIRS NTL Extracted Data 2012-2020"
 
