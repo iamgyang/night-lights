@@ -4,18 +4,6 @@ local time year
 // COPY OF SUBSETTING AND COLLAPSING CODE (FOR COUNTRY AND YEAR) ----------
 
 clear
-input str40 measure_vars
-	"del_sum_pix"
-	"del_sum_pix_area"
-	"PWT"
-	"sum_light_dmsp"
-	"sum_light_dmsp_div_area"
-	"sumoflights_gold"
-	"WDI"
-	"WDI_ppp"
-end
-tempfile measure_vars_tempfile
-save `measure_vars_tempfile'
 
 // import dataset:
 use "$input/iso3c_year_base.dta", clear
@@ -40,7 +28,7 @@ gen del_sum_pix_area = del_sum_pix / del_sum_area
 gen sum_light_dmsp_div_area = sum_light_dmsp / sum_area
 
 // label variables
-label variable _gdppercap_constant_ppp_gold "WB real GDP PPP per capita (AGJ)"
+label variable rgdppc_ppp_gold "WB real GDP PPP per capita (AGJ)"
 label variable del_sum_area "VIIRS (cleaned) polygon area"
 label variable del_sum_pix "VIIRS (cleaned) pixels"
 label variable del_sum_pix_area "VIIRS (cleaned) pixels / area"
@@ -50,8 +38,12 @@ label variable lightpercap_gold "DMSP pixels per capita (AGJ)"
 label variable ln_gdp_gold "Log real GDP PPP per capita (WB, AGJ)"
 label variable lndn "Log DMSP pixels / area (HSW)"
 label variable lngdpwdilocal "Log WDI real GDP LCU (HSW)"
-label variable mean_g_ln_gdp_gold "Mean Growth in Log WB real GDP PPP per capita (AGJ)"
-label variable mean_g_ln_lights_gold "Mean Growth in DMSP pixels per capita (AGJ)"
+/*
+note that AGJ in their paper do not label their per capita variables in the 
+variable NAME as per capita, but they actually ARE per capita
+*/
+label variable mean_g_ln_gdp_gold "Growth in Log WB real GDP PPP per capita (AGJ)"
+label variable mean_g_ln_lights_gold "Growth in DMSP pixels (AGJ) per capita"
 label variable poptotal "population (UN)"
 label variable PWT "PWT real GDP PPP"
 label variable sum_area "lights (raw) polygon area"
@@ -67,7 +59,18 @@ save `dataset_up_to_this_point'
 // create local "measure_vars" with all quantitative variables of interest:
 clear
 macro drop measure_vars
-use `measure_vars_tempfile'
+clear
+input str40 measure_vars
+	"del_sum_pix"
+	"del_sum_pix_area"
+	"PWT"
+	"sum_light_dmsp"
+	"sum_light_dmsp_div_area"
+	"sumoflights_gold"
+	"WDI"
+	"WDI_ppp"
+	"sumoflights_gold"
+end
 levelsof measure_vars, local(measure_vars)
 clear
 
@@ -82,7 +85,7 @@ if ("`area'" == "iso3c") {
 		if strpos("`i'", "area") {
 		    continue
 		}
-		gen `i'_pc = `i' / poptotal
+		gen `i'_pc = `i' / poptotal // Goldberg data has total population scaled by 10,000 (poptotal/100000)
 		loc lab: variable label `i'
 		di "`lab'"
 		label variable `i'_pc "`lab' per capita"
@@ -99,12 +102,19 @@ if ("`area'" == "iso3c") {
 }
 
 // log values
+
+/*
+note that Goldberg log lights will differ from its original replication file
+because we have new and updated population figures. Specifically, Moldova was 
+had been misreporting inaccurate statistics regarding its population for years.
+See https://balkaninsight.com/2020/01/16/moldova-faces-existential-population-crisis/
+*/
 foreach i in `measure_vars' {
 	gen ln_`i' = ln(`i')
 	loc lab: variable label `i'
 	di "`lab'"
 	label variable ln_`i' "Log `lab'"
-}    
+}
 
 // First differences on the logged variables
 // before taking first differences, HAVE TO have all years, months, etc.
@@ -203,7 +213,15 @@ label variable cat_wbdqcat_3 "WB data quality"
 save "$input/sample_`area'_`time'_pop_den_`pop_den'_allvars2.dta", replace
 
 
+// these are the same values
+// gg_ln_sumoflights_gold_pc/g_ln_lights_gold
+// gg_ln_lights_gold/g_ln_lights_gold
+// gg_ln_sumoflights_gold_pc/g_ln_lights_gold
+// ln_sumoflights_gold_pc/ln_lights
 
+// capture drop diff
+// gen diff = abs(ln_lights_gold/ln_sumoflights_gold_pc - 1)
+// br iso3c year ln_sumoflights_gold_pc ln_lights_gold if diff > 0.01 & !missing(diff)
 
 
 
