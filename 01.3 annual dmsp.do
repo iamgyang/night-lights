@@ -28,14 +28,17 @@ use "$raw_data/Angrist JEP replication/Data/Processed Data/master.dta", clear
 
 // average
 foreach var in g_ln_survey_fill g_ln_gdp g_ln_lights {
-bys code: egen mean_`var' = mean(`var')
-bys code: egen sd_`var' = sd(`var')
+bys code: egen mean_`var' = mean(`var') if !missing(`var')
+bys code: egen sd_`var' = sd(`var') if !missing(`var')
 }
-
-keep code year mean_g_ln_lights mean_g_ln_gdp _gdppercap_constant_ppp lightpercap ln_gdp sumoflights
-rename (code year mean_g_ln_lights mean_g_ln_gdp _gdppercap_constant_ppp ///
-lightpercap ln_gdp sumoflights) (iso3c year mean_g_ln_lights_gold mean_g_ln_gdp_gold ///
-_gdppercap_constant_ppp_gold lightpercap_gold ln_gdp_gold sumoflights_gold)
+keep code year mean_g_ln_lights mean_g_ln_gdp g_ln_lights _gdppercap_constant_ppp lightpercap ln_gdp sumoflights
+rename _gdppercap_constant_ppp rgdppc_ppp
+rename * *_gold
+rename (code_gold year_gold) (iso3c year)
+foreach i of varlist *_gold {
+    loc lab: variable label `i'
+	label variable `i' "`lab' Goldberg"
+}
 
 save `dmsp_goldberg', replace
 
