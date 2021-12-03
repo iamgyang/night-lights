@@ -29,21 +29,37 @@ assert lngdpwdilocal == lngdpwdilocal_orig
 save "$input/vars_hender.dta", replace
 
 // Create a function that runs the regressions we want and outputs a table:
-capture program drop run_henderson_full_regression
-program run_henderson_full_regression
+capture program drop gr_lev_reg
+program gr_lev_reg
 	
+	////////////////////////////////////////////////////////////////////////////
+	// 	parameters
 	// output TEX file (outfile)
 	// dependent variabls (dep_vars)
 	// variables to be absorbed (abs_vars)
-	syntax, outfile(string) dep_vars(namelist) abs_vars(namelist) [growth levels]
+	// specify whether it's a growth or levels regression (growth levels)
+	syntax, outfile(string) dep_vars(namelist) [abs_vars(namelist) growth levels]
 	
+	////////////////////////////////////////////////////////////////////////////
 	eststo clear
 
 	// create a local that contains the lights variable labels
 	foreach i in `dep_vars' {
 		loc lab: variable label `i'
+		
+		// Remove parts of the label for formatting purposes
+		local lab = subinstr("`lab'", " pixels", "", .)
+		local lab = subinstr("`lab'", "/area", "", .)
+		local lab = subinstr("`lab'", " / area", "", .)
+		local lab = subinstr("`lab'", "per capita", "", .)
+		local lab = subinstr("`lab'", "Log ", "", .)
+		local lab = subinstr("`lab'", "Growth in", "", .)
+		local lab = subinstr("`lab'", "Mean", "", .)
+		local lab = subinstr("`lab'", "Diff. ", "", .)
+		local lab = subinstr("`lab'", "  ", " ", .)
+		local lab = subinstr("`lab'", "  ", " ", .)
 		local macrolen: length local dep_var_labs
-
+		
 		// get the start and end year
 		preserve
 		keep `i' year
@@ -52,7 +68,7 @@ program run_henderson_full_regression
 		duplicates drop 
 		summarize year
 		restore
-
+		
 		/*
 		If the macro has stuff in it, then append the new string to the end
 		of the macro. Otherwise, create the macro.
@@ -82,69 +98,105 @@ program run_henderson_full_regression
 		
 		// for formatting, we have to rename the variables into generic
 		// names
-		rename `light_var' log_lights_area_generic
 		
 		// GROWTH regressions
-		if ("`growth'" != "") {
+		if ("`growth'" != "" & "`levels'" == "") {
 			preserve
+			rename `light_var' log_lights_area_generic
+			
 			// For growth regressions, growth is defined as the average of the 
 			// logged differences across each year, so we have to look at the variable 
 			// of interest and collapse it.
-			keep g_ln_WDI_ppp_pc cat_iso3c year `light_var' cat_wbdqcat_3
+
+			keep g_ln_WDI_ppp_pc cat_iso3c year log_lights_area_generic cat_wbdqcat_3
 			naomit
-			collapse (mean) g_ln_WDI_ppp_pc cat_iso3c year `light_var', by(cat_wbdqcat_3)
+			collapse (mean) g_ln_WDI_ppp_pc year log_lights_area_generic, by(cat_iso3c cat_wbdqcat_3)
 			eststo: regress g_ln_WDI_ppp_pc log_lights_area_generic, vce(hc3)
-			eststo: regress g_ln_WDI_ppp_pc log_lights_area_generic i.cat_wbdqcat_3 ///
-				c.log_lights_area_generic##i.cat_wbdqcat_3, vce(hc3)
+			eststo: regress g_ln_WDI_ppp_pc c.log_lights_area_generic##i.cat_wbdqcat_3, vce(hc3)
 			restore
-			local label_append "Growth in "
+			local label_prefix "Growth in "
+			local label_suffix " per capita"
 		}
 		
 		// LEVELS regressions
 		// bare levels regression: country & year fixed effects
 		else if ("`growth'" == "" & "`levels'" != "") {
-		preserve
-		eststo: reghdfe ln_WDI log_lights_area_generic, absorb(`abs_vars') ///
-			vce(cluster cat_iso3c)
-			estadd local NC `e(N_clust)'
-			local y= round(`e(r2_a_within)', .001)
-			estadd local WR2 `y'
+			preserve
+			rename `light_var' log_lights_area_generic
+			eststo: reghdfe ln_WDI log_lights_area_generic, absorb(`abs_vars') ///
+				vce(cluster cat_iso3c)
+				estadd local NC `e(N_clust)'
+				local y= round(`e(r2_a_within)', .001)
+				estadd local WR2 `y'
 
-		// levels regression with income interaction & income dummy (maintain country-year FE)
-		eststo: reghdfe ln_WDI log_lights_area_generic ///
-			c.log_lights_area_generic#i.cat_wbdqcat_3, ///
-			absorb(`abs_vars') vce(cluster cat_iso3c)
-			estadd local NC `e(N_clust)'
-			local y = round(`e(r2_a_within)', .001)
-			estadd local WR2 `y'
-		restore
+			// levels regression with income interaction & income dummy (maintain country-year FE)
+			eststo: reghdfe ln_WDI c.log_lights_area_generic##i.cat_wbdqcat_3, ///
+				absorb(`abs_vars') vce(cluster cat_iso3c)
+				estadd local NC `e(N_clust)'
+				local y = round(`e(r2_a_within)', .001)
+				estadd local WR2 `y'
+			restore
+		}
+		else if ("`growth'" == "`levels'") {
+		    _error("You must specify either a growth or a levels regression.")
 		}
 	}
-
+	
+	if ("`growth'" == "" & "`levels'" != "") {
+	    local scalar_labels `"scalars("NC Number of Countries" "WR2 Adjusted Within R-squared")"'
+	}
+	
 	// output
 	gen log_lights_area_generic = .
-	label variable log_lights_area_generic "`label_append'Log Lights/Area"
+	label variable log_lights_area_generic "`label_prefix'Log Lights/Area`label_suffix'"
 	esttab using "`outfile'", replace f  ///
 		b(3) se(3) star(* 0.10 ** 0.05 *** 0.01) ///
-		label booktabs nomtitle collabels(none) nobaselevels ///
-		scalars("NC Number of Countries" "WR2 Adjusted Within R-squared") sfmt(3) ///
+		label booktabs nomtitle nobaselevels collabels(none) ///
+		`scalar_labels' ///
+		sfmt(3) ///
 		mgroups("`dep_var_labs'", pattern(1 0 1 0 1 0) ///
 		prefix(\multicolumn{@span}{c}{) suffix(}) span ///
-		erepeat(\cmidrule(lr){@span}))
+		erepeat(\cmidrule(lr){@span})) drop(*.cat_wbdqcat_3 _cons)
 end
 
+// TEST: ---------------------------------------------------------------
+
+use "$input/sample_iso3c_year_pop_den__allvars2.dta", clear
+keep iso3c year ln_sum_light_dmsp_div_area ln_del_sum_pix_area
+naomit
+br
+scatter(ln_sum_light_dmsp_div_area  ln_del_sum_pix_area)
+
 // ---------------------------------------------------------------------
-// HENDERSON 
+// LEVELS
 // ---------------------------------------------------------------------
 
 // full regression Henderson ------------------------------------
 
 use "$input/sample_iso3c_year_pop_den__allvars2.dta", clear
+/*
+From Henderson 2012:
+"We exclude Bahrain and Singapore because they are outliers in terms of
+having a large percentage of their pixels top-coded, Equatorial Guinea
+because nearly all of its lights are from gas flares (see Section V below),
+and Serbia and Montenegro because of changing borders."
+*/
+replace lndn = . if iso3c == "SGP"
+replace lndn = . if iso3c == "GNQ"
+replace lndn = . if iso3c == "BHR"
+replace lndn = . if iso3c == "SRB"
+replace lndn = . if iso3c == "MNE"
 
-run_henderson_full_regression, levels outfile("$full_hender") dep_vars(lndn ln_sum_light_dmsp_div_area ln_del_sum_pix_area) abs_vars(cat_iso3c cat_year)
+gr_lev_reg, levels outfile("$full_hender") ///
+	dep_vars(lndn ln_sum_light_dmsp_div_area ln_del_sum_pix_area) abs_vars(cat_iso3c cat_year)
 
 // // regression on overlaps Henderson ---------------------------
 use "$input/sample_iso3c_year_pop_den__allvars2.dta", clear
+replace lndn = . if iso3c == "SGP"
+replace lndn = . if iso3c == "GNQ"
+replace lndn = . if iso3c == "BHR"
+replace lndn = . if iso3c == "SRB"
+replace lndn = . if iso3c == "MNE"
 
 keep if year == 2012 | year == 2013
 keep ln_sum_light_dmsp_div_area ln_del_sum_pix_area ln_WDI cat_wbdqcat_3 cat_iso3c iso3c year
@@ -154,11 +206,21 @@ naomit
 
 save "$input/clean_validation_overlap.dta", replace
 
-run_henderson_full_regression, levels outfile("$overlaps_hender") dep_vars(ln_sum_light_dmsp_div_area ln_del_sum_pix_area) abs_vars(cat_iso3c)
+gr_lev_reg, levels outfile("$overlaps_hender") ///
+	dep_vars(ln_sum_light_dmsp_div_area ln_del_sum_pix_area) abs_vars(cat_iso3c)
 
-// full regression Henderson on same sample as overlapping -------
+// full regression Henderson on same sample as overlapping -------------------
 
 use "$input/clean_validation_overlap.dta", clear
+
+/*
+we need at least 2 observations per country to make country and time fixed 
+effects, so drop those observations that don't have that
+*/
+bysort iso3c: gen n = _N
+drop if n < 2
+
+// store a local w/ the countries in the same sample as overlapping regressions.
 levelsof iso3c, local(countries_in_overlap)
 
 use "$input/sample_iso3c_year_pop_den__allvars2.dta", clear
@@ -176,72 +238,82 @@ assert `length_after' == `length_before'
 
 drop tokeep
 
-run_henderson_full_regression, levels outfile("$full_same_sample_hender") dep_vars(lndn ln_sum_light_dmsp_div_area ln_del_sum_pix_area) abs_vars(cat_iso3c cat_year)
+gr_lev_reg, levels outfile("$full_same_sample_hender") ///
+	dep_vars(lndn ln_sum_light_dmsp_div_area ln_del_sum_pix_area) ///
+	abs_vars(cat_iso3c cat_year)
 
+// --------------------------------------------------------------------------
+// GROWTH
+// --------------------------------------------------------------------------
 
-// ---------------------------------------------------------------------
-// Goldberg 
-// ---------------------------------------------------------------------
-
-// full regression Goldberg ------------------------------------
+// full regression Goldberg -------------------------------------------------
 use "$input/sample_iso3c_year_pop_den__allvars2.dta", replace
 
-run_goldberg_full_regression, growth outfile("$full_gold") dep_vars(g_ln_del_sum_pix_pc g_ln_sum_light_dmsp_pc mean_g_ln_lights_gold)
+gr_lev_reg, growth outfile("$full_gold") ///
+	dep_vars(g_ln_sumoflights_gold_pc g_ln_sum_light_dmsp_pc g_ln_del_sum_pix_pc)
 
-// regression on overlaps Goldberg ------------------------------------
+// regression on overlaps Goldberg -----------------------------------------
 use "$input/sample_iso3c_year_pop_den__allvars2.dta", replace
 
 keep if year == 2013
 keep g_ln_del_sum_pix_pc g_ln_sum_light_dmsp_pc g_ln_WDI_ppp_pc ///
 	cat_iso3c ln_WDI_ppp_pc_2012 cat_wbdqcat_3 year iso3c
 
-ds, has(type numeric)
-foreach var of varlist `r(varlist)' {
-	drop if `var' == .
-}
+// remove missing variables
+naomit
+
 save "$input/clean_validation_overlap_gold.dta", replace
 
 // run regressions:
-foreach x_var in g_ln_del_sum_pix_pc g_ln_sum_light_dmsp_pc {
-foreach y_var in g_ln_WDI_ppp_pc {
-	capture regress `y_var' `x_var', robust
-	capture outreg2 using "$overlaps_gold", append label dec(4)
+gr_lev_reg, growth outfile("$overlaps_gold") ///
+	dep_vars(g_ln_sum_light_dmsp_pc g_ln_del_sum_pix_pc)
+
+// full regression Goldberg on same sample as overlapping ------------------
+use "$input/clean_validation_overlap_gold.dta", clear
+levelsof iso3c, local(countries_in_overlap)
+
+// restrict sample:
+use "$input/sample_iso3c_year_pop_den__allvars2.dta", clear
+gen tokeep = "no"
+foreach country_code in `countries_in_overlap' {
+	replace tokeep = "yes" if iso3c == "`country_code'"
+}
+keep if tokeep == "yes"
+
+// check that we have the same number of countries
+local length_before: length local countries_in_overlap
+levelsof iso3c, local(countries_in_overlap_after)
+local length_after: length local countries_in_overlap_after
+assert `length_after' == `length_before'
+
+drop tokeep
+
+// run regressions
+gr_lev_reg, growth outfile("$full_same_sample_gold") ///
+	dep_vars(g_ln_sumoflights_gold_pc g_ln_sum_light_dmsp_pc g_ln_del_sum_pix_pc)
+
 	
-	capture regress `y_var' `x_var' i.cat_wbdqcat_3 ///
-		c.`x_var'##i.cat_wbdqcat_3, robust
-	capture outreg2 using "$overlaps_gold", append label dec(4)
-}
-}
-
-// // full regression Goldberg on same sample as overlapping ------
-// use "$input/clean_validation_overlap_gold.dta", clear
-// levelsof iso3c, local(countries_in_overlap)
-//
-// // restrict sample:
-// use "$input/sample_iso3c_year_pop_den__allvars2.dta", clear
-// gen tokeep = "no"
-// foreach country_code in `countries_in_overlap' {
-// 	replace tokeep = "yes" if iso3c == "`country_code'"
-// }
-// keep if tokeep == "yes"
-//
-// // check that we have the same number of countries
-// local length_before: length local countries_in_overlap
-// levelsof iso3c, local(countries_in_overlap_after)
-// local length_after: length local countries_in_overlap_after
-// assert `length_after' == `length_before'
-//
-// drop tokeep
-//
-// // run regressions
-// run_goldberg_full_regression "$full_same_sample_gold"
-//
-//
 
 
 
-////////////
-	// seeout using "C:/Users/gyang/Dropbox/CGD GlobalSat//HF_measures/input/full_hender.txt"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
