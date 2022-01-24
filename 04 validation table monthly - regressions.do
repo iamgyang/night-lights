@@ -239,8 +239,8 @@ mmerge iso3c using "$raw_data/WorldPop/pop_density_90.dta"
 // Cutoff for COVID stringency:
 // We set a cutoff for COVID stringency as above 40 on the Oxford index.
 
-gen tr = 1 if oxcgrtstringency > 50
-replace tr = 0 if oxcgrtstringency <= 50
+gen tr = 1 if oxcgrtstringency >= 50
+replace tr = 0 if oxcgrtstringency < 50
 replace tr = . if missing(oxcgrtstringency)
 
 // countries treated:
@@ -318,23 +318,47 @@ use "$input/ox_event_study.dta", clear
 	timevar(ttt) ci(rcap) cluster(cat_iso3c) inrange lags(10) leads(40) 
 	graph_op(ytitle("Log Lights / Area") xlabel(-40(5)10));
 #delimit cr
-gr_edit .style.editstyle declared_xsize(50) editcopy
-gr_edit .style.editstyle declared_ysize(50) editcopy
-graph export "$output/event_study_CI.pdf", replace
+graph export "$overleaf/event_study_CI.pdf", replace
+
+// outreg2 using "covid_response_3.tex", append ///
+// 	label dec(3) ///
+// 	bdec(3) addstat(Countries, e(N_clust), ///
+// 	Adjusted Within R-squared, e(r2_a_within), ///
+// 	Within R-squared, e(r2_within))
 	
-outreg2 using "covid_response_3.tex", append ///
-	label dec(3) ///
-	bdec(3) addstat(Countries, e(N_clust), ///
-	Adjusted Within R-squared, e(r2_a_within), ///
-	Within R-squared, e(r2_within))
+// OXFORD DIFF-N-DIFF:
+	use "$input/ox_event_study.dta", clear
+	est clear
+	replace tr = 0 if missing(tr)
+	foreach y_var in ln_del_sum_pix_area ln_del_sum_pix_area_90_cut {
+		// count the number of ADM2 regions that were treated and store into local, x:
+		preserve
+		drop if missing(tr) | tr == 0 | missing(`y_var')
+		quietly tab cat_iso3c
+		local x `r(r)'
+		restore
+		
+		label variable tr "$\ge$ 50 Oxf Stringency"
+		
+		// the tr variable is 1 if we are in a month where the treatment is greater than the percentile cutoff.
+		eststo: reghdfe `y_var' tr, absorb(i.cat_year i.cat_iso3c i.cat_month) vce(cluster cat_iso3c)
+		// number of ADM2 clusters
+		estadd local NC `e(N_clust)'
+		// number of ADM2 regions that were treated
+		estadd local TC `x'
+		// Within R squared
+		local y= round(`e(r2_a_within)', .001)
+		estadd local WR2 `y'		
+	}
+	
+	esttab using "$overleaf/covid_response.tex", replace f ///
+	b(3) se(3) star(* 0.10 ** 0.05 *** 0.01) ///
+	label booktabs nonotes ///
+	mlabel("Full" "90th Percentile Population Density") ///
+	scalars("NC Number of Countries" "TC Number of Treated Countries" "WR2 Adjusted Within R-squared") ///
+	drop(_cons)
 
-reghdfe ln_del_sum_pix_area post_tr, absorb(i.cat_year i.cat_iso3c i.cat_month) vce(cluster cat_iso3c)
-outreg2 using "covid_response_3.tex", append ///
-	label dec(3) keep (post_tr) ///
-	bdec(3) addstat(Countries, e(N_clust), ///
-	Adjusted Within R-squared, e(r2_a_within), ///
-	Within R-squared, e(r2_within))
-
+	
 ////////////////
 #delimit ;
 	eventdd ln_del_sum_pix_area_90_cut, hdfe absorb(i.cat_year i.cat_iso3c i.cat_month) 
