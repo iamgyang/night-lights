@@ -269,7 +269,21 @@ gr_lev_reg, levels outfile("$overleaf/NUTS_regression.tex") ///
 	dep_vars(ln_del_sum_pix_area) ///
 	abs_vars(cat_iso3c cat_year)
 	
-	
+// make graphs
+create_logvars "gdp del_sum_pix"
+label variable ln_del_sum_pix "Log Sum of Pixels"
+label variable ln_gdp "Log GDP"
+label variable ln_del_sum_pix_area "Log Sum of Pixels/Area"
+scatter ln_gdp  ln_del_sum_pix 
+scatter ln_gdp  ln_del_sum_pix_area 
+gr export "$overleaf/scatter_NUTS_log_log_pixel_gdp.pdf", replace
+reg ln_gdp  ln_del_sum_pix
+
+reghdfe ln_gdp ln_del_sum_pix, absorb(cat_iso3c) ///
+				vce(cluster cat_iso3c)
+
+br
+
 // --------------------------------------------------------------------------
 // GROWTH
 // --------------------------------------------------------------------------
