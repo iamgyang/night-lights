@@ -266,7 +266,7 @@ encode wbdqcat_3, gen(cat_wbdqcat_3)
 // run regressions 
 rename ln_gdp ln_WDI
 gr_lev_reg, levels outfile("$overleaf/NUTS_regression.tex") ///
-	dep_vars(ln_del_sum_pix_area) ///
+	dep_vars(ln_del_sum_pix) ///
 	abs_vars(cat_iso3c cat_year)
 	
 // make graphs
@@ -274,13 +274,12 @@ create_logvars "gdp del_sum_pix"
 label variable ln_del_sum_pix "Log Sum of Pixels"
 label variable ln_gdp "Log GDP"
 label variable ln_del_sum_pix_area "Log Sum of Pixels/Area"
-scatter ln_gdp  ln_del_sum_pix 
-scatter ln_gdp  ln_del_sum_pix_area 
+scatter ln_gdp  ln_del_sum_pix || lfit ln_gdp ln_del_sum_pix, xlab(8(2)16) ylab(8(2)16)
+scatter ln_gdp  ln_del_sum_pix_area, xlab(8(2)16) ylab(8(2)16)
 gr export "$overleaf/scatter_NUTS_log_log_pixel_gdp.pdf", replace
 reg ln_gdp  ln_del_sum_pix
 
-reghdfe ln_gdp ln_del_sum_pix, absorb(cat_iso3c) ///
-				vce(cluster cat_iso3c)
+reghdfe ln_gdp ln_del_sum_pix, absorb(cat_iso3c) vce(cluster cat_iso3c)
 
 br
 
