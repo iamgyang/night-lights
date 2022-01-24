@@ -35,7 +35,7 @@ foreach n in 1 1 1 1 1 1 1 {
 gen tr = 1 if `treat_var' >= `perc'
 
 
-// do not define treatment for any event that lasted less than 1 week's time
+// do not define treatment for any event that lasted less than X week's time
 if ("`week_restriction'" == "duration greater than three weeks") {
 	replace tr = 0 if `treat_var'_dur <= 3*7
 }
@@ -94,41 +94,59 @@ save "$input/`treat_var'_disaster_event_study_`pctile'_percentile_`week_restrict
 
 // first delete all the regression table files:
 foreach i in war_response_1 {
-	noisily capture erase "$output/`i'.xls"
-	noisily capture erase "$output/`i'.txt"
-	noisily capture erase "$output/`i'.tex"
+	noisily capture erase "$overleaf/`i'.xls"
+	noisily capture erase "$overleaf/`i'.txt"
+	noisily capture erase "$overleaf/`i'.tex"
 }
 
 foreach week_restriction in "duration greater than three weeks" " " {
 foreach treat_var in affected deaths {
-foreach pctile in 90 60 80 40 20 {
+foreach pctile in 99 90 60 80 40 20 {
 
 use "$input/`treat_var'_disaster_event_study_`pctile'_percentile_`week_restriction'.dta", clear
 
 keep if ((ttt <= 30) & (ttt>=-30)) | (missing(ttt))
 
-#delimit ;
-	eventdd ln_del_sum_pix_area, hdfe absorb(i.cat_year i.cat_objectid i.cat_month) 
-	timevar(ttt) ci(rcap) cluster(cat_objectid) inrange lags(30) leads(30) 
-	graph_op(ytitle("Log Lights / Area") xlabel(-30(5)30))
-	;
-#delimit cr
-gr export "$output/event_study_`treat_var'_`pctile'_`week_restriction'.png", as(png) width(3000) height(2000) replace
+// #delimit ;
+// 	eventdd ln_del_sum_pix_area, hdfe absorb(i.cat_year i.cat_objectid i.cat_month) 
+// 	timevar(ttt) ci(rcap) cluster(cat_objectid) inrange lags(30) leads(30) 
+// 	graph_op(ytitle("Log Lights / Area") xlabel(-30(5)30))
+// 	;
+// #delimit cr
+// gr export "$output/event_study_`treat_var'_`pctile'_`week_restriction'.png", as(png) width(3000) height(2000) replace
 
-outreg2 using "$output/war_response_1.tex", append ///
-	label dec(3) ///
-	bdec(3) addstat(Countries, e(N_clust), ///
-	Adjusted Within R-squared, e(r2_a_within), ///
-	Within R-squared, e(r2_within)) ///
-	title(">`perc' `treat_var'" "(`pctile' percentile) `week_restriction'")
+// outreg2 using "$output/war_response_1.tex", append ///
+// 	label dec(3) ///
+// 	bdec(3) addstat(Countries, e(N_clust), ///
+// 	Adjusted Within R-squared, e(r2_a_within), ///
+// 	Within R-squared, e(r2_within)) ///
+// 	title(">`perc' `treat_var'" "(`pctile' percentile) `week_restriction'")
 
-reghdfe ln_del_sum_pix_area post_tr, absorb(i.cat_year i.cat_objectid i.cat_month) vce(cluster cat_objectid)
-outreg2 using "$output/war_response_1.tex", append ///
-	label dec(3) keep (post_tr) ///
-	bdec(3) addstat(Countries, e(N_clust), ///
-	Adjusted Within R-squared, e(r2_a_within), ///
-	Within R-squared, e(r2_within)) ///
-	title(">`perc' `treat_var'" "(`pctile' percentile) `week_restriction'")
+
+eststo: reghdfe ln_del_sum_pix_area post_tr, absorb(i.cat_year i.cat_objectid i.cat_month) vce(cluster cat_objectid), title("$\ge$`perc' `treat_var'" "(`pctile' percentile) `week_restriction'")
+	estadd local NC `e(N_clust)'
+	local y= round(`e(r2_a_within)', .001)
+	estadd local WR2 `y'
+	
+// esttab using "$overleaf/war_response_1.tex", append f  ///
+// 	b(3) se(3) star(* 0.10 ** 0.05 *** 0.01) ///
+// 	label booktabs nomtitle nobaselevels collabels(none) ///
+// 	scalars("NC Number of Countries" "WR2 Adjusted Within R-squared") ///
+// 	title("$\ge$`perc' `treat_var'" "(`pctile' percentile) `week_restriction'") ///
+// 	sfmt(3)
+// 	drop(*.cat_wbdqcat_3 _cons)
+
+eststo clear
+//
+//
+//
+// reghdfe ln_del_sum_pix_area post_tr, absorb(i.cat_year i.cat_objectid i.cat_month) vce(cluster cat_objectid)
+// outreg2 using "$output/war_response_1.tex", append ///
+// 	label dec(3) keep (post_tr) ///
+// 	bdec(3) addstat(Countries, e(N_clust), ///
+// 	Adjusted Within R-squared, e(r2_a_within), ///
+// 	Within R-squared, e(r2_within)) ///
+// 	title(">`perc' `treat_var'" "(`pctile' percentile) `week_restriction'")
 }
 }
 }
