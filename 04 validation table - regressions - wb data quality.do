@@ -159,13 +159,6 @@ program gr_lev_reg
 		erepeat(\cmidrule(lr){@span})) drop(*.cat_wbdqcat_3 _cons)
 end
 
-// TEST: ---------------------------------------------------------------
-
-use "$input/sample_iso3c_year_pop_den__allvars2.dta", clear
-keep iso3c year ln_sum_light_dmsp_div_area ln_del_sum_pix_area
-naomit
-br
-scatter(ln_sum_light_dmsp_div_area  ln_del_sum_pix_area)
 
 // ---------------------------------------------------------------------
 // LEVELS
@@ -242,6 +235,41 @@ gr_lev_reg, levels outfile("$full_same_sample_hender") ///
 	dep_vars(lndn ln_sum_light_dmsp_div_area ln_del_sum_pix_area) ///
 	abs_vars(cat_iso3c cat_year)
 
+// Europe Regional GDP ------------------------------------------------------
+
+// get WB statistical quality indicators:
+use "$input/sample_iso3c_year_pop_den__allvars2.dta", clear
+keep wbdqcat_3 iso3c
+duplicates drop
+naomit
+tempfile wb_stat_capacity
+save `wb_stat_capacity'
+
+// get Europe regional GDP variable and generate categorical variables and log variables
+use "$input/NUTS_validation.dta", clear
+encode country, gen( cat_iso3c )
+gen yr = string(year)
+encode yr, gen(cat_year)
+drop yr
+create_logvars "del_sum_pix_area gdp"
+naomit
+conv_ccode country
+replace iso = "CZE" if country == "Czechia"
+rename iso iso3c
+
+// merge the statistical capacity numbers:
+mmerge iso3c using `wb_stat_capacity'
+naomit
+drop _merge
+encode wbdqcat_3, gen(cat_wbdqcat_3)
+
+// run regressions 
+rename ln_gdp ln_WDI
+gr_lev_reg, levels outfile("$overleaf/NUTS_regression.tex") ///
+	dep_vars(ln_del_sum_pix_area) ///
+	abs_vars(cat_iso3c cat_year)
+	
+	
 // --------------------------------------------------------------------------
 // GROWTH
 // --------------------------------------------------------------------------
