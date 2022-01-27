@@ -38,6 +38,7 @@ program gr_lev_reg
 	// dependent variabls (dep_vars)
 	// variables to be absorbed (abs_vars)
 	// specify whether it's a growth or levels regression (growth levels)
+	
 	syntax, outfile(string) dep_vars(namelist) [abs_vars(namelist) growth levels]
 	
 	////////////////////////////////////////////////////////////////////////////
@@ -251,7 +252,7 @@ encode country, gen( cat_iso3c )
 gen yr = string(year)
 encode yr, gen(cat_year)
 drop yr
-create_logvars "del_sum_pix_area gdp"
+create_logvars "del_sum_pix del_sum_pix_area gdp"
 naomit
 conv_ccode country
 replace iso = "CZE" if country == "Czechia"
@@ -265,23 +266,148 @@ encode wbdqcat_3, gen(cat_wbdqcat_3)
 
 // run regressions 
 rename ln_gdp ln_WDI
-gr_lev_reg, levels outfile("$overleaf/NUTS_regression.tex") ///
+
+// ok, this is going to be messy code, but I'm just adding another function here 
+// that is basically the same one as above, but without WB statistical capacity
+
+// Create a function that runs the regressions we want and outputs a table:
+capture program drop gr_lev_reg_adjusted
+program gr_lev_reg_adjusted
+	
+	////////////////////////////////////////////////////////////////////////////
+	// 	parameters
+	// output TEX file (outfile)
+	// dependent variabls (dep_vars)
+	// variables to be absorbed (abs_vars)
+	// specify whether it's a growth or levels regression (growth levels)
+	
+	syntax, outfile(string) dep_vars(namelist) [abs_vars(namelist) growth levels]
+	
+	////////////////////////////////////////////////////////////////////////////
+	eststo clear
+
+	// create a local that contains the lights variable labels
+	foreach i in `dep_vars' {
+		loc lab: variable label `i'
+		
+		// Remove parts of the label for formatting purposes
+		local lab = subinstr("`lab'", " pixels", "", .)
+		local lab = subinstr("`lab'", "/area", "", .)
+		local lab = subinstr("`lab'", " / area", "", .)
+		local lab = subinstr("`lab'", "per capita", "", .)
+		local lab = subinstr("`lab'", "Log ", "", .)
+		local lab = subinstr("`lab'", "Growth in", "", .)
+		local lab = subinstr("`lab'", "Mean", "", .)
+		local lab = subinstr("`lab'", "Diff. ", "", .)
+		local lab = subinstr("`lab'", "  ", " ", .)
+		local lab = subinstr("`lab'", "  ", " ", .)
+		local macrolen: length local dep_var_labs
+		
+		// get the start and end year
+		preserve
+		keep `i' year
+		naomit
+		keep year
+		duplicates drop 
+		summarize year
+		restore
+		
+		/*
+		If the macro has stuff in it, then append the new string to the end
+		of the macro. Otherwise, create the macro.
+		*/
+		if (`macrolen'>0) {
+			local dep_var_labs "`dep_var_labs'" "\shortstack{`lab'\\(`r(min)' - `r(max)')}"
+		} 
+		else if (`macrolen'==0) {
+			local dep_var_labs "\shortstack{`lab'\\(`r(min)' - `r(max)')}"
+		}
+	}
+
+	// loop through night lights variables to do the regressions
+	foreach light_var in `dep_vars' {
+		
+		if (inlist("`light_var'", "ln_del_sum_pix_area", "g_ln_del_sum_pix_pc", ///
+		"g_ln_sum_pix_pc")) {
+			local year 2012
+		}
+		else if (inlist("`light_var'", "lndn", "ln_sum_light_dmsp_div_area", ///
+		"g_ln_sum_light_dmsp_pc", "mean_g_ln_lights_gold")) {
+			local year 1992
+		}
+		
+		// store the variable label of the light variable we're using in `lab'
+		loc lab: variable label `light_var'
+		
+		// for formatting, we have to rename the variables into generic
+		// names
+		
+		// GROWTH regressions
+		if ("`growth'" != "" & "`levels'" == "") {
+			preserve
+			rename `light_var' log_lights_area_generic
+			
+			// For growth regressions, growth is defined as the average of the 
+			// logged differences across each year, so we have to look at the variable 
+			// of interest and collapse it.
+
+			keep g_ln_WDI_ppp_pc cat_iso3c year log_lights_area_generic
+			naomit
+			collapse (mean) g_ln_WDI_ppp_pc year log_lights_area_generic, by(cat_iso3c)
+			eststo: regress g_ln_WDI_ppp_pc log_lights_area_generic, vce(hc3)
+			restore
+			local label_prefix "Growth in "
+			local label_suffix " per capita"
+		}
+		
+		// LEVELS regressions
+		// bare levels regression: country & year fixed effects
+		else if ("`growth'" == "" & "`levels'" != "") {
+			preserve
+			rename `light_var' log_lights_area_generic
+			eststo: reghdfe ln_WDI log_lights_area_generic, absorb(`abs_vars') ///
+				vce(cluster cat_iso3c)
+				estadd local NC `e(N_clust)'
+				local y= round(`e(r2_a_within)', .001)
+				estadd local WR2 `y'
+			restore
+		}
+		else if ("`growth'" == "`levels'") {
+		    _error("You must specify either a growth or a levels regression.")
+		}
+	}
+	
+	if ("`growth'" == "" & "`levels'" != "") {
+	    local scalar_labels `"scalars("NC Number of Countries" "WR2 Adjusted Within R-squared")"'
+	}
+	
+	// output
+	gen log_lights_area_generic = .
+	label variable log_lights_area_generic "`label_prefix'Log Lights`label_suffix'"
+	esttab using "`outfile'", replace f  ///
+		b(3) se(3) star(* 0.10 ** 0.05 *** 0.01) ///
+		label booktabs nomtitle nobaselevels collabels(none) ///
+		`scalar_labels' ///
+		sfmt(3) ///
+		mgroups("`dep_var_labs'", pattern(1 0 1 0 1 0) ///
+		prefix(\multicolumn{@span}{c}{) suffix(}) span ///
+		erepeat(\cmidrule(lr){@span})) drop(_cons)
+end
+
+gr_lev_reg_adjusted, levels outfile("$overleaf/NUTS_regression.tex") ///
 	dep_vars(ln_del_sum_pix) ///
 	abs_vars(cat_iso3c cat_year)
 	
 // make graphs
-create_logvars "gdp del_sum_pix"
+rename ln_WDI ln_gdp
 label variable ln_del_sum_pix "Log Sum of Pixels"
 label variable ln_gdp "Log GDP"
 label variable ln_del_sum_pix_area "Log Sum of Pixels/Area"
-scatter ln_gdp  ln_del_sum_pix || lfit ln_gdp ln_del_sum_pix, xlab(8(2)16) ylab(8(2)16)
-scatter ln_gdp  ln_del_sum_pix_area, xlab(8(2)16) ylab(8(2)16)
+sepscatter ln_gdp ln_del_sum_pix, mc(red blue) ms(Oh + ) separate(country) legend(size(*0.5) symxsize(*5) position(0) bplacement(nwest) region(lwidth(none)))
 gr export "$overleaf/scatter_NUTS_log_log_pixel_gdp.pdf", replace
-reg ln_gdp  ln_del_sum_pix
+sepscatter ln_gdp ln_del_sum_pix_area, mc(red blue) ms(Oh + ) separate(country) legend(size(*0.5) symxsize(*5) position(0) bplacement(nwest) region(lwidth(none)))
+gr export "$overleaf/scatter_NUTS_log_log_pixel_gdp_area.pdf", replace
 
-reghdfe ln_gdp ln_del_sum_pix, absorb(cat_iso3c) vce(cluster cat_iso3c)
-
-br
 
 // --------------------------------------------------------------------------
 // GROWTH
@@ -332,14 +458,6 @@ drop tokeep
 // run regressions
 gr_lev_reg, growth outfile("$full_same_sample_gold") ///
 	dep_vars(g_ln_sumoflights_gold_pc g_ln_sum_light_dmsp_pc g_ln_del_sum_pix_pc)
-
-	
-
-
-
-
-
-
 
 
 
