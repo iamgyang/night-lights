@@ -20,10 +20,30 @@ loc install_user_defined_functions "No"
 
 if ("`install_user_defined_functions'" == "Yes") {
 	foreach i in rangestat wbopendata kountry mmerge outreg2 somersd ///
-	asgen moss reghdfe ftools fillmissing eventdd matsort {
+	asgen moss reghdfe ftools fillmissing eventdd matsort ranktest ivreg2 ///
+	ivreghdfe{
 		ssc install `i'
 	}
 }
+
+// installation for ivreghdfe:
+// * Install ftools (remove program if it existed previously)
+// cap ado uninstall ftools
+// net install ftools, from("https://raw.githubusercontent.com/sergiocorreia/ftools/master/src/")
+//
+// * Install reghdfe
+// cap ado uninstall reghdfe
+// net install reghdfe, from("https://raw.githubusercontent.com/sergiocorreia/reghdfe/master/src/")
+//
+// * Install ivreg2, the core package
+// cap ado uninstall ivreg2
+// ssc install ivreg2
+//
+// * Finally, install this package
+// cap ado uninstall ivreghdfe
+// net install ivreghdfe, from(https://raw.githubusercontent.com/sergiocorreia/ivreghdfe/master/src/)
+
+
 
 // CHANGE THIS!! --- Do we want to import nightlights from the tabular raw data? 
 // (takes a long time)
