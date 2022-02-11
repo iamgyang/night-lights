@@ -31,161 +31,259 @@ create_logvars "taxes_exc_soc imports exports credit rgdp_lcu elec"
 mmerge iso3c year using "$input/sample_iso3c_year_pop_den__allvars2.dta"
 keep if _merge == 3
 
-loc dep_vars ln_taxes_exc_soc ln_imports ln_exports ln_credit ln_elec
 
 save "$input/clean_synthetic_reg_prior.dta", replace
 
-// for each year from 2013 - 2018, do a cross validation exercise where we 
-// use the pre-cutoff year to fit the regression, and use the post-cutoff year to 
-// predict GDP. make a graph of actual vs. predicted for each of those years, 
-// as well as a simple regression table.
-// ---------------------------------------------------------------------
 
+// create table to store output
+clear
+set obs 1
+gen income_group = "N/A"
+gen light_var = "N/A"
+gen LHS_var = "N/A"
+gen ul = 99999999
+gen point = 99999999
+gen ll = 99999999
+gen yr_start = 99999999
+gen yr_end = 99999999
+gen fixed_effects = "N/A"
+gen WR2 = 999999999
+tempfile base
+save `base'
+
+/*
+reg taxes_exc_soc imports exports credit rgdp_lcu elec
+Fit GDP~4 variables for all years.
+For each year, regress log(GDP)~log(NTL) and plot the coefficients.
+For each year, regress log(GDP_hat)~log(NTL) and plot the coefficients.
+Do this for both DMSP and VIIRS, global, OECD, etc.
+*/
+
+foreach income_group in "Global" "OECD" "Not OECD" {
+foreach light_var in "VIIRS" "DMSP" {
+foreach LHS_var in "Synthetic GDP" "Actual GDP" {
+foreach fixed_effects in "cat_year cat_iso3c" "cat_year" "cat_iso3c" {
+
+use "$input/clean_synthetic_reg_prior.dta", replace
+br
+
+// define which countries we keep
+if "`income_group'" == "OECD" {
+keep_oecd, iso_var(iso3c)
+} 
+else if "`income_group'" == "Not OECD" {
+drop_oecd, iso_var(iso3c)
+}
+
+loc dep_vars ln_imports ln_exports ln_credit ln_elec 
+reg ln_rgdp_lcu `dep_vars'
+predict yhat, xb
+
+keep yhat ln_rgdp_lcu ln_del_sum_pix_area year ln_sum_light_dmsp_div_area cat_iso3c cat_year
+
+// define the years we do the regression on
+if "`light_var'" == "VIIRS" {
+	loc years "2013/2019"
+	loc years_group `""2013" "2014" "2015" "2016" "2017" "2018" "2019""'
+	rename ln_del_sum_pix_area RHS_var
+}
+else if "`light_var'" == "DMSP" {
+	loc years "1992/2012"
+	loc years_group `""1992" "1993" "1994" "1995" "1996" "1997" "1998" "1999" "2000" "2001" "2002" "2003" "2004" "2005" "2006" "2007" "2008" "2009" "2010" "2011" "2012""'
+	rename ln_sum_light_dmsp_div_area RHS_var
+}
+
+// define the LHS var:
+if "`LHS_var'" == "Synthetic GDP" {
+	rename yhat LHS_var
+}
+else if "`LHS_var'" == "Actual GDP" {
+	rename ln_rgdp_lcu LHS_var
+}
+
+// regressions
 est clear
-foreach num of numlist 2012/2018 {
+foreach year of numlist `years' {
+    
+	eststo: reghdfe LHS_var RHS_var if (year == `year' | year == `year' + 1), absorb(`fixed_effects') vce(cluster cat_iso3c)
+		estadd local NC `e(N_clust)'
+		local y= round(`e(r2_a_within)', .001)
+		estadd local WR2 `y'
+		
+	// get the upper and lower confidence intervals and the point estimate
+	preserve
+	
+	matrix list r(table)
+	matrix test = r(table)
+	foreach i in b ll ul {
+		matrix `i' = test["`i'", "RHS_var"]
+		loc `i' = `i'[1,1]
+	}
+	
+	// store coefficients into my table
+	clear
+	set obs 1
+	gen income_group = "`income_group'"
+	gen light_var = "`light_var'"
+	gen LHS_var = "`LHS_var'"
+	gen fixed_effects = "`fixed_effects'"
+	gen point = `b'
+	gen ul = `ul'
+	gen ll = `ll'
+	gen yr_start = `year'
+	gen yr_end = `year' + 1 
+	gen WR2 = `y'
+	append using `base'
+	save `base', replace
+	
+	restore
+}
+
+// output results into LATEX
+
+local scalar_labels `"scalars("NC Number of Countries" "WR2 Adjusted Within R-squared")"'
+
+esttab using "$overleaf/`income_group'_`light_var'_`LHS_var'_`fixed_effects'.tex", replace f  ///
+b(3) se(3) ar2 nomtitle label star(* 0.10 ** 0.05 *** 0.01) ///
+booktabs collabels(none) mgroups(`years_group', ///
+pattern(1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1) ///
+prefix(\multicolumn{@span}{c}{) suffix(}) span erepeat(\cmidrule(lr){@span})) ///
+coeflabel(RHS_var "Log Lights/Area") ///
+`scalar_labels'
+}
+}
+}
+}
+
+// save table results
+clear
+use  `base'
+drop if point >9999
+sort light_var yr_start
+duplicates drop
+save "$input/synthetic_gdp_results.dta", replace
+
+foreach light_var in "DMSP" "VIIRS" {
+foreach income_group in "OECD" "Not OECD" "Global" {
+foreach fixed_effects in "year and country" "year" "country" {
+
+use "$input/synthetic_gdp_results.dta", clear
+
+if "`fixed_effects'" == "year and country" {
+    loc FE "cat_year cat_iso3c"
+}
+else if "`fixed_effects'" == "year" {
+    loc FE "cat_year"
+}
+else if "`fixed_effects'" == "country" {
+    loc FE "cat_iso3c"
+}
+keep if fixed_effects == "`FE'"
+keep if income_group == "`income_group'"
+keep if light_var == "`light_var'"
+
+// get start and end years:
+summarize yr_start
+local x_axis_start `r(min)'
+local x_axis_end `r(max)'
+
+// graphs
+set graphics off
+# delimit ;
+twoway (line point yr_start if LHS_var == "Actual GDP", lcolor(red)) 
+(line point yr_start if  LHS_var == "Synthetic GDP", lcolor(blue)) 
+(scatter point yr_start) (rcap ul ll yr_start, lcolor(%50) msize(4-pt)), 
+ytitle("`ytitle'") ytitle(, 
+orientation(horizontal)) xtitle("") 
+legend(on order(1 "Actual GDP" 2 "Synthetic GDP")
+margin(zero) nobox region(fcolor(none) margin(zero) lcolor(none)) 
+position(12))
+xsize(10) ysize(5)
+xlabel(`x_axis_start'(2)`x_axis_end')
+;
+# delimit cr
+gr export "$overleaf/synthetic_GDP_`light_var'_`income_group'_`fixed_effects'_fixed_effects.pdf", replace
+set graphics on
+
+set graphics off
+# delimit ;
+twoway (line WR2 yr_start if LHS_var == "Actual GDP", lcolor(red)) 
+(line WR2 yr_start if  LHS_var == "Synthetic GDP", lcolor(blue)) 
+(scatter WR2 yr_start) , 
+ytitle("`ytitle'") ytitle(, 
+orientation(horizontal)) xtitle("") 
+legend(on order(1 "Actual GDP" 2 "Synthetic GDP")
+margin(zero) nobox region(fcolor(none) margin(zero) lcolor(none)) 
+position(12))
+xsize(10) ysize(5)
+xlabel(`x_axis_start'(2)`x_axis_end')
+;
+# delimit cr
+gr export "$overleaf/synthetic_GDP_`light_var'_`income_group'_`fixed_effects'_fixed_effects_WR2.pdf", replace
+set graphics on
+
+}
+}
+}
+
+foreach light_var in "DMSP" "VIIRS" {
+foreach income_group in "OECD" "Not OECD" "Global" {
+foreach fixed_effects in "year and country" "year" "country" {
+di "synthetic_GDP_`light_var'_`income_group'_`fixed_effects'_fixed_effects.pdf"
+}
+}
+}
+
+foreach income_group in "Global" "OECD" "Not OECD" {
+foreach light_var in "VIIRS" "DMSP" {
+foreach LHS_var in "Synthetic GDP" "Actual GDP" {
+foreach fixed_effects in "cat_year cat_iso3c" "cat_year" "cat_iso3c" {
+di "`income_group'_`light_var'_`LHS_var'_`fixed_effects'"
+}
+}
+}
+}
 
 use "$input/clean_synthetic_reg_prior.dta", clear
-keep ln_imports ln_exports ln_credit ln_elec ///
-ln_rgdp_lcu ln_del_sum_pix_area ///
-iso3c cat_iso3c cat_year year
-
-// get rid of missing variables:
-foreach var in ln_imports ln_exports ln_credit ln_elec ///
-ln_rgdp_lcu {
-drop if missing(`var')
-}
-
-// regression estimates: 
-eststo: reg ln_rgdp_lcu ln_imports ln_exports ln_credit ln_elec if year <= `num'
-estadd local OECD "No"
-predict yhat, xb
-
-// lights on GDP
-eststo: reghdfe ln_rgdp_lcu ln_del_sum_pix_area if year > `num', absorb(cat_iso3c cat_year) vce(cluster cat_iso3c) 
-	estadd local NC `e(N_clust)'
-	local y = round(`e(r2_a_within)', .001)
-	estadd local WR2 `y'
-	estadd local OECD "No"
-	
-
-// actual vs. predicted graph -------
-
-// cutoff categorical variable
-gen pre_cutoff = "pre" if year <= `num'
-replace pre_cutoff = "post" if year > `num'
-label define cutoff 1 "pre" 2 "post"
-encode pre_cutoff, generate(cutoff) label(cutoff)
-drop pre_cutoff
-
-// graph of actual vs. predicted
-sepscatter ln_rgdp_lcu yhat, mc(blue black) ms(Oh + ) separate(cutoff) legend(position(0) bplacement(nwest) region(lwidth(none))) //title("Cutoff set at `num'")
-gr export "$overleaf/scatter_actual_predicted_`num'.pdf", replace
-
-// Same regressions on OECD countries
-drop yhat
-keep if iso3c == "AUS" |iso3c == "AUT" |iso3c == "BEL" |iso3c == "CAN" |iso3c == "CHL" |iso3c == "COL" |iso3c == "CRI" |iso3c == "CZE" |iso3c == "DNK" |iso3c == "EST" |iso3c == "FIN" |iso3c == "FRA" |iso3c == "DEU" |iso3c == "GRC" |iso3c == "HUN" |iso3c == "ISL" |iso3c == "IRL" |iso3c == "ISR" |iso3c == "ITA" |iso3c == "JPN" |iso3c == "KOR" |iso3c == "LVA" |iso3c == "LTU" |iso3c == "LUX" |iso3c == "MEX" |iso3c == "NLD" |iso3c == "NZL" |iso3c == "NOR" |iso3c == "POL" |iso3c == "PRT" |iso3c == "SVK" |iso3c == "SVN" |iso3c == "ESP" |iso3c == "SWE" |iso3c == "CHE" |iso3c == "TUR" |iso3c == "GBR" |iso3c == "USA"
-eststo: reg ln_rgdp_lcu ln_imports ln_exports ln_credit ln_elec if year <= `num'
-estadd local OECD "Yes"
-predict yhat, xb
-
-// lights on GDP
-eststo: reghdfe ln_rgdp_lcu ln_del_sum_pix_area if year > `num', absorb(cat_iso3c cat_year) vce(cluster cat_iso3c) 
-	estadd local NC `e(N_clust)'
-	local y = round(`e(r2_a_within)', .001)
-	estadd local WR2 `y'
-	estadd local OECD "Yes"
-}
-
-esttab using "$overleaf/synthetic_gdp2.tex", replace f  ///
-b(3) se(3) nomtitle label star(* 0.10 ** 0.05 *** 0.01) ///
-booktabs collabels(none) mgroups("2012" "2013" "2014" "2015" "2016" "2017" "2018", pattern(1 0 0 0 1 0 0 0 1 0 0 0 1 0 0 0 1 0 0 0 1 0 0 0 1 0 0) prefix(\multicolumn{@span}{c}{) suffix(}) span erepeat(\cmidrule(lr){@span})) scalars("OECD OECD Countries Only?")
+scatter ln_rgdp_lcu ln_del_sum_pix
 
 
-// // ---------------------------------------------------------------------
-// // old synthetic GDP regressions
-// est clear
-// use "$input/clean_synthetic_reg_prior.dta", clear
-// keep `dep_vars' year ln_rgdp_lcu ln_del_sum_pix_area cat_iso3c cat_year
-// loc lab "All"
-//
-// // get rid of missing variables:
-// naomit
-//
-// // regression estimates: 
-// reg ln_rgdp_lcu `dep_vars' if year <= 2012
-// predict yhat if year > 2012, xb
-//
-// // lights on GDP
-// eststo: reghdfe ln_rgdp_lcu ln_del_sum_pix_area, absorb(cat_iso3c cat_year) vce(cluster cat_iso3c)
-// 	estadd local NC `e(N_clust)'
-// 	local y = round(`e(r2_a_within)', .001)
-// 	estadd local WR2 `y'
-//
-// // regress on NTL:
-// keep if !missing(yhat)
-//
-// // clear prior TEX regression estimates
-// foreach i in synthetic_gdp {
-// 	noisily capture erase "$overleaf/`i'.xls"
-// 	noisily capture erase "$overleaf/`i'.txt"
-// 	noisily capture erase "$overleaf/`i'.tex"
-// }
-//
-// // output regressions
-// eststo: reghdfe yhat ln_del_sum_pix_area, absorb(cat_iso3c cat_year) vce(cluster cat_iso3c)
-// 	estadd local NC `e(N_clust)'
-// 	local y = round(`e(r2_a_within)', .001)
-// 	estadd local WR2 `y'
-// esttab using "$overleaf/synthetic_gdp.tex", replace f  ///
-// 	b(3) se(3) star(* 0.10 ** 0.05 *** 0.01)  /// 
-// 	keep(ln_del_sum_pix_area) coeflabel(ln_del_sum_pix_area "All Variables") ///  
-// 	label booktabs noobs nonotes  collabels(none) alignment(D{.}{.}{-1}) ///
-// 	mtitles("Log GDP (2013-2019/20)" "Predicted Log GDP (2013-2019/20)")
-//
-// /*
-// because we have so many missing variables for each of the measures above, 
-// create a synthetic GDP for EACH variable and run a regression. 
-// */
-// foreach dv in `dep_vars' {
-// est clear
-// use "$input/clean_synthetic_reg_prior.dta", clear
-// keep `dv' year ln_rgdp_lcu ln_del_sum_pix_area cat_iso3c cat_year
-// loc lab: variable label `dv'
-// // get rid of missing variables:
-//
-// naomit
-//
-// // regression estimates: --------------------------------------------------
-//
-// reg ln_rgdp_lcu `dv' if year <= 2012
-// predict yhat if year > 2012, xb
-//
-// // lights on GDP
-// eststo: reghdfe ln_rgdp_lcu ln_del_sum_pix_area, absorb(cat_iso3c cat_year) vce(cluster cat_iso3c)
-// 	estadd local NC `e(N_clust)'
-// 	local y = round(`e(r2_a_within)', .001)
-// 	estadd local WR2 `y'
-//
-// // regress on NTL:
-// keep if !missing(yhat)
-//
-// eststo: reghdfe yhat ln_del_sum_pix_area, absorb(cat_iso3c cat_year) vce(cluster cat_iso3c)
-// 	estadd local NC `e(N_clust)'
-// 	local y = round(`e(r2_a_within)', .001)
-// 	estadd local WR2 `y'
-//
-// // output
-// esttab using "$overleaf/synthetic_gdp.tex", append f  ///
-// 	b(3) se(3) star(* 0.10 ** 0.05 *** 0.01)  /// 
-// 	keep(ln_del_sum_pix_area) coeflabel(ln_del_sum_pix_area "`lab'") ///  
-// 	label booktabs nodep nonum nomtitles nolines noobs nonotes collabels(none) alignment(D{.}{.}{-1})
-// }
-//
-//
-//
-//
-//
-//
-//
-//
-//
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
