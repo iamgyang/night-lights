@@ -1,3 +1,11 @@
+// so, this takes EONS to run. I've instead moved parts of it to 
+// 03.3 subsets_and_collapsing_iso3c_yr.do for only country-year collapsing.
+// also for high density population figures, I've moved that code to R for speed.
+
+// also, somehow this code throws errors on my assert command (need to debug)
+
+global sample = 1
+
 clear
 input str40 measure_vars
 	"PWT"
@@ -18,11 +26,26 @@ end
 tempfile measure_vars_tempfile
 save `measure_vars_tempfile'
 
-foreach pop_den in 1 95 {
-foreach area in objectid iso3c {
-foreach time in year quarter month {
-use "$input/sample_adm2_month_allvars.dta", replace
-// use "$input/adm2_month_allvars.dta", clear
+foreach pop_den in 95 { //1
+foreach area in objectid { //iso3c
+foreach time in quarter { //year month 
+
+if ($sample == 1) {
+	use "$input/sample_adm2_month_allvars.dta", clear
+	
+	// make sure that we only have USA and ZWE
+	levelsof iso3c, local(iso_check1)
+	local iso_check2: word count `iso_check1'
+	assert `iso_check2' == 2
+}
+else {
+	use "$input/adm2_month_allvars.dta", clear
+	
+	// make sure that we have >= 100 countries
+	levelsof iso3c, local(iso_check1)
+	local iso_check2: word count `iso_check1'
+	assert `iso_check2' >=100
+}
 
 // drop if missing(`area') | missing(`time')
 
@@ -30,33 +53,24 @@ if ("`area'" == "objectid" & "`time'" == "month") {
     continue
 }
 
-// Get population density figures: (technically we only need the del_sum_area 
-// population density figures, but we include all for kicks).
+// Get population density figures
+// population density is population divided by area:
+gen pop_density15 = sum_wpop / sum_area
+label variable pop_density15 "2015 population density (pop/polygon area)"
+
+// get the Xth percentile population density figure per year:
 sort year
-foreach i in del_sum_area sum_area del_sum_area_new {
-	loc lab: variable label `i'
-	local new_var = subinstr("`i'", "sum_area", "",.)
-	local new_var = "`new_var'" + "_"
-	local new_var = subinstr("`new_var'", "__", "_",.)
-	
-	// population density is population divided by area:
-	gen `new_var'pop_density15 = sum_wpop / `i'
-	label variable `new_var'pop_density15 "2015 population density; denominator is `lab'"    
-	
-	// get the Xth percentile population density figure per year:
-	sort year
-	by year: egen p`pop_den'_`new_var'pop_den = pctile(`new_var'pop_density15), p(`pop_den')
-}
-rename _pop_density15 pop_density15
+by year: egen p`pop_den'_pop_den = pctile(pop_density15), p(`pop_den')
 
 // IF population density is below the Xth percentile, delete it:
 // delete things based on population density
 if (`pop_den' != 1) {
-	keep if del_pop_den >= p`pop_den'_del_pop_den
+keep if pop_density15 >= p`pop_den'_pop_den
 }
 
-
 // Collapse -------------------------------------------------------------
+
+pause
 
 #delimit ;
 
@@ -116,10 +130,15 @@ foreach i in sum_pix sum_area del_sum_pix del_sum_area {
     replace `i' = . if `i' == 0
 }
 
+// make GDP values dollars (not billions or anything)
+// convert from billions:
+foreach i in PWT WDI {
+    replace `i' = `i' * (10^9)
+}
 // per area variables:
 gen del_sum_pix_area = del_sum_pix / del_sum_area
 gen sum_pix_area = sum_pix / sum_area
-gen sum_pix_new_area = sum_pix_new / sum_area // CHANGE TO sum_area_new in the new iteration!!!!!!!!!!!!
+gen sum_pix_new_area = sum_pix_new / sum_area
 gen sum_light_dmsp_div_area = sum_light_dmsp / sum_area
 
 // label variables
@@ -175,6 +194,7 @@ save `dataset_up_to_this_point'
 // create local "measure_vars" with all quantitative variables of interest:
 clear
 macro drop measure_vars
+clear
 use `measure_vars_tempfile'
 levelsof measure_vars, local(measure_vars)
 clear
@@ -216,7 +236,13 @@ foreach i in `measure_vars' {
 
 // First differences on the logged variables
 // before taking first differences, HAVE TO have all years, months, etc.
-fillin `area' year `time'
+sort `area' year `time'
+if ("`time'" != "year") {
+	fillin `area' year `time'
+}
+else if ("`time'" == "year") {
+    fillin `area' year
+}
 check_dup_id "`area' year `time'"
 drop _fillin
 
@@ -294,119 +320,19 @@ foreach year_base in 1992 2012 {
 }
 
 // Fill in missing world bank quality index years with the average of the WB quality index:
+pause
 bysort cat_iso3c:  fillmissing cat_wbdqcat_3, with(mean)
 gen check = mod(cat_wbdqcat_3, 1)
 assert check == 0 | check == .
 drop check
 
+// label WB data quality
+label variable cat_wbdqcat_3 "WB data quality"
+
 save "$input/sample_`area'_`time'_pop_den_`pop_den'_allvars2.dta", replace
 }
 }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
