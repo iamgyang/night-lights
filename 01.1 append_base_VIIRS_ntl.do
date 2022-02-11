@@ -1,4 +1,3 @@
-
 // Appends all VIIRS night lights files into 1 file. 
 
 if ("$import_nightlights" == "yes") {
@@ -15,13 +14,13 @@ if ("$import_nightlights" == "yes") {
 		save `ntl_append', replace
 	}
 	use `ntl_append'
-
+	
 // clean dates
 	gen date2 = date(time, "M20Y")	
 	format date2 %td
 	gen yq = qofd(date2)
 	format yq %tq
-
+	
 // in other datasets, Kosovo is XKX
 	rename gid_0 iso3c
 	replace iso3c = "XKX" if iso3c == "XKO"

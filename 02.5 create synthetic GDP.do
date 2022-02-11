@@ -69,5 +69,7 @@ mmerge iso3c year using "$input/clean_electricity_pc.dta"
 mmerge iso3c year using "$input/clean_tax_ungrd.dta"
 mmerge iso3c year using "$input/clean_wdi_synth.dta"
 
+drop _merge
+
 save "$input/clean_merged_synth.dta", replace
 
