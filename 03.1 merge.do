@@ -68,13 +68,6 @@ mmerge
 save "$input/adm2_month_allvars.dta", replace
 
 
-
-// MERGE IN WAR DATA
-
-
-// MERGE IN GOOGLE MOBILITY
-
-
 // CODE FOR FINAL 11/09/2021: (annual-country-level): -------------
 clear
 input str70 datasets
