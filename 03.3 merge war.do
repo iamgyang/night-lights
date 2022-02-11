@@ -28,7 +28,7 @@ capture quietly drop _merge
 mmerge objectid month year using "$input/aggregated_objectID_deaths_cleaned.dta"
 mmerge objectid month year using "$input/nat_disaster_cleaned.dta"
 
-keep objectid iso3c del_sum_pix del_sum_area year month deaths *dur _merge affected
+keep objectid iso3c del_sum_pix del_sum_area sum_pix sum_area year month deaths *dur _merge affected
 drop _merge
 fillin objectid year month
 replace deaths = 0 if deaths == .
@@ -40,7 +40,8 @@ check_dup_id "objectid year month"
 
 // get outcome variable:
 g ln_del_sum_pix_area = ln(del_sum_pix/del_sum_area)
-drop del_sum_pix del_sum_area _fillin iso3c
+g ln_sum_pix_area = ln(sum_pix/sum_area)
+drop del_sum_pix del_sum_area sum_pix sum_area _fillin iso3c sum_pix sum_area
 
 // encode categorical variables (numeric --> categorical)
 foreach i in year {
