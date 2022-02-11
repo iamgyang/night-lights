@@ -8,6 +8,15 @@ clear
 // import dataset:
 use "$input/iso3c_year_base.dta", clear
 
+// merge in habitable area NTL values:
+mmerge iso3c year using "$input/clean_high_density_ntl.dta"
+drop _merge
+
+// merge in other NTL versions:
+mmerge iso3c year using "$intermediate_data/adm0-annual/vrsmn_adm0_ann_2.dta"
+drop sum_pix_pagg pol_area_pagg imf_rgdp_lcu_pagg PWT_pagg WDI_pagg ox_anrgdp_lcu_pagg _merge
+rename *_pagg *
+
 // PWT is easier to remember:
 rename pwt_rgdpna PWT
 
@@ -25,13 +34,39 @@ foreach i in PWT WDI {
 // per area variables:
 bys iso3c: fillmissing sum_area
 gen del_sum_pix_area = del_sum_pix / del_sum_area
+gen sum_pix_area = sum_pix / sum_area
 gen sum_light_dmsp_div_area = sum_light_dmsp / sum_area
+foreach i of numlist 79(5)99 {
+	gen del_sum_pix_`i'_area = del_sum_pix_`i' / del_sum_area_`i'
+	gen sum_pix_`i'_area = sum_pix_`i' / sum_area_`i'
+}
+gen sum_pix_clb_area = sum_pix_clb / sum_area
+gen pos_sumpx_area = pos_sumpx / sum_area
+gen sum_pix_new_area = sum_pix_new / sum_area
 
 // label variables
 label variable rgdppc_ppp_gold "WB real GDP PPP per capita (AGJ)"
 label variable del_sum_area "VIIRS (cleaned) polygon area"
 label variable del_sum_pix "VIIRS (cleaned) pixels"
 label variable del_sum_pix_area "VIIRS (cleaned) pixels / area"
+// calibrated night lights versions
+label variable sum_pix_clb "VIIRS (calib.) pixels"
+label variable sum_pix "VIIRS (raw) pixels"
+label variable pos_sumpx "VIIRS (pos.) pixels"
+label variable sum_pix_clb_area "VIIRS (calib.) pixels / area"
+label variable sum_pix_area "VIIRS (raw) pixels / area"
+label variable pos_sumpx_area "VIIRS (pos.) pixels / area"
+label variable sum_pix_new "VIIRS (ann.) pixels / area"
+label variable sum_pix_new_area "VIIRS (ann.) pixels / area"
+// TO DO !!!!!
+foreach i of numlist 79(5)99 {
+	label variable del_sum_pix_`i'_area "VIIRS (cleaned) pixels / area (`i' pct pop density)"
+	label variable del_sum_pix_`i' "VIIRS (cleaned) pixels (`i' pct pop density)"
+	label variable del_sum_area_`i' "VIIRS (cleaned) polygon area (`i' pct pop density)"
+	label variable sum_pix_`i'_area "VIIRS (cleaned) pixels / area (`i' pct pop density)"
+	label variable sum_pix_`i' "VIIRS (cleaned) pixels (`i' pct pop density)"
+	label variable sum_area_`i' "VIIRS (cleaned) polygon area (`i' pct pop density)"
+}
 label variable exp_hws_wdi "WDI real GDP LCU (HSW)"
 label variable income "WB historical income classification"
 label variable lightpercap_gold "DMSP pixels per capita (AGJ)"
@@ -63,6 +98,25 @@ clear
 input str40 measure_vars
 	"del_sum_pix"
 	"del_sum_pix_area"
+	"del_sum_pix_79_area" // NTL restricted based on 2015 pop density (%tiles)
+	"del_sum_pix_79"
+	"del_sum_pix_84_area"
+	"del_sum_pix_84"
+	"del_sum_pix_89_area"
+	"del_sum_pix_89"
+	"del_sum_pix_94_area"
+	"del_sum_pix_94"
+	"del_sum_pix_99_area"
+	"del_sum_pix_99"
+	"sum_pix_area"
+	"sum_pix"
+	"sum_pix_area"
+	"sum_pix_new"
+	"sum_pix_new_area"
+	"sum_pix_clb" // other NTL versions based on calibration settings
+	"sum_pix_clb_area"
+	"pos_sumpx"
+	"pos_sumpx_area"
 	"PWT"
 	"sum_light_dmsp"
 	"sum_light_dmsp_div_area"
@@ -210,7 +264,30 @@ drop check
 // label WB data quality
 label variable cat_wbdqcat_3 "WB data quality"
 
-save "$input/sample_`area'_`time'_pop_den_`pop_den'_allvars2.dta", replace
+// everywhere we have VIIRS percentile built density, we should have VIIRS:
+assert !(!mi(del_sum_pix_79_area) & mi(del_sum_pix_area))
+assert !(mi(del_sum_pix_79_area) & !mi(del_sum_pix_area))
+
+save "$input/sample_`area'_`time'_pop_den__allvars2.dta", replace
+
+// check with other version of lights (different calibration) from Parth's data:
+use "$input/sample_iso3c_year_pop_den__allvars2.dta", clear
+
+
+
+
+
+// // find differences between sum_pix, pol_area, WDI, PWT, Oxford, IMF
+// rename pol_area_pagg sum_area_pagg
+// foreach i in sum_pix sum_area {
+//     preserve
+// 	di "`i'"
+// 	keep `i' iso3c year `i'_pagg
+// 	naomit
+// 	gen diff_`i' = abs(`i'/`i'_pagg-1)
+// 	assert diff_`i' < 0.01
+// 	restore
+// }
 
 
 // these are the same values
@@ -222,7 +299,6 @@ save "$input/sample_`area'_`time'_pop_den_`pop_den'_allvars2.dta", replace
 // capture drop diff
 // gen diff = abs(ln_lights_gold/ln_sumoflights_gold_pc - 1)
 // br iso3c year ln_sumoflights_gold_pc ln_lights_gold if diff > 0.01 & !missing(diff)
-
 
 
 
