@@ -58,7 +58,7 @@ foreach sample in fixed variable {
 	}
 	
 foreach n of numlist 1/22 {
-	use "$input/sample_iso3c_year_pop_den_`pop_den'_allvars2.dta", clear
+	use "$input/sample_iso3c_year_pop_den__allvars2.dta", clear
 
 	if ("`fix_yr'" == "start") {
 		if "`light'" == "viirs" {
@@ -256,7 +256,7 @@ gr export "$overleaf/graph_`gdp_var'_`fix_yr'_`fix_samp'.pdf", replace
 //                                         __/ |
 //                                        |___/ 
 
-use "$input/sample_iso3c_year_pop_den_`pop_den'_allvars2.dta", clear
+use "$input/sample_iso3c_year_pop_den__allvars2.dta", clear
 keep if year == 2012 | year == 2020
 keep iso3c year cat_income2012 ln_WDI_ppp_pc ln_WDI ln_del_sum_pix_area
 naomit
