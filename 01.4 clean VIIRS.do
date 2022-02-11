@@ -88,14 +88,6 @@ foreach i in iso3c name_0 gid_1 name_1 gid_2 sum_area {
 
 save "$input/NTL_VIIRS_appended_cleaned_all.dta", replace
 
-// Create annual ISO3C aggregation of VIIRS annual product:
-
-use "$input/NTL_VIIRS_appended_cleaned_all.dta", clear
-collapse (sum) del_sum_pix (mean) del_sum_area sum_area, by(iso3c year)
-save "$input/iso3c_year_viirs_new.dta", replace
-
-
-
 
 
 
