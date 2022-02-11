@@ -21,7 +21,7 @@ code_dir <- paste0(root_dir, "code")
 setwd(input_dir)
 
 # Packages ---------------------------------------------------------------
-list.of.packages <- c("data.table", "dplyr", "stringdist", "countrycode")
+list.of.packages <- c("data.table", "dplyr", "stringdist", "countrycode", "ggplot2", "ggthemes")
 
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[, "Package"])]
 if (length(new.packages)) install.packages(new.packages, dependencies = TRUE)
@@ -52,7 +52,6 @@ b_df <-
 # make NTL data at an ADM1 level:
 a_df <- a_df[,.(del_sum_pix = sum(del_sum_pix, na.rm = T), 
                 del_sum_area = sum(del_sum_area, na.rm = T)),by = .(name_1, year, month, iso3c)]
-
 
 # Get a fuzzy match between the NUTS region names and the NTL VIIRS ADM2 names:
 a <- a_df$name_1 %>% unique()
