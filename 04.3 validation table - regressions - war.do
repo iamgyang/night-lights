@@ -1,4 +1,4 @@
-local sample 0
+local sample 1
 if (`sample' == 1) {
 	di "YOU ARE USING A TEST SAMPLE OF THE DATA"
 }
@@ -9,166 +9,152 @@ else if (`sample' != 1) {
 
 // DEFINE CUTOFF FOR TREATMENT ----------------------------------------------
 foreach treat_var in affected deaths {
-foreach pctile in 90 60 80 40 20 {
-foreach week_restriction in "duration greater than three weeks" " " {
+	foreach pctile in 50 75 90 95 {
+		foreach week_restriction in "3wk" " " {
 
-if (`sample' == 1) {
-	use "$input/sample_war_nat_disaster_event_prior_to_cutoff.dta", clear
-}
-else {
-	use "$input/war_nat_disaster_event_prior_to_cutoff.dta", clear	
-}
+			if (`sample' == 1) {
+				use "$input/sample_war_nat_disaster_event_prior_to_cutoff.dta", clear
+			}
+			else {
+				use "$input/war_nat_disaster_event_prior_to_cutoff.dta", clear	
+			}
+			
+			// get percentile values
+			preserve
+			drop if `treat_var' <= 0 | missing(`treat_var')
+			centile `treat_var', centile(`pctile')
+			local perc `r(c_1)'
+			restore
 
-// get percentile values
-preserve
-drop if `treat_var' <= 0 | missing(`treat_var')
-centile `treat_var', centile(`pctile')
-local perc `r(c_1)'
-restore
+			// just display the percentile so that I can diagnose problems
+			foreach n in 1 1 1 1 1 1 1 {
+				di `perc'
+			}
 
-// just display the percentile so that I can diagnose problems
-foreach n in 1 1 1 1 1 1 1 {
-	di `perc'
-}
+			// treatment value if greater than this percentile value
+			gen tr = 1 if `treat_var' >= `perc'
 
-// treatment value if greater than this percentile value
-gen tr = 1 if `treat_var' >= `perc'
+			// do not define treatment for any event that lasted less than X week's time
+			if ("`week_restriction'" == "3wk") {
+				replace tr = 0 if `treat_var'_dur <= 3*7
+			}
+			replace tr = 0 if `treat_var' < `perc'
+			replace tr = . if missing(`treat_var')
 
+			// countries treated:
+			bys objectid: egen tr_at_all = max(tr)
+			drop if missing(tr_at_all)
 
-// do not define treatment for any event that lasted less than X week's time
-if ("`week_restriction'" == "duration greater than three weeks") {
-	replace tr = 0 if `treat_var'_dur <= 3*7
-}
-replace tr = 0 if `treat_var' < `perc'
-replace tr = . if missing(`treat_var')
+			// get treatment start date
+			bys objectid: egen tr_year = min(year) if tr == 1
+			bys objectid: egen tr_month = min(month) if tr == 1
+			assert tr_year == . if tr_at_all == .
+			assert tr_month == . if tr_at_all == .
 
-// countries treated:
-bys objectid: egen tr_at_all = max(tr)
-drop if missing(tr_at_all)
+			// ignore if we don't have objectID
+			drop if missing(objectid)
 
-// get treatment start date
-bys objectid: egen tr_year = min(year) if tr == 1
-bys objectid: egen tr_month = min(month) if tr == 1
-assert tr_year == . if tr_at_all == .
-assert tr_month == . if tr_at_all == .
+			// each country should only have 1 treatment start date
+			preserve
+			keep objectid tr_year tr_month
+			duplicates drop
+			drop if mi(tr_year) & mi(tr_month)
+			check_dup_id "objectid"
+			restore
 
-// ignore if we don't have objectID
-drop if missing(objectid)
+			bys objectid: fillmissing tr_year tr_month
+			br objectid year month tr tr_year tr_month
+			assert tr_year != . if tr_at_all == 1
+			assert tr_month != . if tr_at_all == 1
 
-// each country should only have 1 treatment start date
-preserve
-keep objectid tr_year tr_month
-duplicates drop
-drop if mi(tr_year) & mi(tr_month)
-check_dup_id "objectid"
-restore
+			keep ln_del_sum_pix_area ln_sum_pix_area objectid year month tr tr_year tr_month tr_at_all cat_year cat_month cat_objectid
+			g ttt = 12*(year - tr_year) + (month-tr_month)
 
-bys objectid: fillmissing tr_year tr_month
-br objectid year month tr tr_year tr_month
-assert tr_year != . if tr_at_all == 1
-assert tr_month != . if tr_at_all == 1
+			gen post_tr = 1 if ttt >= 0
+			replace post_tr = 0 if ttt < 0 | missing(ttt)
 
-keep ln_del_sum_pix_area objectid year month tr tr_year tr_month tr_at_all cat_year cat_month cat_objectid
-g ttt = 12*(year - tr_year) + (month-tr_month)
+			label variable objectid "ADM2"
+			label variable year "year"
+			label variable month "month"
+			label variable ln_del_sum_pix_area "Log VIIRS (cleaned) / area"
+			label variable tr "Whether the country was above `perc' `treat_var' (`pctile' percentile) this month"
+			label variable tr_at_all "Did the country experience >`perc' `treat_var' in a month at all?"
+			label variable tr_year "Year of event start"
+			label variable tr_month "Month of event start"
+			label variable ttt "Time to event start (months)"
+			label variable post_tr "Is this after event start?"
 
-gen post_tr = 1 if ttt >= 0
-replace post_tr = 0 if ttt < 0 | missing(ttt)
-
-label variable objectid "ADM2"
-label variable year "year"
-label variable month "month"
-label variable ln_del_sum_pix_area "Log VIIRS (cleaned) / area"
-label variable tr "Whether the country was above `perc' `treat_var' (`pctile' percentile) this month"
-label variable tr_at_all "Did the country experience >`perc' `treat_var' in a month at all?"
-label variable tr_year "Year of event start"
-label variable tr_month "Month of event start"
-label variable ttt "Time to event start (months)"
-label variable post_tr "Is this after event start?"
-
-save "$input/`treat_var'_disaster_event_study_`pctile'_percentile_`week_restriction'.dta", replace
-}
-}
+			save "$input/`treat_var'_disaster_event_study_`pctile'_percentile_`week_restriction'.dta", replace
+		}
+	}
 }
 
 // RUN REGRESSIONS --------------------------------
 
 // first delete all the regression table files:
-foreach i in war_response_1 {
+foreach i in war_response_1 sum_pix_war_response_1 {
 	noisily capture erase "$overleaf/`i'.xls"
 	noisily capture erase "$overleaf/`i'.txt"
 	noisily capture erase "$overleaf/`i'.tex"
 }
 
-foreach week_restriction in "duration greater than three weeks" " " {
-foreach treat_var in affected deaths {
-foreach pctile in 99 90 60 80 40 20 {
+foreach week_restriction in "3wk" " " {
+	foreach treat_var in affected deaths {
+		foreach pctile in 50 75 90 95 {
+			pause `week_restriction' `treat_var' `pctile'
+			use "$input/`treat_var'_disaster_event_study_`pctile'_percentile_`week_restriction'.dta", clear
 
-use "$input/`treat_var'_disaster_event_study_`pctile'_percentile_`week_restriction'.dta", clear
+			keep if ((ttt <= 30) & (ttt>=-30)) | (missing(ttt))
 
-keep if ((ttt <= 30) & (ttt>=-30)) | (missing(ttt))
+			#delimit ;
+			eventdd ln_sum_pix_area, hdfe absorb(cat_year cat_objectid cat_month) 
+			timevar(ttt) ci(rcap) cluster(cat_objectid) inrange lags(30) leads(30) 
+			graph_op(ytitle("Log Lights / Area") xlabel(-30(5)30))
+			;
+			#delimit cr
+			gr export "$output/sum_pix_event_study_`treat_var'_`pctile'_`week_restriction'.png", as(png) width(3000) height(2000) replace
 
-// #delimit ;
-// 	eventdd ln_del_sum_pix_area, hdfe absorb(i.cat_year i.cat_objectid i.cat_month) 
-// 	timevar(ttt) ci(rcap) cluster(cat_objectid) inrange lags(30) leads(30) 
-// 	graph_op(ytitle("Log Lights / Area") xlabel(-30(5)30))
-// 	;
-// #delimit cr
-// gr export "$output/event_study_`treat_var'_`pctile'_`week_restriction'.png", as(png) width(3000) height(2000) replace
+			outreg2 using "$output/sum_pix_war_response_1.tex", append ///
+				label dec(3) ///
+				bdec(3) addstat(Countries, e(N_clust), ///
+				Adjusted Within R-squared, e(r2_a_within), ///
+				Within R-squared, e(r2_within)) ///
+				title("`treat_var'" "(`pctile' percentile) `week_restriction'")
 
-// outreg2 using "$output/war_response_1.tex", append ///
-// 	label dec(3) ///
-// 	bdec(3) addstat(Countries, e(N_clust), ///
-// 	Adjusted Within R-squared, e(r2_a_within), ///
-// 	Within R-squared, e(r2_within)) ///
-// 	title(">`perc' `treat_var'" "(`pctile' percentile) `week_restriction'")
+			eststo: reghdfe ln_del_sum_pix_area post_tr, absorb(cat_year cat_objectid cat_month) vce(cluster cat_objectid)
+			estadd local NC `e(N_clust)'
+			local y= round(`e(r2_a_within)', .001)
+			estadd local WR2 `y'
 
+			esttab using "$overleaf/sum_pix_war_response_1.tex", append f  ///
+				b(3) se(3) star(* 0.10 ** 0.05 *** 0.01) ///
+				label booktabs nomtitle nobaselevels collabels(none) ///
+				scalars("NC Number of Countries" "WR2 Adjusted Within R-squared") ///
+				title("`treat_var'" "(`pctile' percentile) `week_restriction'") ///
+				sfmt(3)
 
-eststo: reghdfe ln_del_sum_pix_area post_tr, absorb(i.cat_year i.cat_objectid i.cat_month) vce(cluster cat_objectid), title("$\ge$`perc' `treat_var'" "(`pctile' percentile) `week_restriction'")
-	estadd local NC `e(N_clust)'
-	local y= round(`e(r2_a_within)', .001)
-	estadd local WR2 `y'
-	
-// esttab using "$overleaf/war_response_1.tex", append f  ///
-// 	b(3) se(3) star(* 0.10 ** 0.05 *** 0.01) ///
-// 	label booktabs nomtitle nobaselevels collabels(none) ///
-// 	scalars("NC Number of Countries" "WR2 Adjusted Within R-squared") ///
-// 	title("$\ge$`perc' `treat_var'" "(`pctile' percentile) `week_restriction'") ///
-// 	sfmt(3)
-// 	drop(*.cat_wbdqcat_3 _cons)
-
-eststo clear
-//
-//
-//
-// reghdfe ln_del_sum_pix_area post_tr, absorb(i.cat_year i.cat_objectid i.cat_month) vce(cluster cat_objectid)
-// outreg2 using "$output/war_response_1.tex", append ///
-// 	label dec(3) keep (post_tr) ///
-// 	bdec(3) addstat(Countries, e(N_clust), ///
-// 	Adjusted Within R-squared, e(r2_a_within), ///
-// 	Within R-squared, e(r2_within)) ///
-// 	title(">`perc' `treat_var'" "(`pctile' percentile) `week_restriction'")
-}
-}
+		}
+	}
 }
 
 cls
-foreach week_restriction in "duration greater than three weeks" " " {
-foreach treat_var in affected deaths {
-foreach pctile in 90 60 80 40 20 {
+foreach week_restriction in "3wk" " " {
+	foreach treat_var in affected deaths {
+		foreach pctile in 50 75 90 95 {
 
-if ("`treat_var'" == "affected") {
-	loc treat_var "Natural Disaster"
-}
-else if ("`treat_var'" == "deaths") {
-	loc treat_var "Wars"
-}
+			if ("`treat_var'" == "affected") {
+				loc treat_var "Natural Disaster"
+			}
+			else if ("`treat_var'" == "deaths") {
+				loc treat_var "Wars"
+			}
 
-di "`treat_var' `pctile'th Percentile `week_restriction'"
-di "`treat_var' `pctile'th Percentile `week_restriction'"
+			di "`treat_var' `pctile'th Percentile `week_restriction'"
+			di "`treat_var' `pctile'th Percentile `week_restriction'"
 
 
-}
-}
+		}
+	}
 }
 
 
