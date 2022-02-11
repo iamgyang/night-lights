@@ -1,0 +1,164 @@
+---
+title: "Effects of Top Coding and Aggregation"
+author: "George Yang"
+date: "2/2/2022"
+header-includes:
+  - \usepackage{float}
+  - \floatplacement{figure}{H}  #make every figure with caption = h, this was the fix
+output:
+  pdf_document: default
+fig_caption: yes
+---
+
+```{r setup, include=FALSE, echo=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+knitr::opts_chunk$set(fig.width=5, fig.height=4, fig.align="center") 
+knitr::opts_chunk$set(fig.pos = "!H", out.extra = "")
+library(data.table)
+```
+
+We know that one big difference between DMSP and VIIRS data is that DMSP pixels are top-coded, while VIIRS data is not. 
+
+Now, to explore how this might affect regressions, we can run a simulation with top coded data and without top coded data (with classical independent normally distributed measurement error).
+
+So, first, we create our night lights variable. We get 1000 observations from random draws of a gamma distribution. The distribution is fit on the VIIRS night lights using maximum likelihood estimation and reflect the long-tail of the night lights distribution. So, it basically looks like the night lights data, but on a different scale. 
+
+```{r}
+# suppose this is our TRUE night lights data:
+set.seed(385047)
+ntl <- rgamma(n = 1000, shape = 0.45416061, scale = 1/0.08899724)
+hist(ntl,50,main = "", xlab = "Simulated pixel lumosity")
+```
+
+For reference, this is actually what VIIRs night lights look like:
+
+```{r}
+library(dplyr)
+LIGHT_DF <- readstata13::read.dta13("C:/Users/user/Dropbox/CGD GlobalSat/HF_measures/input/NTL_appended2.dta")
+LIGHT_DF$sum_pix[LIGHT_DF$sum_pix<=8537359/100 & LIGHT_DF$sum_pix>0] %>% hist(1000,main = "", xlab = "Actual night lights pixel lumosity")
+```
+
+And here is the calculations that the computer did to get the shape and rate parameters.
+
+```{r}
+library(fitdistrplus)
+fit.gamma <- fitdist(sample(LIGHT_DF$sum_pix[LIGHT_DF$sum_pix<=8537359/100 & LIGHT_DF$sum_pix>0]/1000, 10000), distr = "gamma", method = "mle")
+summary(fit.gamma)
+dev.off()
+plot(fit.gamma)
+
+```
+
+We introduce classical measurement error by taking 1000 draws of a standard normal distribution. The errors look like so. 
+
+```{r}
+# and this is our error:
+error <- rnorm(1000)
+# error <- runif(1000)
+# error <- rgamma(n = 1000, shape = 2, scale = 2)
+hist(error, 50,main = "", xlab = "Simulated error (standard normal distribution)")
+```
+
+Adding the "true" night lights to the error term give us what's observed.
+For DMSP, we top-code values at 10.
+
+```{r}
+dmsp <- ifelse(ntl+error>10,10,ntl+error)
+hist(dmsp, 50, main = "Simulated DMSP (top-coded) pixels")
+```
+
+
+For VIIRS, we do not.
+
+```{r}
+# so this is what's observed
+viirs <- ntl+error
+hist(viirs, 50, main = "Simulated VIIRS (NOT top-coded) pixels")
+```
+
+And we code the true relationship between GDP and lights as just the night lights variable raised to 0.3 (i.e. Log GDP = 0.3*Log Lights).
+
+```{r}
+# and this is our TRUE relationship between lights and GDP
+gdp <- ntl^0.3; hist(gdp, 50, main = "", xlab = "Simulated GDP")
+```
+
+We can then use another random number generator to get us arbitrary groupings of these pixels (which represent countries). The number generator spits out 1000 numbers from 1 to 100 (with each number from 1 to 100 representing a separate country). The top of our dataset now looks like this.
+
+```{r}
+# merge it all together:
+DT <- data.table(
+    country = as.vector(unlist(random::randomNumbers(1000, 1, 100, 1))),
+    gdp = gdp,
+    error = error,
+    dmsp = dmsp,
+    viirs = viirs
+)
+
+head(DT, 15)
+```
+
+We can collapse values by country. And finally, we run a regression of log GDP on the left hand side and log lights per area on the right hand side, with the top coded variable and the non-top-coded lights variable. 
+
+
+```{r}
+# and we aggregate values up by country:
+DT[,viirs_country:=sum(viirs, na.rm = T), by = .(country)]
+DT[,dmsp_country:=sum(dmsp, na.rm = T), by = .(country)]
+DT[,gdp_country:=sum(gdp, na.rm = T), by = .(country)]
+DT[,polygon_area:=length(viirs), by = .(country)]
+DT[,lights_area_dmsp:=dmsp_country/polygon_area]
+DT[,lights_area_viirs:=viirs_country/polygon_area]
+DT <- unique(DT[,.(country, lights_area_viirs, lights_area_dmsp, gdp_country)])
+# head(DT[order(country)], 15)
+```
+
+
+```{r}
+
+library(modelsummary)
+
+mod <- list(
+  lm(log(gdp_country)~log(lights_area_viirs), data = DT),
+  lm(log(gdp_country)~log(lights_area_dmsp), data = DT))
+
+modelsummary(mod)
+
+```
+
+And oddly enough, we are able to replicate the result from the paper---the coefficient on the top-coded simulated night lights (DMSP) is greater than that of VIIRS. This is exactly what we find in the pre-2013 period. 
+
+Moreover, if we plot the non-top coded lights variable and the top coded lights variable, we see a broad corresspondence after we've aggregated things above the pixel level. This is exactly what we find in the country comparisons between DMSP and VIIRS. 
+
+This is what it looks like if we plot log-log of *pixels*.
+
+```{r}
+plot(log(dmsp)~log(viirs))
+abline(0,1)
+```
+
+This is what it looks like if we plot log *aggregate* pixels on log *aggregate* pixels.
+
+```{r}
+plot(log(DT$lights_area_dmsp)~log(DT$lights_area_viirs))
+abline(0,1)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
