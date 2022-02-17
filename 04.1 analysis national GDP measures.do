@@ -14,8 +14,8 @@
 	bysort iso3c year: egen sum_counter = total(counter)
 	keep if sum_counter == 4
 	
-*** Collapse by summing across year and ISO3C
-	collapse (sum) rgdp ox_rgdp_lcu, by(iso3c year)
+*** collapse by summing across year and ISO3C
+	gcollapse (sum) rgdp ox_rgdp_lcu, by(iso3c year)
 	
 *** check: Oxford data should match IMF's data
 	foreach i in rgdp ox_rgdp_lcu {
@@ -38,7 +38,7 @@
 	
 *** Find the stdev of the difference between the average growth of oxford and imf
 	gen diff = abs(avg_gr_ox - avg_gr_imf)
-	collapse (mean) avg_gr_imf avg_gr_ox diff
+	gcollapse (mean) avg_gr_imf avg_gr_ox diff
 	graph bar (asis) avg_gr_imf avg_gr_ox diff, blabel(bar) legend(order(1 "IMF" 2 "Oxford" 3 "Standard Deviation of Difference")) scheme(s2color8) ytitle("") title("Average Annual Growth (2013-2020) vs. Standard Deviation") caption("Source: IMF, Oxford Economics")
 	graph export "$input/bar_imf_oxf_quart_gdp_gr_stdev.png", replace
 	
@@ -71,7 +71,7 @@
 	
 *** Find the stdev of the difference between the average growth of PWT and imf
 	gen diff = abs(avg_gr_pwt - avg_gr_imf)
-	collapse (mean) avg_gr_imf avg_gr_pwt diff
+	gcollapse (mean) avg_gr_imf avg_gr_pwt diff
 	graph bar (asis) avg_gr_imf avg_gr_pwt diff, blabel(bar) legend(order(1 "IMF" 2 "PWT" 3 "Standard Deviation of Difference")) scheme(s2color8) ytitle("") title("Average Annual Growth (2012-2019) vs. Standard Deviation") caption("Source: IMF, PWT")
 	graph export "$input/bar_imf_pwt_annu_gdp_gr_stdev.png", replace
 	

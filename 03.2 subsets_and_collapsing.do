@@ -74,7 +74,7 @@ pause
 
 #delimit ;
 
-collapse 
+gcollapse 
 
 /* VIIRS is summed */
 (sum)

@@ -38,7 +38,7 @@ foreach sample in fixed variable {
 		foreach i in `fullname' {
 			append using "`i'"
 		}
-		duplicates drop
+		gduplicates drop
 		if "`fix_yr'" == "start" {
 			loc u yr_end
 		}
@@ -51,7 +51,7 @@ foreach sample in fixed variable {
 		summ n
 		keep if n == `r(max)'
 		keep iso3c
-		duplicates drop
+		gduplicates drop
 
 		gen keep = 1
 		save "$input/reduced_country_list_`light'_`fix_yr'_`gdp_var'_`sample'.dta", replace
@@ -168,7 +168,7 @@ clear
 use  `base'
 drop if point >9999
 sort gdp_var
-duplicates drop
+gduplicates drop
 save "$input/window_reg_results.dta", replace
 
 /*
@@ -210,7 +210,7 @@ else if ("`fix_yr'" == "vary") {
 	loc xvar yr_start
 }
 drop if yr_start == yr_end
-duplicates drop
+gduplicates drop
 sort `xvar'
 
 // Title Labels

@@ -3,7 +3,7 @@
 // collapse by iso3c year:
 use "$input/NTL_appended_cleaned.dta", clear
 keep del_sum_pix sum_pix del_sum_area sum_area iso3c year month objectid
-collapse (sum) del_sum_pix sum_pix (mean) del_sum_area sum_area, by(iso3c objectid year)
+gcollapse (sum) del_sum_pix sum_pix (mean) del_sum_area sum_area, by(iso3c objectid year)
 
 // are there any objectids that are completely excluded by removing 
 // neg pixels?
@@ -11,7 +11,7 @@ br if abs(sum_area - del_sum_area ) >= 0.1
 // yes -- one objectid in solomon islands is completely excluded
 
 // collapse by year and country
-collapse (sum) del_sum_pix sum_pix del_sum_area sum_area, by(iso3c year)
+gcollapse (sum) del_sum_pix sum_pix del_sum_area sum_area, by(iso3c year)
 
 // make sure that across time, the polygon area remains the same
 sort iso3c year
@@ -24,8 +24,8 @@ save `viirs1'
 // do the same for the annual product
 use "$input/NTL_appended2_cleaned.dta", clear
 rename iso3c_new iso3c
-collapse (sum) sum_pix_new (mean) sum_area_new, by(iso3c objectid year)
-collapse (sum) sum_pix_new        sum_area_new, by(iso3c          year)
+gcollapse (sum) sum_pix_new (mean) sum_area_new, by(iso3c objectid year)
+gcollapse (sum) sum_pix_new        sum_area_new, by(iso3c          year)
 
 // make sure that across time, the polygon area remains the same
 sort iso3c year

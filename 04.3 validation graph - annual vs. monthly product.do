@@ -2,9 +2,9 @@
 use "$input/NTL_VIIRS_appended_cleaned_all.dta", clear
 assert abs(del_sum_area_new-sum_area)<0.1 | mi(del_sum_area_new-sum_area)
 assert mi(sum_pix_new) if month!=1
-collapse (sum) del_sum_pix sum_pix_new (mean) del_sum_area sum_area, by(year objectid iso3c)
+gcollapse (sum) del_sum_pix sum_pix_new (mean) del_sum_area sum_area, by(year objectid iso3c)
 save "$input/NTL_VIIRS_objectid_ann.dta", replace
-collapse (sum) del_sum_pix sum_pix_new del_sum_area sum_area, by(year iso3c)
+gcollapse (sum) del_sum_pix sum_pix_new del_sum_area sum_area, by(year iso3c)
 
 // have manually checked equivalence with
 // iso3c_year_viirs_new.dta

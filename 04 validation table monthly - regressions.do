@@ -256,7 +256,7 @@ assert tr_month == . if tr_at_all == .
 // each country should only have 1 treatment start date
 preserve
 keep iso3c tr_year tr_month
-duplicates drop
+gduplicates drop
 drop if mi(tr_year) & mi(tr_month)
 check_dup_id "iso3c"
 restore
@@ -397,7 +397,7 @@ exit
 // 	keep if ttt_`i' >= -3 & ttt_`i' <= 2
 // 	keep ttt_`i' ln_del_sum_pix_area g_an_ln_del_sum_pix_area iso3c year month `i'
 // 	sort iso3c year month
-// 	collapse (mean) ln_del_sum_pix_area g_an_ln_del_sum_pix_area, by(iso3c ttt_`i')
+// 	gcollapse (mean) ln_del_sum_pix_area g_an_ln_del_sum_pix_area, by(iso3c ttt_`i')
 // 	naomit
 // 	g index = "`i'"
 // 	rename ttt* ttt
@@ -427,7 +427,7 @@ exit
 // // mean across all:
 // use "$input/month_iso3c_cleaned.dta", clear
 //
-// collapse (mean) cornet* oxcgrt* g_an_ln_del_sum_pix_area, by(iso3c year)
+// gcollapse (mean) cornet* oxcgrt* g_an_ln_del_sum_pix_area, by(iso3c year)
 // naomit
 // reg g_an_ln_del_sum_pix_area cornet* oxcgrt*, vce(hc3)
 // outreg2 using "covid_response_1.tex", append label dec(3)
@@ -583,7 +583,7 @@ exit
 // drop if cat_yr <= 3
 // drop if ln_del_sum_pix_area < `perc'
 //
-// collapse (mean) g_an_ln_del_sum_pix_area, by(cat_yr after_march)
+// gcollapse (mean) g_an_ln_del_sum_pix_area, by(cat_yr after_march)
 // reshape wide g_an_ln_del_sum_pix_area, i(cat_yr) j(after_march)
 // rename (g_an_ln_del_sum_pix_area0 g_an_ln_del_sum_pix_area1) (premar postmar)
 // gen dd = postmar - premar

@@ -63,7 +63,6 @@ drop str_month
 
 save "$input/war_nat_disaster_event_prior_to_cutoff.dta", replace
 
-
 // GET A TEST SAMPLE ----------------------------------------------------
 use "$input/war_nat_disaster_event_prior_to_cutoff.dta", clear
 
@@ -72,7 +71,7 @@ preserve
 keep if (affected != 0  & !missing(affected)) | ///
 (deaths != 0  & !missing(deaths))
 keep objectid
-duplicates drop
+gduplicates drop
 gen keep_var = 1
 tempfile keep_merge
 save `keep_merge'

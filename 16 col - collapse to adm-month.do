@@ -134,7 +134,7 @@ local to_collapse : subinstr local to_collapse "mes" "", word
 di "`to_collapse'"
 
 // we collapse by Department (ADM1)
-collapse (mean) `to_collapse' [aweight = fex_dpto_c], ///
+gcollapse (mean) `to_collapse' [aweight = fex_dpto_c], ///
 	by(location_type month year dpto area)
 
 save "cleaned_colombia_full_3.dta", replace

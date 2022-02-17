@@ -11,7 +11,7 @@
 // apply same checks
 // then, merge w/ this file.
 // education: general characteristics
-// collapse (mean) `r(varlist)', by(location_type month year dpto directorio)
+// gcollapse (mean) `r(varlist)', by(location_type month year dpto directorio)
 // ds, has(type numeric)
 // where I'm confused:
 // 1) 
