@@ -39,7 +39,7 @@ program gr_lev_reg
 	// variables to be absorbed (abs_vars)
 	// specify whether it's a growth or levels regression (growth levels)
 	
-	syntax, outfile(string) dep_vars(namelist) dep_var_label(string) [abs_vars(namelist) growth levels]
+	syntax, outfile(string) dep_vars(namelist) dep_var_label(string) [abs_vars(namelist) interact_vars(namelist) cluster_vars(namelist) growth levels]
 	
 	////////////////////////////////////////////////////////////////////////////
 	eststo clear
@@ -66,7 +66,7 @@ program gr_lev_reg
 		keep `i' year
 		naomit
 		keep year
-		duplicates drop 
+		gduplicates drop 
 		summarize year
 		restore
 		
@@ -109,22 +109,22 @@ program gr_lev_reg
 			// logged differences across each year, so we have to look at the variable 
 			// of interest and collapse it.
 
-			keep g_ln_WDI_ppp_pc cat_iso3c year log_lights_area_generic cat_wbdqcat_3
+			keep g_ln_WDI_ppp_pc cat_iso3c year log_lights_area_generic `interact_vars'
 			naomit
-			collapse (mean) g_ln_WDI_ppp_pc year log_lights_area_generic, by(cat_iso3c cat_wbdqcat_3)
+			gcollapse (mean) g_ln_WDI_ppp_pc year log_lights_area_generic, by(cat_iso3c `interact_vars')
 			eststo: regress g_ln_WDI_ppp_pc log_lights_area_generic, vce(hc3)
 				estadd local OECD "No"
-			eststo: regress g_ln_WDI_ppp_pc c.log_lights_area_generic##i.cat_wbdqcat_3, vce(hc3)
+			eststo: regress g_ln_WDI_ppp_pc c.log_lights_area_generic##i.`interact_vars', vce(hc3)
 				estadd local OECD "No"
 			restore
 			
 			// run the same regression for OECD countries only
 			preserve
-			drop_oecd, iso_var(iso3c)
+			drop_oecd iso3c // custom made function from preliminaries
 			rename `light_var' log_lights_area_generic
-			keep g_ln_WDI_ppp_pc cat_iso3c year log_lights_area_generic cat_wbdqcat_3
+			keep g_ln_WDI_ppp_pc cat_iso3c year log_lights_area_generic `interact_vars'
 			naomit
-			collapse (mean) g_ln_WDI_ppp_pc year log_lights_area_generic, by(cat_iso3c cat_wbdqcat_3)
+			gcollapse (mean) g_ln_WDI_ppp_pc year log_lights_area_generic, by(cat_iso3c `interact_vars')
 			eststo: regress g_ln_WDI_ppp_pc log_lights_area_generic, vce(hc3)
 				estadd local OECD "Yes"
 			restore
@@ -139,15 +139,15 @@ program gr_lev_reg
 			preserve
 			rename `light_var' log_lights_area_generic
 			eststo: reghdfe ln_WDI log_lights_area_generic, absorb(`abs_vars') ///
-				vce(cluster cat_iso3c)
+				vce(cluster `cluster_vars')
 				estadd local NC `e(N_clust)'
 				estadd local OECD "No"
 				local y= round(`e(r2_a_within)', .001)
 				estadd local WR2 `y'
 
 			// levels regression with income interaction dummy (maintain country-year FE)
-			eststo: reghdfe ln_WDI c.log_lights_area_generic##i.cat_wbdqcat_3, ///
-				absorb(`abs_vars') vce(cluster cat_iso3c)
+			eststo: reghdfe ln_WDI c.log_lights_area_generic##i.`interact_vars', ///
+				absorb(`abs_vars') vce(cluster `cluster_vars')
 				estadd local NC `e(N_clust)'
 				estadd local OECD "No"
 				local y = round(`e(r2_a_within)', .001)
@@ -157,9 +157,9 @@ program gr_lev_reg
 			// run the same regression for OECD countries only
 			preserve
 			rename `light_var' log_lights_area_generic
-			drop_oecd, iso_var(iso3c)
+			drop_oecd iso3c // custom made function from preliminaries
 			eststo: reghdfe ln_WDI log_lights_area_generic, absorb(`abs_vars') ///
-				vce(cluster cat_iso3c)
+				vce(cluster `cluster_vars')
 				estadd local NC `e(N_clust)'
 				estadd local OECD "Yes"
 				local y = round(`e(r2_a_within)', .001)
@@ -189,7 +189,7 @@ program gr_lev_reg
 		sfmt(3) ///
 		mgroups("`dep_var_labs'", pattern(1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 ) ///
 		prefix(\multicolumn{@span}{c}{) suffix(}) span ///
-		erepeat(\cmidrule(lr){@span})) drop(*.cat_wbdqcat_3 _cons)
+		erepeat(\cmidrule(lr){@span})) drop(*.`interact_vars' _cons)
 end
 
 
@@ -215,7 +215,7 @@ replace lndn = . if iso3c == "SRB"
 replace lndn = . if iso3c == "MNE"
 
 gr_lev_reg, levels outfile("$full_hender") dep_var_label("Log Lights/Area") ///
-	dep_vars(lndn ln_sum_light_dmsp_div_area ln_del_sum_pix_area ln_sum_pix_new_area ln_sum_pix_area ln_pos_sumpx_area ln_sum_pix_clb_area ln_del_sum_pix_79_area ln_del_sum_pix_84_area ln_del_sum_pix_89_area ln_del_sum_pix_94_area ln_del_sum_pix_99_area) abs_vars(cat_iso3c cat_year)
+	dep_vars(lndn ln_sum_light_dmsp_div_area ln_del_sum_pix_area ln_sum_pix_new_area ln_sum_pix_area ln_pos_sumpx_area ln_sum_pix_clb_area ln_del_sum_pix_79_area ln_del_sum_pix_84_area ln_del_sum_pix_89_area ln_del_sum_pix_94_area ln_del_sum_pix_99_area) abs_vars(cat_iso3c cat_year)  interact_vars(cat_wbdqcat_3) cluster_vars(cat_iso3c)
 
 // regression on overlaps Henderson ---------------------------
 use "$input/sample_iso3c_year_pop_den__allvars2.dta", clear
@@ -234,7 +234,7 @@ naomit
 save "$input/clean_validation_overlap.dta", replace
 
 gr_lev_reg, levels outfile("$overlaps_hender") dep_var_label("Log Lights/Area") ///
-	dep_vars(ln_sum_light_dmsp_div_area ln_del_sum_pix_area ln_sum_pix_new_area ln_sum_pix_area ln_pos_sumpx_area ln_sum_pix_clb_area ln_del_sum_pix_79_area ln_del_sum_pix_84_area ln_del_sum_pix_89_area ln_del_sum_pix_94_area ln_del_sum_pix_99_area) abs_vars(cat_iso3c)
+	dep_vars(ln_sum_light_dmsp_div_area ln_del_sum_pix_area ln_sum_pix_new_area ln_sum_pix_area ln_pos_sumpx_area ln_sum_pix_clb_area ln_del_sum_pix_79_area ln_del_sum_pix_84_area ln_del_sum_pix_89_area ln_del_sum_pix_94_area ln_del_sum_pix_99_area) abs_vars(cat_iso3c) interact_vars(cat_wbdqcat_3) cluster_vars(cat_iso3c)
 
 // full regression Henderson on same sample as overlapping -------------------
 
@@ -268,171 +268,8 @@ drop tokeep
 
 gr_lev_reg, levels outfile("$full_same_sample_hender") dep_var_label("Log Lights/Area") ///
 	dep_vars(lndn ln_sum_light_dmsp_div_area ln_del_sum_pix_area ln_sum_pix_new_area ln_sum_pix_area ln_pos_sumpx_area ln_sum_pix_clb_area ln_del_sum_pix_79_area ln_del_sum_pix_84_area ln_del_sum_pix_89_area ln_del_sum_pix_94_area ln_del_sum_pix_99_area) ///
-	abs_vars(cat_iso3c cat_year)
+	abs_vars(cat_iso3c cat_year) interact_vars(cat_wbdqcat_3) cluster_vars(cat_iso3c)
 
-// Europe Regional GDP ------------------------------------------------------
-
-// get WB statistical quality indicators:
-use "$input/sample_iso3c_year_pop_den__allvars2.dta", clear
-keep wbdqcat_3 iso3c
-duplicates drop
-naomit
-tempfile wb_stat_capacity
-save `wb_stat_capacity'
-
-// get Europe regional GDP variable and generate categorical variables and log variables
-use "$input/NUTS_validation.dta", clear
-encode country, gen( cat_iso3c )
-gen yr = string(year)
-encode yr, gen(cat_year)
-drop yr
-create_logvars "del_sum_pix del_sum_pix_area gdp"
-naomit
-conv_ccode country
-replace iso = "CZE" if country == "Czechia"
-rename iso iso3c
-
-// merge the statistical capacity numbers:
-mmerge iso3c using `wb_stat_capacity'
-naomit
-drop _merge
-encode wbdqcat_3, gen(cat_wbdqcat_3)
-
-// run regressions 
-rename ln_gdp ln_WDI
-
-// ok, this is going to be messy code, but I'm just adding another function here 
-// that is basically the same one as above, but without WB statistical capacity
-
-// Create a function that runs the regressions we want and outputs a table:
-capture program drop gr_lev_reg_adjusted
-program gr_lev_reg_adjusted
-	
-	////////////////////////////////////////////////////////////////////////////
-	// 	parameters
-	// output TEX file (outfile)
-	// dependent variabls (dep_vars)
-	// variables to be absorbed (abs_vars)
-	// specify whether it's a growth or levels regression (growth levels)
-	
-	syntax, outfile(string) dep_vars(namelist) [abs_vars(namelist) growth levels]
-	
-	////////////////////////////////////////////////////////////////////////////
-	eststo clear
-
-	// create a local that contains the lights variable labels
-	foreach i in `dep_vars' {
-		loc lab: variable label `i'
-		
-		// Remove parts of the label for formatting purposes
-		local lab = subinstr("`lab'", " pixels", "", .)
-		local lab = subinstr("`lab'", "/area", "", .)
-		local lab = subinstr("`lab'", " / area", "", .)
-		local lab = subinstr("`lab'", "per capita", "", .)
-		local lab = subinstr("`lab'", "Log ", "", .)
-		local lab = subinstr("`lab'", "Growth in", "", .)
-		local lab = subinstr("`lab'", "Mean", "", .)
-		local lab = subinstr("`lab'", "Diff. ", "", .)
-		local lab = subinstr("`lab'", "  ", " ", .)
-		local lab = subinstr("`lab'", "  ", " ", .)
-		local macrolen: length local dep_var_labs
-		
-		// get the start and end year
-		preserve
-		keep `i' year
-		naomit
-		keep year
-		duplicates drop 
-		summarize year
-		restore
-		
-		/*
-		If the macro has stuff in it, then append the new string to the end
-		of the macro. Otherwise, create the macro.
-		*/
-		if (`macrolen'>0) {
-			local dep_var_labs "`dep_var_labs'" "\shortstack{`lab'\\(`r(min)' - `r(max)')}"
-		} 
-		else if (`macrolen'==0) {
-			local dep_var_labs "\shortstack{`lab'\\(`r(min)' - `r(max)')}"
-		}
-	}
-
-	// loop through night lights variables to do the regressions
-	foreach light_var in `dep_vars' {
-		
-		// store the variable label of the light variable we're using in `lab'
-		loc lab: variable label `light_var'
-		
-		// for formatting, we have to rename the variables into generic
-		// names
-		
-		// GROWTH regressions
-		if ("`growth'" != "" & "`levels'" == "") {
-			preserve
-			rename `light_var' log_lights_area_generic
-			
-			// For growth regressions, growth is defined as the average of the 
-			// logged differences across each year, so we have to look at the variable 
-			// of interest and collapse it.
-
-			keep g_ln_WDI_ppp_pc cat_iso3c year log_lights_area_generic
-			naomit
-			collapse (mean) g_ln_WDI_ppp_pc year log_lights_area_generic, by(cat_iso3c)
-			eststo: regress g_ln_WDI_ppp_pc log_lights_area_generic, vce(hc3)
-			restore
-			local label_prefix "Growth in "
-			local label_suffix " per capita"
-		}
-		
-		// LEVELS regressions
-		// bare levels regression: country & year fixed effects
-		else if ("`growth'" == "" & "`levels'" != "") {
-			preserve
-			rename `light_var' log_lights_area_generic
-			eststo: reghdfe ln_WDI log_lights_area_generic, absorb(`abs_vars') ///
-				vce(cluster cat_iso3c)
-				estadd local NC `e(N_clust)'
-				local y= round(`e(r2_a_within)', .001)
-				estadd local WR2 `y'
-			restore
-		}
-		else if ("`growth'" == "`levels'") {
-		    _error("You must specify either a growth or a levels regression.")
-		}
-	}
-	
-	if ("`growth'" == "" & "`levels'" != "") {
-	    local scalar_labels `"scalars("NC Number of Countries" "WR2 Adjusted Within R-squared")"'
-	}
-	
-	// output
-	gen log_lights_area_generic = .
-	label variable log_lights_area_generic "`label_prefix'Log Lights/Area`label_suffix'"
-	esttab using "`outfile'", replace f  ///
-		b(3) se(3) star(* 0.10 ** 0.05 *** 0.01) ///
-		label booktabs nomtitle nobaselevels collabels(none) ///
-		`scalar_labels' ///
-		sfmt(3) ///
-		mgroups("`dep_var_labs'", pattern(1 0 1 0 1 0) ///
-		prefix(\multicolumn{@span}{c}{) suffix(}) span ///
-		erepeat(\cmidrule(lr){@span})) drop(_cons)
-end
-
-// run regressions
-gr_lev_reg_adjusted, levels outfile("$overleaf/NUTS_regression.tex") ///
-	dep_vars(ln_del_sum_pix_area) ///
-	abs_vars(cat_iso3c cat_year)
-	
-// make graphs
-rename ln_WDI ln_gdp
-label variable ln_del_sum_pix "Log Sum of Pixels"
-label variable ln_gdp "Log GDP"
-label variable ln_del_sum_pix_area "Log Sum of Pixels/Area"
-quietly sepscatter ln_gdp ln_del_sum_pix, mc(red blue) ms(Oh + ) separate(country) legend(size(*0.5) symxsize(*5) position(0) bplacement(nwest) region(lwidth(none)))
-gr export "$overleaf/scatter_NUTS_log_log_pixel_gdp.pdf", replace
-quietly sepscatter ln_gdp ln_del_sum_pix_area, mc(red blue) ms(Oh + ) separate(country) legend(size(*0.5) symxsize(*5) position(0) bplacement(nwest) region(lwidth(none)))
-gr export "$overleaf/scatter_NUTS_log_log_pixel_gdp_area.pdf", replace
 
 // --------------------------------------------------------------------------
 // GROWTH
@@ -442,7 +279,7 @@ gr export "$overleaf/scatter_NUTS_log_log_pixel_gdp_area.pdf", replace
 use "$input/sample_iso3c_year_pop_den__allvars2.dta", replace
 
 gr_lev_reg, growth outfile("$full_gold") dep_var_label("Log Lights") ///
-	dep_vars(g_ln_sumoflights_gold_pc g_ln_sum_light_dmsp_pc g_ln_del_sum_pix_pc g_ln_sum_pix_new_pc g_ln_sum_pix_pc g_ln_pos_sumpx_pc g_ln_sum_pix_clb_pc  g_ln_del_sum_pix_79_pc g_ln_del_sum_pix_84_pc g_ln_del_sum_pix_89_pc g_ln_del_sum_pix_94_pc g_ln_del_sum_pix_99_pc)
+	dep_vars(g_ln_sumoflights_gold_pc g_ln_sum_light_dmsp_pc g_ln_del_sum_pix_pc g_ln_sum_pix_new_pc g_ln_sum_pix_pc g_ln_pos_sumpx_pc g_ln_sum_pix_clb_pc  g_ln_del_sum_pix_79_pc g_ln_del_sum_pix_84_pc g_ln_del_sum_pix_89_pc g_ln_del_sum_pix_94_pc g_ln_del_sum_pix_99_pc) interact_vars(cat_wbdqcat_3)
 
 // regression on overlaps Goldberg -----------------------------------------
 use "$input/sample_iso3c_year_pop_den__allvars2.dta", replace
@@ -458,7 +295,7 @@ save "$input/clean_validation_overlap_gold.dta", replace
 
 // run regressions:
 gr_lev_reg, growth outfile("$overlaps_gold")  dep_var_label("Log Lights") ///
-	dep_vars(g_ln_sum_light_dmsp_pc g_ln_del_sum_pix_pc g_ln_sum_pix_new_pc g_ln_sum_pix_pc g_ln_pos_sumpx_pc g_ln_sum_pix_clb_pc  g_ln_del_sum_pix_79_pc g_ln_del_sum_pix_84_pc g_ln_del_sum_pix_89_pc g_ln_del_sum_pix_94_pc g_ln_del_sum_pix_99_pc)
+	dep_vars(g_ln_sum_light_dmsp_pc g_ln_del_sum_pix_pc g_ln_sum_pix_new_pc g_ln_sum_pix_pc g_ln_pos_sumpx_pc g_ln_sum_pix_clb_pc  g_ln_del_sum_pix_79_pc g_ln_del_sum_pix_84_pc g_ln_del_sum_pix_89_pc g_ln_del_sum_pix_94_pc g_ln_del_sum_pix_99_pc) interact_vars(cat_wbdqcat_3)
 
 // full regression Goldberg on same sample as overlapping ------------------
 use "$input/clean_validation_overlap_gold.dta", clear
@@ -484,7 +321,7 @@ drop tokeep
 
 // run regressions
 gr_lev_reg, growth outfile("$full_same_sample_gold")  dep_var_label("Log Lights") ///
-	dep_vars(g_ln_sumoflights_gold_pc g_ln_sum_light_dmsp_pc g_ln_del_sum_pix_pc g_ln_sum_pix_new_pc g_ln_sum_pix_pc g_ln_pos_sumpx_pc g_ln_sum_pix_clb_pc  g_ln_del_sum_pix_79_pc g_ln_del_sum_pix_84_pc g_ln_del_sum_pix_89_pc g_ln_del_sum_pix_94_pc g_ln_del_sum_pix_99_pc)
+	dep_vars(g_ln_sumoflights_gold_pc g_ln_sum_light_dmsp_pc g_ln_del_sum_pix_pc g_ln_sum_pix_new_pc g_ln_sum_pix_pc g_ln_pos_sumpx_pc g_ln_sum_pix_clb_pc  g_ln_del_sum_pix_79_pc g_ln_del_sum_pix_84_pc g_ln_del_sum_pix_89_pc g_ln_del_sum_pix_94_pc g_ln_del_sum_pix_99_pc) interact_vars(cat_wbdqcat_3)
 
 
 
