@@ -1,4 +1,4 @@
-local sample 1
+local sample 0
 if (`sample' == 1) {
 	di "YOU ARE USING A TEST SAMPLE OF THE DATA"
 }
@@ -42,12 +42,12 @@ foreach treat_var in affected deaths {
 			replace tr = . if missing(`treat_var')
 
 			// countries treated:
-			bys objectid: egen tr_at_all = max(tr)
+			bys objectid: gegen tr_at_all = max(tr)
 			drop if missing(tr_at_all)
 
 			// get treatment start date
-			bys objectid: egen tr_year = min(year) if tr == 1
-			bys objectid: egen tr_month = min(month) if tr == 1
+			bys objectid: gegen tr_year = min(year) if tr == 1
+			bys objectid: gegen tr_month = min(month) if tr == 1
 			assert tr_year == . if tr_at_all == .
 			assert tr_month == . if tr_at_all == .
 
@@ -57,7 +57,7 @@ foreach treat_var in affected deaths {
 			// each country should only have 1 treatment start date
 			preserve
 			keep objectid tr_year tr_month
-			duplicates drop
+			gduplicates drop
 			drop if mi(tr_year) & mi(tr_month)
 			check_dup_id "objectid"
 			restore
@@ -77,6 +77,7 @@ foreach treat_var in affected deaths {
 			label variable year "year"
 			label variable month "month"
 			label variable ln_del_sum_pix_area "Log VIIRS (cleaned) / area"
+			label variable ln_sum_pix_area "Log VIIRS (raw) / area"
 			label variable tr "Whether the country was above `perc' `treat_var' (`pctile' percentile) this month"
 			label variable tr_at_all "Did the country experience >`perc' `treat_var' in a month at all?"
 			label variable tr_year "Year of event start"
@@ -92,7 +93,7 @@ foreach treat_var in affected deaths {
 // RUN REGRESSIONS --------------------------------
 
 // first delete all the regression table files:
-foreach i in war_response_1 sum_pix_war_response_1 {
+foreach i in affected_response_1 sum_pix_affected_response_1 deaths_response_1 sum_pix_deaths_response_1  {
 	noisily capture erase "$overleaf/`i'.xls"
 	noisily capture erase "$overleaf/`i'.txt"
 	noisily capture erase "$overleaf/`i'.tex"
@@ -112,21 +113,21 @@ foreach week_restriction in "3wk" " " {
 			graph_op(ytitle("Log Lights / Area") xlabel(-30(5)30))
 			;
 			#delimit cr
-			gr export "$output/sum_pix_event_study_`treat_var'_`pctile'_`week_restriction'.png", as(png) width(3000) height(2000) replace
+			gr export "$overleaf/sum_pix_event_study_`treat_var'_`pctile'_`week_restriction'.png", as(png) width(3000) height(2000) replace
 
-			outreg2 using "$output/sum_pix_war_response_1.tex", append ///
+			outreg2 using "$output/`treat_var'_response_1.tex", append ///
 				label dec(3) ///
 				bdec(3) addstat(Countries, e(N_clust), ///
 				Adjusted Within R-squared, e(r2_a_within), ///
 				Within R-squared, e(r2_within)) ///
 				title("`treat_var'" "(`pctile' percentile) `week_restriction'")
 
-			eststo: reghdfe ln_del_sum_pix_area post_tr, absorb(cat_year cat_objectid cat_month) vce(cluster cat_objectid)
+			eststo: reghdfe ln_sum_pix_area post_tr, absorb(cat_year cat_objectid cat_month) vce(cluster cat_objectid)
 			estadd local NC `e(N_clust)'
 			local y= round(`e(r2_a_within)', .001)
 			estadd local WR2 `y'
 
-			esttab using "$overleaf/sum_pix_war_response_1.tex", append f  ///
+			esttab using "$overleaf/sum_pix_`treat_var'_response_1.tex", append f  ///
 				b(3) se(3) star(* 0.10 ** 0.05 *** 0.01) ///
 				label booktabs nomtitle nobaselevels collabels(none) ///
 				scalars("NC Number of Countries" "WR2 Adjusted Within R-squared") ///
