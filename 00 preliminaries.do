@@ -21,7 +21,7 @@ loc install_user_defined_functions "No"
 
 if ("`install_user_defined_functions'" == "Yes") {
 	foreach i in rangestat wbopendata kountry mmerge outreg2 somersd ///
-	asgen moss reghdfe ftools fillmissing eventdd matsort ranktest ivreg2 sepscatter ///
+	asgen moss reghdfe ftools fillmissing eventdd matsort ranktest ivreg2 sepscatter gtools ///
 	ivreghdfe{
 		capture ssc install `i'
 	}
@@ -100,37 +100,58 @@ end
 
 quietly capture program drop keep_oecd
 program keep_oecd
-syntax, iso_var(namelist)
-keep if `iso_var' == "AUS" |`iso_var' == "AUT" |`iso_var' == "BEL" |`iso_var' == "CAN" |`iso_var' == "CHL" |`iso_var' == "COL" |`iso_var' == "CRI" |`iso_var' == "CZE" |`iso_var' == "DNK" |`iso_var' == "EST" |`iso_var' == "FIN" |`iso_var' == "FRA" |`iso_var' == "DEU" |`iso_var' == "GRC" |`iso_var' == "HUN" |`iso_var' == "ISL" |`iso_var' == "IRL" |`iso_var' == "ISR" |`iso_var' == "ITA" |`iso_var' == "JPN" |`iso_var' == "KOR" |`iso_var' == "LVA" |`iso_var' == "LTU" |`iso_var' == "LUX" |`iso_var' == "MEX" |`iso_var' == "NLD" |`iso_var' == "NZL" |`iso_var' == "NOR" |`iso_var' == "POL" |`iso_var' == "PRT" |`iso_var' == "SVK" |`iso_var' == "SVN" |`iso_var' == "ESP" |`iso_var' == "SWE" |`iso_var' == "CHE" |`iso_var' == "TUR" |`iso_var' == "GBR" |`iso_var' == "USA"
+syntax varlist(max=1)
+keep if `varlist' == "AUS" |`varlist' == "AUT" |`varlist' == "BEL" |`varlist' == "CAN" |`varlist' == "CHL" |`varlist' == "COL" |`varlist' == "CRI" |`varlist' == "CZE" |`varlist' == "DNK" |`varlist' == "EST" |`varlist' == "FIN" |`varlist' == "FRA" |`varlist' == "DEU" |`varlist' == "GRC" |`varlist' == "HUN" |`varlist' == "ISL" |`varlist' == "IRL" |`varlist' == "ISR" |`varlist' == "ITA" |`varlist' == "JPN" |`varlist' == "KOR" |`varlist' == "LVA" |`varlist' == "LTU" |`varlist' == "LUX" |`varlist' == "MEX" |`varlist' == "NLD" |`varlist' == "NZL" |`varlist' == "NOR" |`varlist' == "POL" |`varlist' == "PRT" |`varlist' == "SVK" |`varlist' == "SVN" |`varlist' == "ESP" |`varlist' == "SWE" |`varlist' == "CHE" |`varlist' == "TUR" |`varlist' == "GBR" |`varlist' == "USA"
 end
 
 quietly capture program drop drop_oecd
 program drop_oecd
-syntax, iso_var(namelist)
-drop if `iso_var' == "AUS" |`iso_var' == "AUT" |`iso_var' == "BEL" |`iso_var' == "CAN" |`iso_var' == "CHL" |`iso_var' == "COL" |`iso_var' == "CRI" |`iso_var' == "CZE" |`iso_var' == "DNK" |`iso_var' == "EST" |`iso_var' == "FIN" |`iso_var' == "FRA" |`iso_var' == "DEU" |`iso_var' == "GRC" |`iso_var' == "HUN" |`iso_var' == "ISL" |`iso_var' == "IRL" |`iso_var' == "ISR" |`iso_var' == "ITA" |`iso_var' == "JPN" |`iso_var' == "KOR" |`iso_var' == "LVA" |`iso_var' == "LTU" |`iso_var' == "LUX" |`iso_var' == "MEX" |`iso_var' == "NLD" |`iso_var' == "NZL" |`iso_var' == "NOR" |`iso_var' == "POL" |`iso_var' == "PRT" |`iso_var' == "SVK" |`iso_var' == "SVN" |`iso_var' == "ESP" |`iso_var' == "SWE" |`iso_var' == "CHE" |`iso_var' == "TUR" |`iso_var' == "GBR" |`iso_var' == "USA"
+syntax varlist(max=1)
+drop if `varlist' == "AUS" |`varlist' == "AUT" |`varlist' == "BEL" |`varlist' == "CAN" |`varlist' == "CHL" |`varlist' == "COL" |`varlist' == "CRI" |`varlist' == "CZE" |`varlist' == "DNK" |`varlist' == "EST" |`varlist' == "FIN" |`varlist' == "FRA" |`varlist' == "DEU" |`varlist' == "GRC" |`varlist' == "HUN" |`varlist' == "ISL" |`varlist' == "IRL" |`varlist' == "ISR" |`varlist' == "ITA" |`varlist' == "JPN" |`varlist' == "KOR" |`varlist' == "LVA" |`varlist' == "LTU" |`varlist' == "LUX" |`varlist' == "MEX" |`varlist' == "NLD" |`varlist' == "NZL" |`varlist' == "NOR" |`varlist' == "POL" |`varlist' == "PRT" |`varlist' == "SVK" |`varlist' == "SVN" |`varlist' == "ESP" |`varlist' == "SWE" |`varlist' == "CHE" |`varlist' == "TUR" |`varlist' == "GBR" |`varlist' == "USA"
 end
 
+// create categorical variables:
+quietly capture program drop create_categ
+program create_categ
+syntax varlist(min=1)
+foreach i of local varlist {
+capture confirm numeric variable `i'
+// if it's numeric, then first convert to string
+if !_rc {
+	gen str_`i' = string(`i')
+	encode str_`i', gen(cat_`i')
+	drop str_`i'
+}
+// if it's a character, then directly encode
+else {
+	encode `i', gen(cat_`i')
+}
+}
+end
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+// Wrapper for the decode function to decode variables to characters.
+// Note that this function automatically replaces the decoded variables.
+quietly capture program drop decode_vars
+program decode_vars
+syntax [varlist], [all]
+if "`all'" != "" {
+	ds, has(vallabel)
+	foreach v of varlist `r(varlist)'{
+		rename `v' `v'_old
+		decode `v'_old, gen(`v')
+		replace `v' = string(`v'_old) if missing(`v')
+	}
+	drop *_old
+}
+else if "`all'" == "" {
+	foreach v of local varlist {
+		rename `v' `v'_old
+		decode `v'_old, gen(`v')
+		replace `v' = string(`v'_old) if missing(`v')
+	}
+	drop *_old
+}
+end
 
 
 
