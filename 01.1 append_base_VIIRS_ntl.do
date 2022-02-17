@@ -28,7 +28,7 @@ if ("$import_nightlights" == "yes") {
 // check that GID is the same as ISO ID
 	preserve
 	keep iso3c name_0
-	duplicates drop
+	gduplicates drop
 	kountry name_0, from(other) stuck
 	ren(_ISO3N_) (temp)
 	kountry temp, from(iso3n) to(iso3c)

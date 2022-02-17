@@ -175,7 +175,7 @@ end
 		restore 
 		keep delt_* objectid yr gid_0
 		drop delt_`func_var'
-		duplicates drop
+		gduplicates drop
 		reshape wide delt_gdppc, i(objectid gid_0) j(yr, string)
 		mmerge objectid using `ntl_`func_var'_wide'
 		assert _merge == 3

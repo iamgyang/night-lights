@@ -160,7 +160,7 @@ clear
 use  `base'
 drop if point >9999
 sort light_var yr_start
-duplicates drop
+gduplicates drop
 save "$input/synthetic_gdp_results.dta", replace
 
 foreach light_var in "DMSP" "VIIRS" {

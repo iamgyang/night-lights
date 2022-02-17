@@ -26,7 +26,7 @@ reshape wide med_est, i(country year month day) j(modtype, string)
 rename med_est* restr_*
 
 // collapse to monthly
-collapse (mean) restr_*, by(country year month)
+gcollapse (mean) restr_*, by(country year month)
 
 // ISO3C codes
 conv_ccode country
@@ -53,7 +53,7 @@ replace countrycode = "XKX" if countryname == "Kosovo"
 // make sure have right ISO3C codes
 preserve
 	keep countrycode countryname
-	duplicates drop
+	gduplicates drop
 	conv_ccode countryname
 	assert iso == countrycode if iso != ""
 	drop iso

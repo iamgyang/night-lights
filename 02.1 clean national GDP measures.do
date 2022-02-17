@@ -139,7 +139,7 @@
 	preserve
 	sort iso3c year quarter
 	keep iso3c year quarter
-	duplicates tag iso3c year quarter, gen (dup_id_cov)
+	gduplicates tag iso3c year quarter, gen (dup_id_cov)
 	assert dup_id_cov==0
 	restore
 	
@@ -168,7 +168,7 @@
 *** check there are no duplicated country-years
 	preserve
 	keep iso3c year
-	duplicates tag iso3c year, gen (dup_id_cov)
+	gduplicates tag iso3c year, gen (dup_id_cov)
 	assert dup_id_cov==0
 	restore
 	
@@ -184,7 +184,7 @@
 *** check there are no duplicated country-years
 	preserve
 	keep iso3c year
-	duplicates tag iso3c year, gen (dup_id_cov)
+	gduplicates tag iso3c year, gen (dup_id_cov)
 	assert dup_id_cov==0
 	restore
 
@@ -233,7 +233,7 @@
 		preserve
 		sort iso3c year
 		keep iso3c year
-		duplicates tag iso3c year, gen (dup_id_cov)
+		gduplicates tag iso3c year, gen (dup_id_cov)
 		assert dup_id_cov==0
 		restore
 	
@@ -272,7 +272,7 @@
 		preserve
 		sort iso3c year
 		keep iso3c year
-		duplicates tag iso3c year, gen (dup_id_cov)
+		gduplicates tag iso3c year, gen (dup_id_cov)
 		assert dup_id_cov==0
 		restore
 	

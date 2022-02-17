@@ -86,7 +86,7 @@ cd "$input"
 
 // Oxford COVID ---------
 use "$input/covid_oxford_cleaned.dta", clear
-collapse (mean) *index, by(iso3c year month)
+gcollapse (mean) *index, by(iso3c year month)
 tempfile ox
 save `ox'
 
@@ -94,7 +94,7 @@ save `ox'
 use "$input/NTL_GDP_month_ADM2.dta", clear
 // get monthly - country dataset
 keep if !missing(sum_pix)
-collapse (sum) sum_pix pol_area, by(iso3c year month)
+gcollapse (sum) sum_pix pol_area, by(iso3c year month)
 rename sum_pix del_sum_pix
 
 tempfile ntl_raw
@@ -104,7 +104,7 @@ use "$input/NTL_GDP_month_ADM2.dta", clear
 // get monthly - country dataset
 keep if !missing(sum_pix)
 drop if sum_pix<0
-collapse (sum) sum_pix pol_area, by(iso3c year month)
+gcollapse (sum) sum_pix pol_area, by(iso3c year month)
 rename sum_pix sum_pix
 
 tempfile ntl_clean
@@ -246,7 +246,7 @@ mmerge year month iso3c using `ox'
 use "$input/NTL_GDP_month_ADM2.dta", clear
 // get monthly - country dataset
 keep if !missing(sum_pix)
-collapse (sum) sum_pix pol_area, by(iso3c objectid year month)
+gcollapse (sum) sum_pix pol_area, by(iso3c objectid year month)
 rename (sum_pix pol_area) (del_sum_pix del_sum_area)
 
 tempfile ntl_raw
@@ -256,7 +256,7 @@ use "$input/NTL_GDP_month_ADM2.dta", clear
 // get monthly - country dataset
 keep if !missing(sum_pix)
 drop if sum_pix<0
-collapse (sum) sum_pix pol_area, by(iso3c objectid year month)
+gcollapse (sum) sum_pix pol_area, by(iso3c objectid year month)
 rename (sum_pix pol_area) (sum_pix sum_area)
 
 tempfile ntl_clean
