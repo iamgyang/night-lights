@@ -178,6 +178,7 @@ use `full_subnatl_grp'
 
 if "`i'" == "drop-US" {
 	drop if iso3c == "USA"
+	keep if iso3c == "IND"
 }
 
 // log GDP ~ log lights
@@ -195,7 +196,7 @@ gen ln_del_sum_pix_area = ln(del_sum_pix/del_sum_area)
 gen ln_GRP = ln(GRP)
 label variable ln_del_sum_pix_area "Log(VIIRS pixels/area)"
 label variable ln_GRP "Log(Gross Regional Product)"
-eststo: reghdfe ln_GRP ln_del_sum_pix_area, absorb(cat_iso3c cat_year) vce(cluster cat_iso3c)
+eststo: reg ln_GRP ln_del_sum_pix_area
 estadd local NC `e(N_clust)'
 local y= round(`e(r2_a_within)', .001)
 estadd local WR2 `y'
@@ -208,12 +209,90 @@ b(3) se(3) star(* 0.10 ** 0.05 *** 0.01) ///
 label booktabs nomtitle nobaselevels collabels(none) ///
 scalars("NC Number of Groups" "WR2 Adjusted Within R-squared" "AGG Aggregation Level") ///
 sfmt(3) ///
-mgroups("BRA IDN IND" "BRA IDN IND USA", pattern(1 0 1 0) ///
+mgroups("IND" "BRA IDN IND USA", pattern(1 0 1 0) ///
 prefix(\multicolumn{@span}{c}{) suffix(}) span ///
 erepeat(\cmidrule(lr){@span})) drop(_cons)
 
+// Subnational GRP regressions (all OECD) ------------------------------------------------------
 
+// import subnational map data
+use "$raw_data/National Accounts/geo_coded_data/oecd3_adm2NTL_map17feb22.dta", clear
+keep OBJECTID iso3c regional_name reg_2
+rename *, lower
+decode_vars objectid
 
+// import subnational GRP
+mmerge iso3c regional_name reg_2 using "$input/oecd_tl3.dta"
+keep if _merge ==3 // !!!!!!! some were not geocoded accurately
+assert _merge == 3
+drop _merge
+rename iso3c iso3c_grp
+rename value GRP
+rename regional_name region
+tempfile grp_subnatl
+save `grp_subnatl'
 
+// clean night lights (only VIIRS cleaned version)
+use "$input/NTL_VIIRS_appended_cleaned_all.dta", clear
+keep objectid iso3c year month del_sum_pix del_sum_area
+gcollapse (sum) del_sum_pix (mean) del_sum_area, by(objectid iso3c year)
+rename iso3c iso3c_ntl
 
+// merge with night lights
+mmerge objectid year using `grp_subnatl'
+keep if _merge == 3
+drop _merge
+// assert iso3c_ntl == iso3c_grp // !!!!!!! some were not geocoded accurately
+drop if iso3c_ntl != iso3c_grp 
+rename iso3c_grp iso3c
+// check_dup_id "objectid iso3c year" // !!!!! something is wrong here? each objectid gets repeated?
+
+// collapse to OECD region level
+gcollapse (sum) del_sum_pix del_sum_area (mean) GRP, by(region reg_2 iso3c year)
+
+// create variables of interest
+gen ln_del_sum_pix_area = ln(del_sum_pix/del_sum_area)
+gen ln_GRP = ln(GRP)
+label variable ln_del_sum_pix_area "Log(VIIRS pixels/area)"
+label variable ln_GRP "Log(Gross Regional Product)"
+
+// graph:
+sepscatter ln_del_sum_pix_area ln_GRP, mc(red blue green purple) separate(iso3c) legend(size(*0.5) symxsize(*5) position(0) bplacement(nwest) region(lwidth(none)))
+gr export "$overleaf/scatter_GRP_log_log_subnatl_oecd.pdf", replace
+
+// regressions
+create_categ(region year)
+
+tempfile full_subnatl_grp
+save `full_subnatl_grp'
+
+// clear regression estimates
+est clear
+
+// log GDP ~ log lights
+eststo: reghdfe ln_GRP ln_del_sum_pix_area, absorb(cat_region cat_year) vce(cluster cat_region)
+estadd local NC `e(N_clust)'
+local y= round(`e(r2_a_within)', .001)
+estadd local WR2 `y'
+estadd local AGG "ADM1"
+
+// log GDP ~ log lights, same countries @ COUNTRY level
+gcollapse (sum) GRP del_sum_pix del_sum_area, by(iso3c year)
+create_categ(iso3c year)
+gen ln_del_sum_pix_area = ln(del_sum_pix/del_sum_area)
+gen ln_GRP = ln(GRP)
+label variable ln_del_sum_pix_area "Log(VIIRS pixels/area)"
+label variable ln_GRP "Log(Gross Regional Product)"
+eststo: reghdfe ln_GRP ln_del_sum_pix_area, absorb(cat_iso3c cat_year) vce(cluster cat_iso3c)
+estadd local NC `e(N_clust)'
+local y= round(`e(r2_a_within)', .001)
+estadd local WR2 `y'
+estadd local AGG "Country"
+
+// export results into a tex file
+esttab using "$overleaf/subnatl_reg_GRP_oecd.tex", replace f  ///
+b(3) se(3) star(* 0.10 ** 0.05 *** 0.01) ///
+label booktabs nomtitle nobaselevels collabels(none) ///
+scalars("NC Number of Groups" "WR2 Adjusted Within R-squared" "AGG Aggregation Level") ///
+sfmt(3)
 
