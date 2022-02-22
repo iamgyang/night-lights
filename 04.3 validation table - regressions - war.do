@@ -1,15 +1,20 @@
 local sample 0
+local yemen_syria_experiment 1
+
+// WARNINGS -----------------------------------------------
 if (`sample' == 1) {
 	di "YOU ARE USING A TEST SAMPLE OF THE DATA"
 }
 else if (`sample' != 1) {
 	di "YOU ARE USING ALL THE DATA"
 }
-
+if (`yemen_syria_experiment' == 1) {
+	di "YOU ARE RESTRICTING TO 24 COUNTRIES THAT ARE SIMILAR TO YEMEN AND SYRIA"
+}
 
 // DEFINE CUTOFF FOR TREATMENT ----------------------------------------------
 foreach treat_var in affected deaths {
-	foreach pctile in 50 75 90 95 {
+	foreach pctile in 50 75 90 95 98 {
 		foreach week_restriction in "3wk" " " {
 
 			if (`sample' == 1) {
@@ -17,6 +22,37 @@ foreach treat_var in affected deaths {
 			}
 			else {
 				use "$input/war_nat_disaster_event_prior_to_cutoff.dta", clear	
+			
+			/* generate a variable that keeps countries that are close to GDP per capita of yemen 
+			and syria for diff-in-diff comparison */
+			if (`yemen_syria_experiment' == 1) {
+				gen keep_var = ""
+				replace keep_var = "yes" if iso3c == "FSM"
+				replace keep_var = "yes" if iso3c == "COG"
+				replace keep_var = "yes" if iso3c == "CMR"
+				replace keep_var = "yes" if iso3c == "TLS"
+				replace keep_var = "yes" if iso3c == "ZMB"
+				replace keep_var = "yes" if iso3c == "NPL"
+				replace keep_var = "yes" if iso3c == "SEN"
+				replace keep_var = "yes" if iso3c == "TJK"
+				replace keep_var = "yes" if iso3c == "BEN"
+				replace keep_var = "yes" if iso3c == "VUT"
+				replace keep_var = "yes" if iso3c == "COM"
+				replace keep_var = "yes" if iso3c == "HTI"
+				replace keep_var = "yes" if iso3c == "SYR"
+				replace keep_var = "yes" if iso3c == "ZWE"
+				replace keep_var = "yes" if iso3c == "LSO"
+				replace keep_var = "yes" if iso3c == "SLB"
+				replace keep_var = "yes" if iso3c == "TZA"
+				replace keep_var = "yes" if iso3c == "GIN"
+				replace keep_var = "yes" if iso3c == "YEM"
+				replace keep_var = "yes" if iso3c == "MLI"
+				replace keep_var = "yes" if iso3c == "KIR"
+				replace keep_var = "yes" if iso3c == "RWA"
+				replace keep_var = "yes" if iso3c == "GMB"
+				replace keep_var = "yes" if iso3c == "ETH"
+				keep if keep_var == "yes"
+			}
 			}
 			
 			// get percentile values
@@ -101,7 +137,7 @@ foreach i in affected_response_1 sum_pix_affected_response_1 deaths_response_1 s
 
 foreach week_restriction in "3wk" " " {
 	foreach treat_var in affected deaths {
-		foreach pctile in 50 75 90 95 {
+		foreach pctile in  50 75 90 95 98 { 
 			pause `week_restriction' `treat_var' `pctile'
 			use "$input/`treat_var'_disaster_event_study_`pctile'_percentile_`week_restriction'.dta", clear
 
@@ -141,7 +177,7 @@ foreach week_restriction in "3wk" " " {
 cls
 foreach week_restriction in "3wk" " " {
 	foreach treat_var in affected deaths {
-		foreach pctile in 50 75 90 95 {
+		foreach pctile in  50 75 90 95 98 { 
 
 			if ("`treat_var'" == "affected") {
 				loc treat_var "Natural Disaster"
