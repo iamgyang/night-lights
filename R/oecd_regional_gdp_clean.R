@@ -64,6 +64,21 @@ oecd_abbrev <-
     skip = 2
   )
 
+# confirm that every level 3 jurisdiction has a level 2 jurisdiction above it:
+oecd_abbrev <- as.data.table(oecd_abbrev)
+oecd_abbrev[,TL:=as.numeric(TL)]
+oecd_abbrev <- as.data.frame(oecd_abbrev)
+oecd_abbrev <- oecd_abbrev %>% fill(TL,.direction = "down") %>% as.data.table()
+oecd_abbrev[,diff_juris:=TL - shift(TL, n = 1, type = "lag"), by = .(ISO3)]
+waitifnot(all(na.omit(oecd_abbrev$diff_juris<=1)))
+
+# get the region just ABOVE that prior region:
+oecd_abbrev <- oecd_abbrev %>% 
+  mutate(reg_2 = ifelse(TL==2, `Regional name`,NA)) %>% 
+  group_by(ISO3) %>% 
+  fill(reg_2,.direction = "down") %>% 
+  as.data.table()
+
 oecd_tl3 <- merge(oecd_tl3, oecd_abbrev, by.x = "reg_id", by.y = "REG_ID", all.x = T)
 oecd_tl3[,country:=code2name(ISO3)]
 oecd_tl3[,c("region"):=NULL]
