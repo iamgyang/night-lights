@@ -257,7 +257,7 @@ gr export "$overleaf/graph_`gdp_var'_`fix_yr'_`fix_samp'.pdf", replace
 //                                        |___/ 
 
 use "$input/sample_iso3c_year_pop_den__allvars2.dta", clear
-keep if year == 2012 | year == 2020
+keep if year == 2013 | year == 2020
 keep iso3c year cat_income2012 ln_WDI_ppp_pc ln_WDI ln_del_sum_pix_area
 naomit
 sort iso3c year
@@ -283,6 +283,7 @@ save "$input/long_diff_concavity_dataset.dta", replace
 // regress long diff log GDP ~ long diff log lights + log lights 2012 : long diff log lights
 est clear
 eststo: reg lg_ln_WDI lg_ln_del_sum_pix_area c.lg_ln_del_sum_pix_area#c.ln_del_sum_pix_area, vce(hc3)
+eststo: reg lg_ln_WDI lg_ln_del_sum_pix_area i.cat_income2012#c.ln_del_sum_pix_area, vce(hc3)
 esttab using "$overleaf/concavity.tex", replace f  ///
 b(3) se(3) star(* 0.10 ** 0.05 *** 0.01) ///
 label booktabs nobaselevels collabels(none) ///
