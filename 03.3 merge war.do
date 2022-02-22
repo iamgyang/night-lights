@@ -41,7 +41,7 @@ check_dup_id "objectid year month"
 // get outcome variable:
 g ln_del_sum_pix_area = ln(del_sum_pix/del_sum_area)
 g ln_sum_pix_area = ln(sum_pix/sum_area)
-drop del_sum_pix del_sum_area sum_pix sum_area _fillin iso3c sum_pix sum_area
+drop del_sum_pix del_sum_area sum_pix sum_area _fillin sum_pix sum_area
 
 // encode categorical variables (numeric --> categorical)
 foreach i in year {
