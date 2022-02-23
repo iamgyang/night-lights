@@ -24,9 +24,9 @@ save `base'
 foreach year of numlist 2014/2019 {
 foreach fe in `"cat_iso3c cat_year"' `"cat_year"' {
 foreach x_var in "ln_del_sum_pix" "ln_del_sum_pix_area" "ln_sum_pix" "ln_sum_pix_area" {
-local fe "cat_year cat_iso3c"
-local year 2014
-local x_var "ln_del_sum_pix_area"
+// local fe "cat_year cat_iso3c"
+// local year 2014
+// local x_var "ln_del_sum_pix_area"
 di "!!!!!!!!! `year' `fe' `x_var'"
 use "$input/sample_iso3c_year_pop_den__allvars2.dta", clear
 
