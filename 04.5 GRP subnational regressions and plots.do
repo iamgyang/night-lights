@@ -296,7 +296,7 @@ label booktabs nomtitle nobaselevels collabels(none) ///
 scalars("NC Number of Groups" "WR2 Adjusted Within R-squared" "AGG Aggregation Level") ///
 sfmt(3)
 
-// Subnational GRP regressions (all OECD ADM1 LEVEL) ------------------------------------------------------
+// Subnational GRP regressions (all OECD ADM1 LEVEL) ----------------------------------
 
 // import subnational map data
 use "$raw_data/National Accounts/geo_coded_data/oecd2_adm2NTL_map17feb22.dta", clear
@@ -391,5 +391,104 @@ b(3) se(3) star(* 0.10 ** 0.05 *** 0.01) ///
 label booktabs nomtitle nobaselevels collabels(none) ///
 scalars("NC Number of Groups" "WR2 Adjusted Within R-squared" "AGG Aggregation Level") ///
 sfmt(3)
+
+// Subnational GRP regressions (India) ----------------------------------
+
+// GRP data
+use "$raw_data/National Accounts/geo_coded_data/global_subnational_ntlmerged_woPHL.dta", clear
+keep if iso3c_x == "IND"
+keep year region GRP iso3c_x gid_1 name_1
+rename iso3c_x iso3c
+check_dup_id "gid_1 year iso3c"
+tempfile grp_subnatl_IND
+save `grp_subnatl_IND'
+
+// VIIRS NTL
+use "$input/NTL_VIIRS_appended_cleaned_all.dta", clear
+keep if iso3c == "IND"
+keep objectid iso3c gid_1 year month del_sum_pix del_sum_area
+gcollapse (sum) del_sum_pix (mean) del_sum_area, by(objectid iso3c gid_1 year)
+gcollapse (sum) del_sum_pix del_sum_area, by(iso3c gid_1 year)
+label variable del_sum_pix "VIIRS (cleaned) sum of pixels"
+label variable del_sum_area "VIIRS (cleaned) polygon area" 
+check_dup_id "iso3c gid_1 year"
+tempfile VIIRS_ntl
+save `VIIRS_ntl'
+
+// BM NTL
+use "$raw_data/Black Marble NTL/India/black_marble_india.dta", clear
+decode_vars, all
+keep objectid year month r_sum pol_area s_nm name_0 gid_1 name_1 gid_2
+naomit
+gcollapse (sum) r_sum (mean) pol_area, by(objectid gid_1 year)
+gcollapse (sum) r_sum pol_area, by(gid_1 year)
+check_dup_id "gid_1 year"
+destring year, replace
+label variable r_sum "BM sum of pixels"
+label variable pol_area "BM polygon area" 
+rename r_sum r_sum_pix
+tempfile BM_ntl
+save `BM_ntl'
+
+// merge all
+clear
+use `grp_subnatl_IND'
+mmerge gid_1 year using `VIIRS_ntl'
+mmerge gid_1 year using `BM_ntl'
+
+// create variables of interest
+gen del_sum_pix_area = del_sum_pix/del_sum_area
+gen r_sum_pix_area = r_sum_pix/pol_area
+label variable r_sum_pix_area "BM pixels/area"
+label variable del_sum_pix_area "VIIRS pixels/area"
+label variable GRP "Gross Regional Product"
+create_logvars "r_sum_pix del_sum_pix del_sum_pix_area r_sum_pix_area GRP"
+
+// checks
+scatter pol_area del_sum_area
+scatter del_sum_pix r_sum_pix
+
+levelsof region, local(region_levels)
+// foreach region in `region_levels' {
+// 	scatter ln_GRP ln_r_sum_pix if region == "`region'"
+// 	graph export "$input/`region'_india_lights_assoc.pdf"
+// }
+scatter ln_GRP ln_del_sum_pix, range()
+scatter ln_GRP ln_r_sum_pix 
+
+// regressions
+drop region
+rename gid_1 region
+create_categ(region year)
+
+// save
+save "$input/data_prior_to_india_regressions.dta", replace
+
+// clear regression estimates
+est clear
+
+// log GDP ~ log lights
+eststo: reghdfe ln_GRP ln_del_sum_pix_area, absorb(cat_region cat_year) vce(cluster cat_region)
+estadd local NC `e(N_clust)'
+local y= round(`e(r2_a_within)', .001)
+estadd local WR2 `y'
+estadd local AGG "ADM1"
+
+eststo: reghdfe ln_GRP ln_r_sum_pix, absorb(cat_region cat_year) vce(cluster cat_region)
+estadd local NC `e(N_clust)'
+local y= round(`e(r2_a_within)', .001)
+estadd local WR2 `y'
+estadd local AGG "ADM1"
+
+// export results into a tex file
+esttab using "$overleaf/subnatl_reg_GRP_IND.tex", replace f  ///
+b(3) se(3) star(* 0.10 ** 0.05 *** 0.01) ///
+label booktabs nomtitle nobaselevels collabels(none) ///
+scalars("NC Number of Groups" "WR2 Adjusted Within R-squared" "AGG Aggregation Level") ///
+sfmt(3)
+
+
+
+
 
 
