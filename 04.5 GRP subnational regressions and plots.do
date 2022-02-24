@@ -351,6 +351,9 @@ label variable ln_del_sum_pix_area "Log(VIIRS pixels/area)"
 label variable ln_sum_pix_area "Log(VIIRS pixels/area)"
 label variable ln_GRP "Log(Gross Regional Product)"
 
+// save:
+save "$input/oecd_prior_to_reg.dta", replace
+
 // graph:
 sepscatter ln_del_sum_pix_area ln_GRP, mc(red blue green purple) separate(iso3c) legend(size(*0.5) symxsize(*5) position(0) bplacement(nwest) region(lwidth(none)))
 gr export "$overleaf/scatter_GRP_log_log_subnatl_oecd.pdf", replace
