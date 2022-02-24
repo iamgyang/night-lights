@@ -80,6 +80,48 @@ twoway (scatter ln_GRP yhat if iso3c == "USA", msymbol(none) mlabel(region) mlab
 
 
 
+/* 
+DO THE SAME FOR SUBNATIONAL --- COMPLETELY DIFFERENT RESULTS!! ------ SUGGESTS USING LOG FIRST DIFFERENCES
+*/
+
+/* try out for 2019 */
+local year 2019
+use "$input/adm1_oecd_ntl_grp.dta", clear
+
+/* keep the data for model training */
+gen diff_yr_start = year - `year'
+keep if diff_yr_start <= 1
+assert !mi(diff_yr_start)
+
+/* create variable of interest */
+sort iso3c year
+by iso3c: gen ln_diff_GRP = log(GRP/GRP[_n-1]) if iso3c == iso3c[_n-1]
+by iso3c: gen ln_diff_del_sum_pix = log(del_sum_pix/del_sum_pix[_n-1]) if iso3c == iso3c[_n-1]
+
+/* fit the regression on training sample */
+reg ln_diff_GRP ln_diff_del_sum_pix if diff_yr_start <= 1
+scatter ln_diff_GRP  ln_diff_del_sum_pix 
+scatter ln_diff_GRP  ln_diff_del_sum_pix if iso3c == "USA"
+twoway (scatter ln_diff_GRP ln_diff_del_sum_pix if iso3c == "USA", msymbol(none) mlabel(region) mlabcolor(%50))
+
+/* predict on out of sample */
+use "$input/adm1_oecd_ntl_grp.dta", clear
+gen diff_yr_start = year - `year'
+keep if diff_yr_start == 1
+di "`fe'"
+predict yhat, xb
+twoway (scatter ln_GRP yhat, msymbol(none) mlabel(iso3c) mlabcolor(%50))
+twoway (scatter ln_GRP yhat if iso3c == "USA", msymbol(none) mlabel(region) mlabcolor(%50))
+
+
+
+
+
+
+
+
+
+
 
 
 
