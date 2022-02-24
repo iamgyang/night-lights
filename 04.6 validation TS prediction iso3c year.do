@@ -8,8 +8,6 @@ get the residual of this out-of-sample prediction into a table
 plot the residual values vs. time (to see any pattern)
  */
 
-use "$input/iso3c_year_viirs_new.dta", clear
-
 // create table to store output
 clear
 set obs 1
