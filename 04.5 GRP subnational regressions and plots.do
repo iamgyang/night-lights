@@ -9,7 +9,7 @@ tempfile wb_stat_capacity
 save `wb_stat_capacity'
 
 // get Europe regional GDP variable and generate categorical variables and log variables
-use "$raw_data/National Accounts/geo_coded_data/global_subnational_ntlmerged_woPHL.dta", clear
+use "$input/NUTS_validation.dta", clear
 encode country, gen( cat_iso3c )
 gen yr = string(year)
 encode yr, gen(cat_year)
@@ -31,11 +31,13 @@ rename ln_gdp ln_WDI
 
 // ok, this is going to be messy code, but I'm just adding another function here 
 // that is basically the same one as above, but without WB statistical capacity
-
+create_categ reg_name
 // run regressions
 gr_lev_reg, levels outfile("$overleaf/NUTS_regression.tex") ///
 	dep_vars(ln_del_sum_pix_area) ///
-	abs_vars(cat_iso3c cat_year)
+	abs_vars(cat_reg_name cat_year) ///
+	cluster_vars(cat_reg_name) ///
+	dep_var_label("Log VIIRS (cleaned) pixels/area")
 	
 // make graphs
 rename ln_WDI ln_gdp
@@ -439,12 +441,23 @@ use `grp_subnatl_IND'
 mmerge gid_1 year using `VIIRS_ntl'
 mmerge gid_1 year using `BM_ntl'
 
-// create variables of interest
+// create variables of interest (first differences)
 gen del_sum_pix_area = del_sum_pix/del_sum_area
 gen r_sum_pix_area = r_sum_pix/pol_area
 label variable r_sum_pix_area "BM pixels/area"
 label variable del_sum_pix_area "VIIRS pixels/area"
 label variable GRP "Gross Regional Product"
+
+drop region
+rename gid_1 region
+create_categ(region year)
+
+foreach var in GRP r_sum_pix_area r_sum_pix del_sum_pix del_sum_pix_area {
+	sort region year
+	by region: gen ln_diff_`var' = log(`var'/`var'[_n-1]) if region == region[_n-1]
+	loc lab: variable label `var'
+	label variable ln_diff_`var' "Log Diff. `lab'"
+}
 create_logvars "r_sum_pix del_sum_pix del_sum_pix_area r_sum_pix_area GRP"
 
 // checks
@@ -456,13 +469,8 @@ levelsof region, local(region_levels)
 // 	scatter ln_GRP ln_r_sum_pix if region == "`region'"
 // 	graph export "$input/`region'_india_lights_assoc.pdf"
 // }
-scatter ln_GRP ln_del_sum_pix, range()
 scatter ln_GRP ln_r_sum_pix 
-
-// regressions
-drop region
-rename gid_1 region
-create_categ(region year)
+scatter ln_diff_GRP ln_diff_r_sum_pix
 
 // save
 save "$input/data_prior_to_india_regressions.dta", replace
@@ -470,7 +478,14 @@ save "$input/data_prior_to_india_regressions.dta", replace
 // clear regression estimates
 est clear
 
+// regressions
 // log GDP ~ log lights
+eststo: reghdfe ln_diff_GRP ln_diff_del_sum_pix, absorb(cat_region cat_year) vce(cluster cat_region)
+estadd local NC `e(N_clust)'
+local y= round(`e(r2_a_within)', .001)
+estadd local WR2 `y'
+estadd local AGG "ADM1"
+
 eststo: reghdfe ln_GRP ln_del_sum_pix_area, absorb(cat_region cat_year) vce(cluster cat_region)
 estadd local NC `e(N_clust)'
 local y= round(`e(r2_a_within)', .001)
@@ -491,6 +506,41 @@ scalars("NC Number of Groups" "WR2 Adjusted Within R-squared" "AGG Aggregation L
 sfmt(3)
 
 
+// -*----------------------
+
+use "$input/adm1_oecd_ntl_grp.dta", clear
+tempfile full_subnatl_grp
+save `full_subnatl_grp'
+
+// clear regression estimates
+est clear
+
+// log GDP ~ log lights
+eststo: reghdfe ln_GRP ln_del_sum_pix_area, absorb(cat_region cat_year) vce(cluster cat_region)
+estadd local NC `e(N_clust)'
+local y= round(`e(r2_a_within)', .001)
+estadd local WR2 `y'
+estadd local AGG "ADM1"
+
+// log GDP ~ log lights, same countries @ COUNTRY level
+gcollapse (sum) GRP del_sum_pix del_sum_area, by(iso3c year)
+create_categ(iso3c year)
+gen ln_del_sum_pix_area = ln(del_sum_pix/del_sum_area)
+gen ln_GRP = ln(GRP)
+label variable ln_del_sum_pix_area "Log(VIIRS pixels/area)"
+label variable ln_GRP "Log(Gross Regional Product)"
+eststo: reghdfe ln_GRP ln_del_sum_pix_area, absorb(cat_iso3c cat_year) vce(cluster cat_iso3c)
+estadd local NC `e(N_clust)'
+local y= round(`e(r2_a_within)', .001)
+estadd local WR2 `y'
+estadd local AGG "Country"
+
+// export results into a tex file
+esttab using "$overleaf/subnatl_reg_GRP_oecd.tex", replace f  ///
+b(3) se(3) star(* 0.10 ** 0.05 *** 0.01) ///
+label booktabs nomtitle nobaselevels collabels(none) ///
+scalars("NC Number of Groups" "WR2 Adjusted Within R-squared" "AGG Aggregation Level") ///
+sfmt(3)
 
 
 
