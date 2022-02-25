@@ -94,15 +94,16 @@ keep if diff_yr_start <= 1
 assert !mi(diff_yr_start)
 
 /* create variable of interest */
-sort iso3c year
-by iso3c: gen ln_diff_GRP = log(GRP/GRP[_n-1]) if iso3c == iso3c[_n-1]
-by iso3c: gen ln_diff_del_sum_pix = log(del_sum_pix/del_sum_pix[_n-1]) if iso3c == iso3c[_n-1]
+sort region year
+by region: gen ln_diff_GRP = log(GRP/GRP[_n-1]) if region == region[_n-1]
+by region: gen ln_diff_del_sum_pix = log(del_sum_pix/del_sum_pix[_n-1]) if region == region[_n-1]
 
 /* fit the regression on training sample */
 reg ln_diff_GRP ln_diff_del_sum_pix if diff_yr_start <= 1
 scatter ln_diff_GRP  ln_diff_del_sum_pix 
 scatter ln_diff_GRP  ln_diff_del_sum_pix if iso3c == "USA"
 twoway (scatter ln_diff_GRP ln_diff_del_sum_pix if iso3c == "USA", msymbol(none) mlabel(region) mlabcolor(%50))
+reghdfe ln_diff_GRP ln_diff_del_sum_pix, absorb(cat_region cat_year)
 
 /* predict on out of sample */
 use "$input/adm1_oecd_ntl_grp.dta", clear
