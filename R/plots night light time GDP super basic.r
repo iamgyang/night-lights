@@ -86,8 +86,7 @@ load_new_WDI_data <- FALSE
 # THIS IS WHERE THE CODE BEGINS
 # ================================================================================
 
-sal <-
-  fread("C:/Users/user/Dropbox/CGD GlobalSat/HF_measures/input/own_test.csv")
+sal <- fread("C:/Users/user/Dropbox/CGD GlobalSat/HF_measures/input/own_test.csv")
 
 exp_loop <- fread(
   "country	region	income
