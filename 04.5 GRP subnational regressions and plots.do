@@ -171,6 +171,7 @@ create_categ(region year)
 
 tempfile full_subnatl_grp
 save `full_subnatl_grp'
+save "$input/India_Indonesia_Brazil_subnational.dta", replace
 
 est clear
 foreach i in "drop-US" "not drop US" {
@@ -504,44 +505,4 @@ b(3) se(3) star(* 0.10 ** 0.05 *** 0.01) ///
 label booktabs nomtitle nobaselevels collabels(none) ///
 scalars("NC Number of Groups" "WR2 Adjusted Within R-squared" "AGG Aggregation Level") ///
 sfmt(3)
-
-
-// -*----------------------
-
-use "$input/adm1_oecd_ntl_grp.dta", clear
-tempfile full_subnatl_grp
-save `full_subnatl_grp'
-
-// clear regression estimates
-est clear
-
-// log GDP ~ log lights
-eststo: reghdfe ln_GRP ln_del_sum_pix_area, absorb(cat_region cat_year) vce(cluster cat_region)
-estadd local NC `e(N_clust)'
-local y= round(`e(r2_a_within)', .001)
-estadd local WR2 `y'
-estadd local AGG "ADM1"
-
-// log GDP ~ log lights, same countries @ COUNTRY level
-gcollapse (sum) GRP del_sum_pix del_sum_area, by(iso3c year)
-create_categ(iso3c year)
-gen ln_del_sum_pix_area = ln(del_sum_pix/del_sum_area)
-gen ln_GRP = ln(GRP)
-label variable ln_del_sum_pix_area "Log(VIIRS pixels/area)"
-label variable ln_GRP "Log(Gross Regional Product)"
-eststo: reghdfe ln_GRP ln_del_sum_pix_area, absorb(cat_iso3c cat_year) vce(cluster cat_iso3c)
-estadd local NC `e(N_clust)'
-local y= round(`e(r2_a_within)', .001)
-estadd local WR2 `y'
-estadd local AGG "Country"
-
-// export results into a tex file
-esttab using "$overleaf/subnatl_reg_GRP_oecd.tex", replace f  ///
-b(3) se(3) star(* 0.10 ** 0.05 *** 0.01) ///
-label booktabs nomtitle nobaselevels collabels(none) ///
-scalars("NC Number of Groups" "WR2 Adjusted Within R-squared" "AGG Aggregation Level") ///
-sfmt(3)
-
-
-
 
