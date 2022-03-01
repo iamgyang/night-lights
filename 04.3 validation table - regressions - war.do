@@ -1,5 +1,5 @@
 local sample 0
-local yemen_syria_experiment 1
+local yemen_syria_experiment 0
 
 // WARNINGS -----------------------------------------------
 if (`sample' == 1) {
@@ -9,7 +9,7 @@ else if (`sample' != 1) {
 	di "YOU ARE USING ALL THE DATA"
 }
 if (`yemen_syria_experiment' == 1) {
-	di "YOU ARE RESTRICTING TO 24 COUNTRIES THAT ARE SIMILAR TO YEMEN AND SYRIA"
+	di "YOU ARE RESTRICTING TO 24 COUNTRIES THAT ARE SIMILAR IN GDPPC TO YEMEN AND SYRIA"
 }
 
 // DEFINE CUTOFF FOR TREATMENT ----------------------------------------------
@@ -19,10 +19,13 @@ foreach treat_var in affected deaths {
 
 			if (`sample' == 1) {
 				use "$input/sample_war_nat_disaster_event_prior_to_cutoff.dta", clear
+				/* drop if we don't have night lights data */
+				drop if mi(ln_del_sum_pix_area)
 			}
 			else {
 				use "$input/war_nat_disaster_event_prior_to_cutoff.dta", clear	
-			
+				/* drop if we don't have night lights data */
+				drop if mi(ln_del_sum_pix_area)
 			/* generate a variable that keeps countries that are close to GDP per capita of yemen 
 			and syria for diff-in-diff comparison */
 			if (`yemen_syria_experiment' == 1) {
@@ -144,7 +147,7 @@ foreach week_restriction in "3wk" " " {
 			keep if ((ttt <= 30) & (ttt>=-30)) | (missing(ttt))
 
 			#delimit ;
-			eventdd ln_sum_pix_area, hdfe absorb(cat_year cat_objectid cat_month) 
+			eventdd ln_del_sum_pix_area, hdfe absorb(cat_year cat_objectid cat_month) 
 			timevar(ttt) ci(rcap) cluster(cat_objectid) inrange lags(30) leads(30) 
 			graph_op(ytitle("Log Lights / Area") xlabel(-30(5)30))
 			;
@@ -158,7 +161,7 @@ foreach week_restriction in "3wk" " " {
 				Within R-squared, e(r2_within)) ///
 				title("`treat_var'" "(`pctile' percentile) `week_restriction'")
 
-			eststo: reghdfe ln_sum_pix_area post_tr, absorb(cat_year cat_objectid cat_month) vce(cluster cat_objectid)
+			eststo: reghdfe ln_del_sum_pix_area post_tr, absorb(cat_year cat_objectid cat_month) vce(cluster cat_objectid)
 			estadd local NC `e(N_clust)'
 			local y= round(`e(r2_a_within)', .001)
 			estadd local WR2 `y'
