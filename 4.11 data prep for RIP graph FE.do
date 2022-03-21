@@ -3,6 +3,7 @@
 		input str40 files_to_FE
 		"sample_iso3c_year_pop_den__allvars2"
 		"adm1_oecd_ntl_grp"
+        "India_Indonesia_Brazil_subnational"
 		end
 	levelsof files_to_FE, local(files_to_FE)
 
@@ -16,6 +17,10 @@ foreach file in `files_to_FE' {
         local Y WDI_ppp
     }
     else if ("`file'" == "adm1_oecd_ntl_grp") {
+        local location region
+        local Y GRP
+    }
+    else if ("`file'" == "India_Indonesia_Brazil_subnational") {
         local location region
         local Y GRP
     }
