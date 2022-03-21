@@ -88,6 +88,8 @@ glob <- readstata13::read.dta13("sample_iso3c_year_pop_den__allvars2_FE.dta")
 glob <- as.data.table(glob)
 oecd <- readstata13::read.dta13("adm1_oecd_ntl_grp_FE.dta")
 oecd <- as.data.table(oecd)
+iib <- readstata13::read.dta13("India_Indonesia_Brazil_subnational_FE.dta")
+iib <- as.data.table(iib)
 
 # checks Global:
 feols(ln_WDI_ppp ~ ln_del_sum_pix_area | as.factor(year), data = glob)
@@ -152,3 +154,7 @@ euo <- oecd[iso3c%in%name2code(EU)]
 make_graph(euo, "ln_del_sum_pix_area", "ln_GRP", "Log(Lights/Area)", "Log(GRP, LCU)", "euo_region_no_FE")
 make_graph(euo, "my_init_ln_del_sum_pix_area", "my_init_ln_GRP", "Log(Lights/Area) - year FE", "Log(GRP, LCU) - year FE", "euo_region_yr_FE")
 make_graph(euo, "mdln_del_sum_pix_area", "mdln_GRP", "Log(Lights/Area) - year & region FE", "Log(GRP, LCU) - year & region FE", "euo_region_yr_reg_FE")
+
+
+make_graph(iib, "ln_del_sum_pix_area", "ln_GRP", "Log(Lights/Area)", "Log(GRP, LCU)", "iib_region_no_FE")
+make_graph(iib, "mdln_del_sum_pix_area", "mdln_GRP", "Log(Lights/Area) - year & region FE", "Log(GRP, LCU) - year & region FE", "iib_region_yr_reg_FE")
