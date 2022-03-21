@@ -133,7 +133,7 @@ reghdfe ln_WDI ln_del_sum_pix_area, absorb(cat_iso3c cat_year) vce(cluster cat_i
 eststo country_wdi2
 estadd local NC `e(N_clust)'
 local y = round(`e(r2_a_within)', .001)
-estadd local WR2 `y'	
+estadd local WR2 `y'
 estadd local AGG "Country"
 estadd local Region_FE ""
 estadd local Year_FE "X"
