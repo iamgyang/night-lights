@@ -62,7 +62,7 @@ Do this for both DMSP and VIIRS, global, OECD, etc.
 foreach income_group in "Global" "OECD" "Not OECD" {
 foreach light_var in "VIIRS" "DMSP" {
 foreach LHS_var in "Synthetic GDP" "Actual GDP" {
-foreach fixed_effects in "cat_year cat_iso3c" "cat_year" "cat_iso3c" {
+foreach fixed_effects in "cat_year cat_iso3c" {
 
 use "$input/clean_synthetic_reg_prior.dta", replace
 br
@@ -240,44 +240,6 @@ di "`income_group'_`light_var'_`LHS_var'_`fixed_effects'"
 
 use "$input/clean_synthetic_reg_prior.dta", clear
 scatter ln_rgdp_lcu ln_del_sum_pix
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
