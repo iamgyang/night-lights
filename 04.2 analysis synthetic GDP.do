@@ -165,7 +165,7 @@ save "$input/synthetic_gdp_results.dta", replace
 
 foreach light_var in "DMSP" "VIIRS" {
 foreach income_group in "OECD" "Not OECD" "Global" {
-foreach fixed_effects in "year and country" "year" "country" {
+foreach fixed_effects in "year and country" {
 
 use "$input/synthetic_gdp_results.dta", clear
 
@@ -191,35 +191,29 @@ local x_axis_end `r(max)'
 set graphics off
 # delimit ;
 twoway (line point yr_start if LHS_var == "Actual GDP", lcolor(red)) 
-(line point yr_start if  LHS_var == "Synthetic GDP", lcolor(blue)) 
-(scatter point yr_start) (rcap ul ll yr_start, lcolor(%50) msize(4-pt)), 
+(scatter point yr_start if LHS_var == "Actual GDP") (rcap ul ll yr_start if LHS_var == "Actual GDP", lcolor(%50) msize(4-pt)), 
 ytitle("`ytitle'") ytitle(, 
 orientation(horizontal)) xtitle("") 
-legend(on order(1 "Actual GDP" 2 "Synthetic GDP")
-margin(zero) nobox region(fcolor(none) margin(zero) lcolor(none)) 
-position(12))
 xsize(10) ysize(5)
 xlabel(`x_axis_start'(2)`x_axis_end')
+legend(off)
 ;
 # delimit cr
-gr export "$overleaf/synthetic_GDP_`light_var'_`income_group'_`fixed_effects'_fixed_effects.pdf", replace
+gr export "$overleaf/synthetic_GDP_`light_var'_`income_group'_`fixed_effects'_fixed_effects.png", replace
 set graphics on
 
 set graphics off
 # delimit ;
 twoway (line WR2 yr_start if LHS_var == "Actual GDP", lcolor(red)) 
-(line WR2 yr_start if  LHS_var == "Synthetic GDP", lcolor(blue)) 
-(scatter WR2 yr_start) , 
+(scatter WR2 yr_start if LHS_var == "Actual GDP") , 
 ytitle("`ytitle'") ytitle(, 
 orientation(horizontal)) xtitle("") 
-legend(on order(1 "Actual GDP" 2 "Synthetic GDP")
-margin(zero) nobox region(fcolor(none) margin(zero) lcolor(none)) 
-position(12))
 xsize(10) ysize(5)
 xlabel(`x_axis_start'(2)`x_axis_end')
+legend(off)
 ;
 # delimit cr
-gr export "$overleaf/synthetic_GDP_`light_var'_`income_group'_`fixed_effects'_fixed_effects_WR2.pdf", replace
+gr export "$overleaf/synthetic_GDP_`light_var'_`income_group'_`fixed_effects'_fixed_effects_WR2.png", replace
 set graphics on
 
 }
@@ -228,7 +222,7 @@ set graphics on
 
 foreach light_var in "DMSP" "VIIRS" {
 foreach income_group in "OECD" "Not OECD" "Global" {
-foreach fixed_effects in "year and country" "year" "country" {
+foreach fixed_effects in "year and country" {
 di "synthetic_GDP_`light_var'_`income_group'_`fixed_effects'_fixed_effects.pdf"
 }
 }
