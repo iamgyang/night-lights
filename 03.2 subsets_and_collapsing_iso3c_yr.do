@@ -13,7 +13,7 @@ mmerge iso3c year using "$input/clean_high_density_ntl.dta"
 drop _merge
 
 // merge in other NTL versions:
-mmerge iso3c year using "$intermediate_data/adm0-annual/vrsmn_adm0_ann_2.dta"
+mmerge iso3c year using "$intermediate_data/Aggregated Datasets/Aggregated Datasets/adm0-annual/vrsmn_adm0_ann_2.dta"
 drop sum_pix_pagg pol_area_pagg imf_rgdp_lcu_pagg PWT_pagg WDI_pagg ox_anrgdp_lcu_pagg _merge
 rename *_pagg *
 
