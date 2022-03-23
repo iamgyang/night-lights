@@ -4,7 +4,6 @@ est clear
 	clear	
 		input str40 files_to_FE
 		"sample_iso3c_year_pop_den__allvars2"
-        "India_Indonesia_Brazil_subnational"
 		end
 	levelsof files_to_FE, local(files_to_FE)
 
@@ -20,7 +19,7 @@ foreach file in `files_to_FE' {
         local AGG "Country"
         local Region_FE ""
         local Country_FE "X"
-        local extra_NTL_var del_sum_pix_94
+        local extra_NTL_var del_sum_pix_94 bm_sumpix
     }
     /* else if ("`file'" == "adm1_oecd_ntl_grp") {
         local est_name oecd
@@ -50,15 +49,19 @@ foreach file in `files_to_FE' {
 	label variable covid_dummy "Covid Dummy"
 
     if ("`file'" == "sample_iso3c_year_pop_den__allvars2") {
-        gen ln_del_sum_pix_94 = log(del_sum_pix_94)
-        reghdfe ln_del_sum_pix_94 covid_dummy, absorb(cat_`location') vce(cluster cat_`location')
-        eststo `est_name'reg2
-        estadd local AGG "`AGG'"
-        estadd local NC `e(N_clust)'
-        local y = round(`e(r2_a_within)', .001)
-        estadd local WR2 `y'
-        estadd local Region_FE "`Region_FE'"
-        estadd local Country_FE "`Country_FE'"
+        local num_count = 2
+        foreach var in `extra_NTL_var' {
+            gen ln_`var' = log(`var')
+            reghdfe ln_`var' covid_dummy, absorb(cat_`location') vce(cluster cat_`location')
+            eststo `est_name'reg`num_count'
+            estadd local AGG "`AGG'"
+            estadd local NC `e(N_clust)'
+            local y = round(`e(r2_a_within)', .001)
+            estadd local WR2 `y'
+            estadd local Region_FE "`Region_FE'"
+            estadd local Country_FE "`Country_FE'"
+            local num_count = `num_count' + 1
+        }
     }
 
     gen ln_del_sum_pix = log(del_sum_pix)
@@ -74,9 +77,10 @@ foreach file in `files_to_FE' {
     
 }
 
-esttab iibreg1 globalreg1 globalreg2  ///
+
+esttab iibreg1 globalreg1 globalreg2 globalreg3  ///
 using "$overleaf/covid_levels.tex", ///
-mgroups("India, Indonesia, Brazil" "Global" "Global (94th pct pop density)", pattern(1 1 1) span prefix(\multicolumn{@span}{c}{) suffix(})) ///
+mgroups("India, Indonesia, Brazil" "Global" "Global (94th pct pop density)" "Global (BM)", pattern(1 1 1 1) span prefix(\multicolumn{@span}{c}{) suffix(})) ///
 scalars("AGG Aggregation Level" "NC Number of Groups" "WR2 Adjusted Within R-squared" "Region_FE Region Fixed Effects" "Country_FE Country Fixed Effects") ///
 nomtitles ///
 b(3) se(3) star(* 0.10 ** 0.05 *** 0.01) sfmt(3) ///
