@@ -110,6 +110,17 @@ syntax varlist(max=1)
 drop if `varlist' == "AUS" |`varlist' == "AUT" |`varlist' == "BEL" |`varlist' == "CAN" |`varlist' == "CHL" |`varlist' == "COL" |`varlist' == "CRI" |`varlist' == "CZE" |`varlist' == "DNK" |`varlist' == "EST" |`varlist' == "FIN" |`varlist' == "FRA" |`varlist' == "DEU" |`varlist' == "GRC" |`varlist' == "HUN" |`varlist' == "ISL" |`varlist' == "IRL" |`varlist' == "ISR" |`varlist' == "ITA" |`varlist' == "JPN" |`varlist' == "KOR" |`varlist' == "LVA" |`varlist' == "LTU" |`varlist' == "LUX" |`varlist' == "MEX" |`varlist' == "NLD" |`varlist' == "NZL" |`varlist' == "NOR" |`varlist' == "POL" |`varlist' == "PRT" |`varlist' == "SVK" |`varlist' == "SVN" |`varlist' == "ESP" |`varlist' == "SWE" |`varlist' == "CHE" |`varlist' == "TUR" |`varlist' == "GBR" |`varlist' == "USA"
 end
 
+quietly capture program drop label_oecd
+program label_oecd
+syntax varlist(max=1)
+gen OECD = ""
+foreach i in "AUS" "AUT" "BEL" "CAN" "CHL" "COL" "CRI" "CZE" "DNK" "EST" "FIN" "FRA" "DEU" "GRC" "HUN" "ISL" "IRL" "ISR" "ITA" "JPN" "KOR" "LVA" "LTU" "LUX" "MEX" "NLD" "NZL" "NOR" "POL" "PRT" "SVK" "SVN" "ESP" "SWE" "CHE" "TUR" "GBR" "USA" {
+    replace OECD = "yes" if `varlist' == "`i'"
+}
+replace OECD = "no" if mi(OECD)
+assert !mi(OECD)
+end
+
 // create categorical variables:
 quietly capture program drop create_categ
 program create_categ
@@ -139,7 +150,7 @@ if "`all'" != "" {
 	foreach v of varlist `r(varlist)'{
 		rename `v' `v'_old
 		decode `v'_old, gen(`v')
-		replace `v' = string(`v'_old) if missing(`v')
+		/* replace `v' = string(`v'_old) if missing(`v') */
 	}
 	drop *_old
 }
@@ -147,7 +158,7 @@ else if "`all'" == "" {
 	foreach v of local varlist {
 		rename `v' `v'_old
 		decode `v'_old, gen(`v')
-		replace `v' = string(`v'_old) if missing(`v')
+		/* replace `v' = string(`v'_old) if missing(`v') */
 	}
 	drop *_old
 }
