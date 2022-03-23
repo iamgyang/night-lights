@@ -75,9 +75,6 @@ perfect) */
 
     drop if mi(GRP) | mi(gid_1) | mi(year)
 
-// label the OECD variables
-    label_oecd iso3c
-
 // drop if we got it directly from the country website (bettrer than OECD data)
     drop if (iso3c == "BRA" | iso3c == "IDN" | iso3c == "IND" | iso3c == "USA") & (source == "OECD")
 
@@ -88,21 +85,31 @@ perfect) */
     keep if n==1
 
 // collapse to OECD region level
-    gcollapse (sum) del_sum_pix sum_pix del_sum_area sum_area (mean) GRP, ///
+    gcollapse (sum) del_sum_pix del_sum_area bm_sumpix pol_area (mean) GRP, ///
         by(gid_1 iso3c year source)
     rename gid_1 region
-
+	
+	// remove fake zeros
+	foreach i in del_sum_pix del_sum_area bm_sumpix pol_area {
+	    replace `i' = . if `i' == 0
+	}
+	
+	scatter pol_area del_sum_area
+	
 // create variables of interest
     gen ln_del_sum_pix_area = ln(del_sum_pix/del_sum_area)
-    gen ln_sum_pix_area = ln(sum_pix/sum_area)
     gen ln_sum_pix_bm_area = ln(bm_sumpix/pol_area)
-    create_logvars "GRP del_sum_pix sum_pix bm_sumpix"
+    create_logvars "GRP del_sum_pix bm_sumpix"
     label variable ln_del_sum_pix_area "Log(VIIRS pixels/area)"
     label variable ln_sum_pix_bm_area "Log(BM pixels/area)"
-    label variable ln_sum_pix_area "Log(VIIRS pixels/area)"
     label variable ln_GRP "Log(Gross Regional Product)"
 
-create_categ(region iso3c year)
+	// label the OECD variables
+    label_oecd iso3c
+	
+	// create categorical variables
+	create_categ(region iso3c year)
 
 // save:
 save "$input/subnational_GRP.dta", replace
+
