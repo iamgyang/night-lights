@@ -39,6 +39,7 @@ list.of.packages <-
     "tidyr",
     "glue",
     "fst",
+    "fixest",
     "readstata13"
   )
 
@@ -65,11 +66,10 @@ source(paste0(
 # THIS IS WHERE THE ACTUAL CODE BEGINS
 ###########################################################################
 
-make_graph <- function(data_f, x,y,xlab, ylab,filename){
-  plot <- ggplot(data_f, 
-                 aes(
-                   x = eval(as.name(x)),
-                   y = eval(as.name(y)))) +
+make_graph <- function(data_f, x, y, xlab, ylab, filename) {
+  plot <- ggplot(data_f,
+                 aes(x = eval(as.name(x)),
+                     y = eval(as.name(y)))) +
     geom_point() +
     my_custom_theme +
     geom_smooth(
@@ -78,83 +78,46 @@ make_graph <- function(data_f, x,y,xlab, ylab,filename){
       size = 0.5,
       colour = 'red'
     ) +
-    labs(x = xlab, 
+    labs(x = xlab,
          y = ylab)
   
-  ggsave(glue("{filename}.png"), plot, width = 8, height = 6)
+  ggsave(glue("{filename}.png"),
+         plot,
+         width = 8,
+         height = 6)
 }
 
-glob <- readstata13::read.dta13("sample_iso3c_year_pop_den__allvars2_FE.dta")
-glob <- as.data.table(glob)
-oecd <- readstata13::read.dta13("adm1_oecd_ntl_grp_FE.dta")
-oecd <- as.data.table(oecd)
-iib <- readstata13::read.dta13("India_Indonesia_Brazil_subnational_FE.dta")
-iib <- as.data.table(iib)
-
-# checks Global:
-feols(ln_WDI_ppp ~ ln_del_sum_pix_area | as.factor(year), data = glob)
-feols(ln_WDI_ppp ~ ln_del_sum_pix_area |
-        as.factor(year) + iso3c, data = glob)
-lm(mdln_WDI_ppp ~ mdln_del_sum_pix_area, data = glob)
-lm(my_init_ln_WDI_ppp ~ my_init_ln_del_sum_pix_area, data = glob)
-
-# checks OECD:
-feols(ln_GRP ~ ln_del_sum_pix_area | as.factor(year), data = oecd)
-feols(ln_GRP ~ ln_del_sum_pix_area |
-        as.factor(year) + region, data = oecd)
-lm(mdln_GRP ~ mdln_del_sum_pix_area, data = oecd)
-lm(my_init_ln_GRP ~ my_init_ln_del_sum_pix_area, data = oecd)
-
-# EU countries:
-EU <- c(
-  "Austria",
-  "Belgium",
-  "Bulgaria",
-  "Croatia",
-  "Republic of Cyprus",
-  "Czech Republic",
-  "Denmark",
-  "Estonia",
-  "Finland",
-  "France",
-  "Germany",
-  "Greece",
-  "Hungary",
-  "Ireland",
-  "Italy",
-  "Latvia",
-  "Lithuania",
-  "Luxembourg",
-  "Malta",
-  "Netherlands",
-  "Poland",
-  "Portugal",
-  "Romania",
-  "Slovakia",
-  "Slovenia",
-  "Spain",
-  "Sweden"
-)
-
-# Make graphs -------------------------------------------
-
-# global lights to GDP
-make_graph(glob, "ln_del_sum_pix_area", "ln_WDI_ppp", "Log(Lights/Area)", "Log(GDP, PPP)", "global_country_no_FE")
-make_graph(glob, "my_init_ln_del_sum_pix_area", "my_init_ln_WDI_ppp", "Log(Lights/Area) - year FE", "Log(GDP, PPP) - year FE", "global_country_yr_FE")
-make_graph(glob, "mdln_del_sum_pix_area", "mdln_WDI_ppp", "Log(Lights/Area) - year & country FE", "Log(GDP, PPP) - year & country FE", "global_country_yr_iso_FE")
-
-# do the same for OECD
-make_graph(oecd, "ln_del_sum_pix_area", "ln_GRP", "Log(Lights/Area)", "Log(GRP, LCU)", "oecd_region_no_FE")
-make_graph(oecd, "my_init_ln_del_sum_pix_area", "my_init_ln_GRP", "Log(Lights/Area) - year FE", "Log(GRP, LCU) - year FE", "oecd_region_yr_FE")
-make_graph(oecd, "mdln_del_sum_pix_area", "mdln_GRP", "Log(Lights/Area) - year & region FE", "Log(GRP, LCU) - year & region FE", "oecd_region_yr_reg_FE")
-
-# do the same for Europe:
-euo <- oecd[iso3c%in%name2code(EU)]
-
-make_graph(euo, "ln_del_sum_pix_area", "ln_GRP", "Log(Lights/Area)", "Log(GRP, LCU)", "euo_region_no_FE")
-make_graph(euo, "my_init_ln_del_sum_pix_area", "my_init_ln_GRP", "Log(Lights/Area) - year FE", "Log(GRP, LCU) - year FE", "euo_region_yr_FE")
-make_graph(euo, "mdln_del_sum_pix_area", "mdln_GRP", "Log(Lights/Area) - year & region FE", "Log(GRP, LCU) - year & region FE", "euo_region_yr_reg_FE")
-
-
-make_graph(iib, "ln_del_sum_pix_area", "ln_GRP", "Log(Lights/Area)", "Log(GRP, LCU)", "iib_region_no_FE")
-make_graph(iib, "mdln_del_sum_pix_area", "mdln_GRP", "Log(Lights/Area) - year & region FE", "Log(GRP, LCU) - year & region FE", "iib_region_yr_reg_FE")
+for (file in c ("subnational_GRP", "sample_iso3c_year_pop_den__allvars2")) {
+  for (RHS in c("ln_del_sum_pix_area", "ln_sum_pix_bm_area")) {
+    for (income_group in c("OECD", "Not_OECD")) {
+      if (file == "subnational_GRP") {
+        LHS <- "ln_GRP"
+        FE <- "region"
+      }
+      if (file == "sample_iso3c_year_pop_den__allvars2") {
+        LHS <- "ln_WDI_ppp"
+        FE <- "iso3c"
+      }
+      
+      natl <- readstata13::read.dta13(glue("{file}_{RHS}_{income_group}_FE.dta"))
+      natl <- as.data.table(natl)
+      # try(natl <- rename(natl, "region" = "cat_region") %>% as.data.table())
+      
+      # # checks
+      # feols(eval(as.name(LHS)) ~ eval(as.name(RHS)) |
+      #       as.factor(year) + as.factor(eval(as.name(FE))),
+      #       data = natl)
+      # lm(mdln_WDI_ppp ~ mdln_del_sum_pix_area, data = natl)
+      
+      # lights to GDP
+      make_graph(
+        natl,
+        glue("md{RHS}"),
+        glue("md{LHS}"),
+        glue("Log(Lights/Area) - year & {FE} FE"),
+        glue("Log(GDP, PPP) - year & {FE} FE"),
+        glue("{RHS}_{income_group}_{file}_graph")
+      )
+    }
+  }
+}
