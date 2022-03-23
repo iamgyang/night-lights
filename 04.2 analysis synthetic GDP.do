@@ -1,46 +1,8 @@
-// Create Synthetic GDP ---------------------------------------------------
-
-local use_taxes "no"
-
-use "$input/clean_merged_synth.dta", clear
-
-replace deflator = deflator / 100
-assert deflator < 20 | missing(deflator) | iso3c == "ZWE"
-
-// credit is a percentage of GDP, so convert it to an actual number:
-replace credit = credit * rgdp_lcu / 100
-
-// electricity should be population multiplied by per capita measure:
-gen elec = elec_pc * poptotal
-
-// taxes should be deflated as they're in local currency units:
-replace taxes_exc_soc = taxes_exc_soc / deflator
-
-keep iso3c year taxes_exc_soc imports exports credit rgdp_lcu elec
-label variable taxes_exc_soc "Gen govt tax revenue" // (constant LCU)
-label variable imports "Imports" //(constant USD)
-label variable exports "Exports" //(constant USD)
-label variable credit "Credit to private sector" //(constant LCU)
-label variable rgdp_lcu "GDP" //(real, LCU)
-label variable elec "Electricity consumption" //(kWh)
-
-// logged variables:
-create_logvars "taxes_exc_soc imports exports credit rgdp_lcu elec"
-
-// merge with lights
-mmerge iso3c year using "$input/sample_iso3c_year_pop_den__allvars2.dta"
-keep if _merge == 3
-
-
-save "$input/clean_synthetic_reg_prior.dta", replace
-
-
 // create table to store output
 clear
 set obs 1
 gen income_group = "N/A"
 gen light_var = "N/A"
-gen LHS_var = "N/A"
 gen ul = 99999999
 gen point = 99999999
 gen ll = 99999999
@@ -61,7 +23,6 @@ Do this for both DMSP and VIIRS, global, OECD, etc.
 
 foreach income_group in "Global" "OECD" "Not OECD" {
 foreach light_var in "VIIRS" "DMSP" {
-foreach LHS_var in "Synthetic GDP" "Actual GDP" {
 foreach fixed_effects in "cat_year cat_iso3c" {
 
 use "$input/clean_synthetic_reg_prior.dta", replace
@@ -75,11 +36,7 @@ else if "`income_group'" == "Not OECD" {
 drop_oecd, iso_var(iso3c)
 }
 
-loc dep_vars ln_imports ln_exports ln_credit ln_elec 
-reg ln_rgdp_lcu `dep_vars'
-predict yhat, xb
-
-keep yhat ln_rgdp_lcu ln_del_sum_pix_area year ln_sum_light_dmsp_div_area cat_iso3c cat_year
+keep ln_rgdp_lcu ln_del_sum_pix_area year ln_sum_light_dmsp_div_area cat_iso3c cat_year
 
 // define the years we do the regression on
 if "`light_var'" == "VIIRS" {
@@ -94,12 +51,7 @@ else if "`light_var'" == "DMSP" {
 }
 
 // define the LHS var:
-if "`LHS_var'" == "Synthetic GDP" {
-	rename yhat LHS_var
-}
-else if "`LHS_var'" == "Actual GDP" {
-	rename ln_rgdp_lcu LHS_var
-}
+rename ln_rgdp_lcu LHS_var
 
 // regressions
 est clear
@@ -125,7 +77,6 @@ foreach year of numlist `years' {
 	set obs 1
 	gen income_group = "`income_group'"
 	gen light_var = "`light_var'"
-	gen LHS_var = "`LHS_var'"
 	gen fixed_effects = "`fixed_effects'"
 	gen point = `b'
 	gen ul = `ul'
@@ -143,14 +94,13 @@ foreach year of numlist `years' {
 
 local scalar_labels `"scalars("NC Number of Countries" "WR2 Adjusted Within R-squared")"'
 
-esttab using "$overleaf/`income_group'_`light_var'_`LHS_var'_`fixed_effects'.tex", replace f  ///
+esttab using "$overleaf/`income_group'_`light_var'_`fixed_effects'.tex", replace f  ///
 b(3) se(3) ar2 nomtitle label star(* 0.10 ** 0.05 *** 0.01) ///
 booktabs collabels(none) mgroups(`years_group', ///
 pattern(1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1) ///
 prefix(\multicolumn{@span}{c}{) suffix(}) span erepeat(\cmidrule(lr){@span})) ///
 coeflabel(RHS_var "Log Lights/Area") ///
 `scalar_labels'
-}
 }
 }
 }
@@ -190,8 +140,8 @@ local x_axis_end `r(max)'
 // graphs
 set graphics off
 # delimit ;
-twoway (line point yr_start if LHS_var == "Actual GDP", lcolor(red)) 
-(scatter point yr_start if LHS_var == "Actual GDP") (rcap ul ll yr_start if LHS_var == "Actual GDP", lcolor(%50) msize(4-pt)), 
+twoway (line point yr_start, lcolor(red)) 
+(scatter point yr_start) (rcap ul ll yr_start, lcolor(%50) msize(4-pt)), 
 ytitle("`ytitle'") ytitle(, 
 orientation(horizontal)) xtitle("") 
 xsize(10) ysize(5)
@@ -204,8 +154,8 @@ set graphics on
 
 set graphics off
 # delimit ;
-twoway (line WR2 yr_start if LHS_var == "Actual GDP", lcolor(red)) 
-(scatter WR2 yr_start if LHS_var == "Actual GDP") , 
+twoway (line WR2 yr_start, lcolor(red)) 
+(scatter WR2 yr_start) , 
 ytitle("`ytitle'") ytitle(, 
 orientation(horizontal)) xtitle("") 
 xsize(10) ysize(5)
@@ -220,23 +170,6 @@ set graphics on
 }
 }
 
-foreach light_var in "DMSP" "VIIRS" {
-foreach income_group in "OECD" "Not OECD" "Global" {
-foreach fixed_effects in "year and country" {
-di "synthetic_GDP_`light_var'_`income_group'_`fixed_effects'_fixed_effects.pdf"
-}
-}
-}
-
-foreach income_group in "Global" "OECD" "Not OECD" {
-foreach light_var in "VIIRS" "DMSP" {
-foreach LHS_var in "Synthetic GDP" "Actual GDP" {
-foreach fixed_effects in "cat_year cat_iso3c" "cat_year" "cat_iso3c" {
-di "`income_group'_`light_var'_`LHS_var'_`fixed_effects'"
-}
-}
-}
-}
 
 use "$input/clean_synthetic_reg_prior.dta", clear
 scatter ln_rgdp_lcu ln_del_sum_pix
