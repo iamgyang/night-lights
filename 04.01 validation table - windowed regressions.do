@@ -1,17 +1,4 @@
-/*
-           _           _                             
-          (_)         | |                            
- __      ___ _ __   __| | _____      __              
- \ \ /\ / / | '_ \ / _` |/ _ \ \ /\ / /              
-  \ V  V /| | | | | (_| | (_) \ V  V /               
-   \_/\_/ |_|_| |_|\__,_|\___/ \_/\_/                
-                  __  __ _      _            _       
-                 / _|/ _(_)    (_)          | |      
-   ___ ___   ___| |_| |_ _  ___ _  ___ _ __ | |_ ___ 
-  / __/ _ \ / _ \  _|  _| |/ __| |/ _ \ '_ \| __/ __|
- | (_| (_) |  __/ | | | | | (__| |  __/ | | | |_\__ \
-  \___\___/ \___|_| |_| |_|\___|_|\___|_| |_|\__|___/
-*/
+// WINDOW COEFFICIENTS -------------------------------------------
 
 clear
 set obs 1
@@ -171,22 +158,7 @@ sort gdp_var
 gduplicates drop
 save "$input/window_reg_results.dta", replace
 
-/*
-           _           _                
-          (_)         | |               
- __      ___ _ __   __| | _____      __ 
- \ \ /\ / / | '_ \ / _` |/ _ \ \ /\ / / 
-  \ V  V /| | | | | (_| | (_) \ V  V /  
-   \_/\_/ |_|_| |_|\__,_|\___/ \_/\_/   
-                       | |              
-   __ _ _ __ __ _ _ __ | |__  ___       
-  / _` | '__/ _` | '_ \| '_ \/ __|      
- | (_| | | | (_| | |_) | | | \__ \      
-  \__, |_|  \__,_| .__/|_| |_|___/      
-   __/ |         | |                    
-  |___/          |_|                    
-
-*/
+// WINDOW GRAPHS -------------------------------------------
 
 // Graph
 foreach fix_samp in varied_samp fixed_samp {
@@ -247,47 +219,5 @@ gr export "$overleaf/graph_`gdp_var'_`fix_yr'_`fix_samp'.pdf", replace
 }
 }
 }
-
-//                                 (_) |        
-//   ___ ___  _ __   ___ __ ___   ___| |_ _   _ 
-//  / __/ _ \| '_ \ / __/ _` \ \ / / | __| | | |
-// | (_| (_) | | | | (_| (_| |\ V /| | |_| |_| |
-//  \___\___/|_| |_|\___\__,_| \_/ |_|\__|\__, |
-//                                         __/ |
-//                                        |___/ 
-
-use "$input/sample_iso3c_year_pop_den__allvars2.dta", clear
-keep if year == 2013 | year == 2020
-keep iso3c year cat_income2012 ln_WDI_ppp_pc ln_WDI ln_del_sum_pix_area
-naomit
-sort iso3c year
-
-// logged variables
-loc gdp_var ln_WDI ln_WDI_ppp_pc
-loc light_var ln_del_sum_pix_area
-foreach i in `gdp_var' `light_var' {
-	bys iso3c: gen lg_`i' = `i'[_n+1] - `i'
-	loc lab: variable label `i'
-	label variable lg_`i' "Long Difference `lab'"
-}
-naomit
-
-gen income = ""
-replace income = "LIC" if cat_income2012 == 1
-replace income = "LMIC" if cat_income2012 == 2
-replace income = "UMIC" if cat_income2012 == 3
-replace income = "HIC" if cat_income2012 == 4
-
-save "$input/long_diff_concavity_dataset.dta", replace
-
-// regress long diff log GDP ~ long diff log lights + log lights 2012 : long diff log lights
-est clear
-eststo: reg lg_ln_WDI lg_ln_del_sum_pix_area c.lg_ln_del_sum_pix_area#c.ln_del_sum_pix_area, vce(hc3)
-eststo: reg lg_ln_WDI lg_ln_del_sum_pix_area i.cat_income2012#c.ln_del_sum_pix_area, vce(hc3)
-esttab using "$overleaf/concavity.tex", replace f  ///
-b(3) se(3) star(* 0.10 ** 0.05 *** 0.01) ///
-label booktabs nobaselevels collabels(none) ///
-sfmt(3)
-
 
 
