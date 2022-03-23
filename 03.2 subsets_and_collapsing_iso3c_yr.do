@@ -280,8 +280,7 @@ assert !(mi(del_sum_pix_79_area) & !mi(del_sum_pix_area))
 // // everywhere where VIIRS is not missing for 2017-2020, we should have BM:
 // preserve
 // keep if inlist(year, 2017, 2018, 2019, 2020) & !mi(del_sum_pix_area)
-// keep iso3c year del_sum_pix del_sum_area ln_del_sum_pix g_ln_del_sum_pix_area ///
-// iso3c year bm_sumpix sum_pix_bm_area bm_sumpix_pc ln_bm_sumpix ln_sum_pix_bm_area ln_bm_sumpix_pc g_ln_bm_sumpix g_ln_sum_pix_bm_area g_ln_bm_sumpix_pc g_an_ln_bm_sumpix g_an_ln_sum_pix_bm_area g_an_ln_bm_sumpix_pc
+// keep iso3c year del_sum_pix del_sum_area ln_del_sum_pix g_ln_del_sum_pix_area iso3c year bm_sumpix sum_pix_bm_area bm_sumpix_pc ln_bm_sumpix ln_sum_pix_bm_area ln_bm_sumpix_pc g_ln_bm_sumpix g_ln_sum_pix_bm_area g_ln_bm_sumpix_pc g_an_ln_bm_sumpix g_an_ln_sum_pix_bm_area g_an_ln_bm_sumpix_pc
 // assert !mi(sum_pix_bm_area)
 // restore // !!!!!!!!!!!!!!!!!!!!!!!! ok, this is not true... we're missing some countries (mostly islands?)
 
