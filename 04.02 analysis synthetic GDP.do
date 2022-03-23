@@ -41,7 +41,7 @@ foreach light_var in "VIIRS" "DMSP" "BM" {
 				// define the LHS var:
 				rename ln_GRP LHS_var
 				// define fixed effects
-				local fixed_effects in "cat_year cat_region"
+				local fixed_effects "cat_year cat_region"
 			}
 			
 			// define which countries we keep
@@ -75,7 +75,7 @@ foreach light_var in "VIIRS" "DMSP" "BM" {
 			est clear
 			foreach year of numlist `years' {
 
-				eststo: reghdfe LHS_var RHS_var if (year == `year' | year == `year' + 1), absorb(`fixed_effects') vce(cluster cat_iso3c)
+				eststo: reghdfe LHS_var RHS_var if (year == `year' | year == `year' + 1), absorb(`fixed_effects') vce(cluster `agg_level')
 				estadd local NC `e(N_clust)'
 				local y= round(`e(r2_a_within)', .001)
 				estadd local WR2 `y'
@@ -142,6 +142,12 @@ foreach light_var in "VIIRS" "DMSP" "BM" {
 			keep if agg_level == "`agg_level'"
 			keep if income_group == "`income_group'"
 			keep if light_var == "`light_var'"
+
+			// move on if we're missing observations:
+			describe
+			if (`r(N)' == 0) {
+				continue
+			}
 
 			// get start and end years:
 			summarize yr_start
