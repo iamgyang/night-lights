@@ -1,4 +1,4 @@
-use "$raw_data/Black Marble NTL/bm_adm1_1622.dta", clear
+use "$raw_data/Black Marble NTL/bm_adm1_1322.dta", clear
 decode_vars, all
 rename *, lower
 
@@ -32,15 +32,21 @@ rename gid_0 iso3c
 
 save "$input/bm_adm1_month.dta", replace
 
-// assert !mi(iso3c) & !mi(gid_1) & !mi(name_1) // SOME PROBLEM WITH THE DATA?!
+// assert !mi(iso3c) & !mi(gid_1) & !mi(name_1) // !!!!!!!!!!!! SOME PROBLEM WITH THE DATA?!
 
 // collapse across years
 gcollapse (sum) bm_sumpix (mean) pol_area, by(iso3c gid_1 name_1 year)
+
+foreach i in iso3c gid_1 name_1 year {
+    drop if mi(`i')
+}
 
 save "$input/bm_adm1_year.dta", replace
 
 // collapse by year and country
 gcollapse (sum) bm_sumpix pol_area, by(iso3c year)
+
+drop if mi(iso3c) | mi(year)
 
 save "$input/bm_iso3c_year.dta", replace
 
