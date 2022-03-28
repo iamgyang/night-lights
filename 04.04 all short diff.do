@@ -215,11 +215,4 @@ prefoot("\hline") ///
 b(3) se(3) star(* 0.10 ** 0.05 *** 0.01) sfmt(3) ///
 label booktabs nobaselevels drop(_cons)
 
-/////////////////////////////////////////////
-
-
-
-
-
-
 
