@@ -1,10 +1,11 @@
-use "$raw_data/Black Marble NTL/bm_adm1_1322.dta", clear
+use "$raw_data/Black Marble NTL/bm_adm2.dta", clear
 decode_vars, all
 rename *, lower
+quietly capture drop mon year
 
 // replace missing variables
 foreach i in gid_1 name_1 gid_0 name_0 {
-    replace `i' = "" if `i' == "."
+    quietly capture replace `i' = "" if `i' == "."
 }
 
 // create year and month variable
@@ -27,14 +28,51 @@ assert month != 999999 & !mi(month)
 drop mo time
 
 // kosovo
-replace gid_0 = "XKX" if gid_0 == "XKO"
-rename gid_0 iso3c
-
-save "$input/bm_adm1_month.dta", replace
+quietly capture rename gid_0 iso3c
+replace iso3c = "XKX" if iso3c == "XKO"
+keep objectid bm_sumpix pol_area iso3c gid_1 gid_2 year month name_1
 
 // assert !mi(iso3c) & !mi(gid_1) & !mi(name_1) // !!!!!!!!!!!! SOME PROBLEM WITH THE DATA?!
+drop if mi(iso3c) | mi(gid_1) | mi(name_1)
+save "$input/bm_adm2_month.dta", replace
+use "$input/bm_adm2_month.dta", clear
+
+// COLLAPSING -----------------------------------------------------------
+
+// collapse to an ADM2 level:
+    gcollapse (sum) bm_sumpix pol_area, by(iso3c year month gid_1 name_1)
+	save "$input/bm_adm1_month.dta", replace
+
+// collapse across country & month
+    gcollapse (sum) bm_sumpix pol_area, by(iso3c year month)
+    
+    // CHECKS -----------------------------------------------------------
+        // make sure that across time, the polygon area remains the same
+        preserve
+        sort iso3c year month
+        by iso3c:gen pol_area_L1 = pol_area[_n-1]
+        assert abs(pol_area_L1 - pol_area) < 1 if !mi(pol_area_L1)
+
+        // compare polygon area with polygon area of other VIIRS aggregation
+        keep pol_area iso3c
+        gduplicates drop
+        tempfile areas
+        save `areas'
+        use "$input/iso3c_year_viirs_new.dta", clear
+        keep sum_area iso3c
+        rename sum_area other_pol_area
+        gduplicates drop
+        mmerge iso3c using `areas'
+        keep if _merge == 3
+        pause checking polygon area
+        // assert abs(pol_area - other_pol_area) < 1 !!!!!!! polygon area doesn't match up? parth says something to do with raster "extent"...
+        restore
+
+	// export
+    save "$input/bm_iso3c_month.dta", replace
 
 // collapse across years
+use "$input/bm_adm1_month.dta", clear
 gcollapse (sum) bm_sumpix (mean) pol_area, by(iso3c gid_1 name_1 year)
 
 foreach i in iso3c gid_1 name_1 year {
