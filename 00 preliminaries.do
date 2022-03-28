@@ -141,8 +141,8 @@ else {
 }
 end
 
-// Wrapper for the decode function to decode variables to characters.
-// Note that this function automatically replaces the decoded variables.
+// Wrapper for the decode function to decode variables to characters. Note that
+// this function automatically replaces the decoded variables.
 quietly capture program drop decode_vars
 program decode_vars
 syntax [varlist], [all]
