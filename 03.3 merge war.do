@@ -1,5 +1,5 @@
-// Right now, we're merging based on the mid-point of the war start period.
-// As a future robustness check, merge based on the start point of the war start 
+// Right now, we're merging based on the mid-point of the war start period. As a
+// future robustness check, merge based on the start point of the war start
 // period, and vary the death cutoff.
 
 // order war data
@@ -23,12 +23,13 @@ save "$input/nat_disaster_cleaned.dta", replace
 
 // merge in disaster and war data with night lights:
 use "$input/NTL_VIIRS_appended_cleaned_all.dta", clear
+mmerge objectid month year using "$input/bm_adm2_month.dta"
 sort objectid month year 
 capture quietly drop _merge
 mmerge objectid month year using "$input/aggregated_objectID_deaths_cleaned.dta"
 mmerge objectid month year using "$input/nat_disaster_cleaned.dta"
 
-keep objectid iso3c del_sum_pix del_sum_area sum_pix sum_area year month deaths *dur _merge affected
+keep objectid iso3c del_sum_pix bm_sumpix del_sum_area sum_pix sum_area year month deaths *dur _merge affected pol_area
 drop _merge
 fillin objectid year month
 replace deaths = 0 if deaths == .
@@ -37,11 +38,15 @@ replace deaths_dur = 0 if deaths_dur == .
 replace affected = 0 if affected == .
 drop if missing(objectid)
 check_dup_id "objectid year month"
+scatter pol_area sum_area
+gr export "$overleaf/scatterplot of polygon area of BM vs VIIRS.png", replace
 
 // get outcome variable:
 g ln_del_sum_pix_area = ln(del_sum_pix/del_sum_area)
 g ln_sum_pix_area = ln(sum_pix/sum_area)
-drop del_sum_pix del_sum_area sum_pix sum_area _fillin sum_pix sum_area
+g ln_sum_pix_bm_area = ln(bm_sumpix/pol_area)
+
+drop del_sum_pix bm_sumpix del_sum_area sum_pix sum_area _fillin sum_pix pol_area
 
 // encode categorical variables (numeric --> categorical)
 foreach i in year {
