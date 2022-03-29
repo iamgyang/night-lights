@@ -1,202 +1,265 @@
 /* Do all log levels regressions */
+pause off // CHANGE!!!!
 
 est clear
+clear	
 
-/* SUBNATIONAL LEVEL ----------- */
+// macro stores which nonOECD countries are present in the subnational GRP data
+capture macro drop isos_in_subnat
 
-/* India, Indonesia, Brazil */
-use "$input/India_Indonesia_Brazil_subnational.dta", clear
-create_categ(iso3c)
-drop if iso3c == "USA"
-reghdfe ln_GRP ln_del_sum_pix_area, absorb(cat_region cat_year) vce(cluster cat_region)
-eststo subn1
-estadd local NC `e(N_clust)'
-local y = round(`e(r2_a_within)', .001)
-estadd local WR2 `y'	
-estadd local AGG "Admin 1"
-estadd local Region_FE "X"
-estadd local Year_FE "X"
-estadd local Country_FE ""
+foreach file in subnational_GRP sample_iso3c_year_pop_den__allvars2 {
+	foreach light_label in VIIRS BM {
+		foreach income_group in OECD n_O Glo {
+			use "$input/`file'.dta", clear
+			keep if year >= 2012
+			capture quietly rename bm_sumpix sum_pix_bm // this just makes running the loop easier
 
-reghdfe ln_GRP ln_del_sum_pix_area, absorb(cat_iso3c cat_year) vce(cluster cat_iso3c)
-eststo subn3
-estadd local NC `e(N_clust)'
-local y = round(`e(r2_a_within)', .001)
-estadd local WR2 `y'	
-estadd local AGG "Admin 1"
-estadd local Region_FE ""
-estadd local Year_FE "X"
-estadd local Country_FE "X"
+			// restrict the countries to those of interest
+			if ("`income_group'" == "OECD") {
+				keep_oecd iso3c
+			} 
+			if ("`income_group'" == "n_O") {
+				drop_oecd iso3c
+			}
+			if ("`income_group'" == "n_O" & "`file'" == "sample_iso3c_year_pop_den__allvars2") {
+				gen to_keep = "no"
+				foreach i in `isos_in_subnat' {
+					replace to_keep = "yes" if iso3c == "`i'"
+				}
+				replace to_keep = "" if mi(iso3c)
+				pause checking whether the to_keep variable is labeled correctly
+				keep if to_keep == "yes"
+				drop to_keep        
+			}
 
-/* OECD */
-use "$input/adm1_oecd_ntl_grp.dta", clear
-reghdfe ln_GRP ln_del_sum_pix_area, absorb(cat_region cat_year) vce(cluster cat_region)
-eststo subn2
-estadd local NC `e(N_clust)'
-local y = round(`e(r2_a_within)', .001)
-estadd local WR2 `y'	
-estadd local AGG "Admin 1"
-estadd local Region_FE "X"
-estadd local Year_FE "X"
-estadd local Country_FE ""
+			// define local macros that will help us label & run the regression
 
-reghdfe ln_GRP ln_del_sum_pix_area, absorb(cat_iso3c cat_year) vce(cluster cat_iso3c)
-eststo subn4
-estadd local NC `e(N_clust)'
-local y = round(`e(r2_a_within)', .001)
-estadd local WR2 `y'	
-estadd local AGG "Admin 1"
-estadd local Region_FE ""
-estadd local Year_FE "X"
-estadd local Country_FE "X"
+			if ("`light_label'" == "VIIRS") {
+				local light_var del_sum_pix
+				local loc_var del_sum_area
+			}
+			if ("`light_label'" == "BM") {
+				local light_var sum_pix_bm
+				local loc_var pol_area
+			}
+			label variable ln_`light_var'_area "Log(`light_label' pixels/area)"
+			pause u9090uu90r0
 
-/* COUNTRY LEVEL USING AGGREGATED SUBNATIONAL GDP ----------- */
+			if ("`file'" == "sample_iso3c_year_pop_den__allvars2") {
+				local location iso3c
+				local Y WDI
+				local AGG "Country"
+				local Region_FE ""
+				local Country_FE "X"
+				label variable ln_`Y' "Log(GDP, LCU)"
+			}
+			else if ("`file'" == "subnational_GRP") {
+				local location region
+				local Y GRP
+				local AGG "Admin1"
+				local Region_FE "X"
+				local Country_FE ""
+				label variable ln_`Y' "Log(GRP)"
+			}
 
-/* India, Indonesia, Brazil */
-use "$input/India_Indonesia_Brazil_subnational.dta", clear
-drop if iso3c == "USA"
-gcollapse (sum) GRP del_sum_pix del_sum_area, by(iso3c year)
-create_categ(iso3c year)
-gen ln_del_sum_pix_area = ln(del_sum_pix/del_sum_area)
-gen ln_GRP = ln(GRP)
-label variable ln_del_sum_pix_area "Log(VIIRS pixels/area)"
-label variable ln_GRP "Log(Gross Regional Product)"
-reghdfe ln_GRP ln_del_sum_pix_area, absorb(cat_iso3c cat_year) vce(cluster cat_iso3c)
-eststo country1
-estadd local NC `e(N_clust)'
-local y = round(`e(r2_a_within)', .001)
-estadd local WR2 `y'	
-estadd local AGG "Country"
-estadd local Region_FE ""
-estadd local Year_FE "X"
-estadd local Country_FE "X"
+			// indicator variable for COVID-19
+			gen covid_dummy = 1 if year >= 2020
+			replace covid_dummy = 0 if !(year >= 2020)
+			assert !mi(covid_dummy)
+			label variable covid_dummy "Covid Dummy"
+			
+			preserve
+				keep ln_`Y' `location' year ln_`light_var'_area iso3c covid_dummy
+				naomit
+				create_categ(`location' year)
 
-/* OECD */
-use "$input/adm1_oecd_ntl_grp.dta", clear
-gcollapse (sum) GRP del_sum_pix del_sum_area, by(iso3c year)
-create_categ(iso3c year)
-gen ln_del_sum_pix_area = ln(del_sum_pix/del_sum_area)
-gen ln_GRP = ln(GRP)
-label variable ln_del_sum_pix_area "Log(VIIRS pixels/area)"
-label variable ln_GRP "Log(Gross Regional Product)"
-reghdfe ln_GRP ln_del_sum_pix_area, absorb(cat_iso3c cat_year) vce(cluster cat_iso3c)
-eststo country2
-estadd local NC `e(N_clust)'
-local y = round(`e(r2_a_within)', .001)
-estadd local WR2 `y'	
-estadd local AGG "Country"
-estadd local Region_FE ""
-estadd local Year_FE "X"
-estadd local Country_FE "X"
+				// get which countries were used for the subnational bit:
+				if ("`file'" == "subnational_GRP" & "`income_group'" == "n_O") {
+					levelsof iso3c, local(isos_in_subnat)
+				}
 
-/* COUNTRY LEVEL USING WDI LCU ----------- */
 
-/* Global */
-use "$input/sample_iso3c_year_pop_den__allvars2.dta", clear
-reghdfe ln_WDI ln_del_sum_pix_area, absorb(cat_iso3c cat_year) vce(cluster cat_iso3c)
-eststo country_wdi3
-estadd local NC `e(N_clust)'
-local y = round(`e(r2_a_within)', .001)
-estadd local WR2 `y'	
-estadd local AGG "Country"
-estadd local Region_FE ""
-estadd local Year_FE "X"
-estadd local Country_FE "X"
+				// regression
+				pause `file' `light_label' `income_group' FIRST REGRESSION
+				reghdfe ln_`Y' ln_`light_var'_area c.ln_`light_var'_area#covid_dummy, absorb(cat_`location' cat_year) vce(cluster cat_`location')
+				eststo reg_`income_group'_`light_label'_`location'_`Y'_c
+				di "reg_`income_group'_`light_label'_`location'_`Y'_c"
+				estadd local AGG "`AGG'"
+				estadd local NC `e(N_clust)'
+				local y = round(`e(r2_a_within)', .001)
+				estadd local WR2 `y'
+				estadd local Region_FE "`Region_FE'"
+				estadd local Country_FE "`Country_FE'"
+				estadd local Year_FE "X"
 
-/* India, Indonesia, Brazil */
-use "$input/sample_iso3c_year_pop_den__allvars2.dta", clear
-keep if iso3c == "IND" | iso3c == "BRA" | iso3c == "IDN"
-reghdfe ln_WDI ln_del_sum_pix_area, absorb(cat_iso3c cat_year) vce(cluster cat_iso3c)
-eststo country_wdi1
-estadd local NC `e(N_clust)'
-local y = round(`e(r2_a_within)', .001)
-estadd local WR2 `y'	
-estadd local AGG "Country"
-estadd local Region_FE ""
-estadd local Year_FE "X"
-estadd local Country_FE "X"
+				pause `file' `light_label' `income_group' SECOND REGRESSION
+				reghdfe ln_`Y' ln_`light_var'_area, absorb(cat_`location' cat_year) vce(cluster cat_`location')
+				eststo reg_`income_group'_`light_label'_`location'_`Y'
+				di "reg_`income_group'_`light_label'_`location'_`Y'"
+				estadd local AGG "`AGG'"
+				estadd local NC `e(N_clust)'
+				local y = round(`e(r2_a_within)', .001)
+				estadd local WR2 `y'
+				estadd local Region_FE "`Region_FE'"
+				estadd local Country_FE "`Country_FE'"
+				estadd local Year_FE "X"
+			restore
 
-/* OECD */
+			// another regression with aggregated collapsed GDP = sum(GRP)
+			if ("`file'" == "subnational_GRP") {
+				local location iso3c
+				local Y GRP
+				local AGG "Country"
+				local Region_FE ""
+				local Country_FE "X"
 
-/* get the OECD countries we have from the ADM1 dataset */
-use "$input/adm1_oecd_ntl_grp.dta", clear
-levelsof iso3c, local(country_codes)
-
-use "$input/sample_iso3c_year_pop_den__allvars2.dta", clear
-gen tokeep = "No"
-foreach i in `country_codes' {
-    replace tokeep = "Yes" if iso3c == "`i'"
+				// aggregate / collapse GRP
+				gcollapse (sum) GRP `light_var' `loc_var', by(iso3c year)
+				foreach i in GRP `light_var' `loc_var' {
+					replace `i' = . if `i' == 0
+				}
+				create_categ(iso3c year)
+				gen ln_`light_var'_area = ln(`light_var'/`loc_var')
+				gen ln_`Y' = ln(`Y')
+				label variable ln_`light_var'_area "Log(`light_label' pixels/area)"
+				label variable ln_`Y' "Log(Sum GRP)"
+				gen covid_dummy = 1 if year >= 2020
+				replace covid_dummy = 0 if !(year >= 2020)
+				assert !mi(covid_dummy)
+				label variable covid_dummy "Covid Dummy"
+				pause checking the data prior to regression
+				naomit
+				
+				// regression
+				pause `file' `light_label' `income_group' COLLAPSED REGRESSION FIRST
+				reghdfe ln_`Y' ln_`light_var'_area c.ln_`light_var'_area#covid_dummy, absorb(cat_iso3c cat_year) vce(cluster cat_iso3c)
+                eststo reg_`income_group'_`light_label'_`location'_`Y'_c
+                estadd local AGG "`AGG'"
+                estadd local NC `e(N_clust)'
+                local y = round(`e(r2_a_within)', .001)
+                estadd local WR2 `y'
+                estadd local Region_FE "`Region_FE'"
+                estadd local Country_FE "`Country_FE'"
+                estadd local Year_FE "X"
+				
+				pause `file' `light_label' `income_group' COLLAPSED REGRESSION SECOND
+				reghdfe ln_`Y' ln_`light_var'_area, absorb(cat_iso3c cat_year) vce(cluster cat_iso3c)
+                eststo reg_`income_group'_`light_label'_`location'_`Y'
+                estadd local AGG "`AGG'"
+                estadd local NC `e(N_clust)'
+                local y = round(`e(r2_a_within)', .001)
+                estadd local WR2 `y'
+                estadd local Region_FE "`Region_FE'"
+                estadd local Country_FE "`Country_FE'"
+                estadd local Year_FE "X"
+			}
+		}
+	}
 }
-keep if tokeep == "Yes"
-drop tokeep
-reghdfe ln_WDI ln_del_sum_pix_area, absorb(cat_iso3c cat_year) vce(cluster cat_iso3c)
-eststo country_wdi2
-estadd local NC `e(N_clust)'
-local y = round(`e(r2_a_within)', .001)
-estadd local WR2 `y'
-estadd local AGG "Country"
-estadd local Region_FE ""
-estadd local Year_FE "X"
-estadd local Country_FE "X"
+
+
+
+foreach file in subnational_GRP sample_iso3c_year_pop_den__allvars2 {
+	foreach light_label in VIIRS BM {
+		foreach income_group in OECD n_O Glo {
+
+
+            if ("`file'" == "sample_iso3c_year_pop_den__allvars2") {
+				local location iso3c
+				local Y WDI
+				local AGG "Country"
+				local Region_FE ""
+				local Country_FE "X"
+			}
+			else if ("`file'" == "subnational_GRP") {
+				local location region
+				local Y GRP
+				local AGG "Admin1"
+				local Region_FE "X"
+				local Country_FE ""
+			}
+			di "reg_`income_group'_`light_label'_`location'_`Y'"
+			di "reg_`income_group'_`light_label'_`location'_`Y'_c"
+
+
+			if ("`file'" == "subnational_GRP") {
+				local location iso3c
+				local Y GRP
+				local AGG "Country"
+				local Region_FE ""
+				local Country_FE "X"
+			}
+
+			di "reg_`income_group'_`light_label'_`location'_`Y'"
+			di "reg_`income_group'_`light_label'_`location'_`Y'_c"
+
+
+
+
+		}
+	}
+}
+
 
 /* EXPORT ----------- */
 
-esttab country_wdi1 country_wdi2 country_wdi3 using "$overleaf/all_log_levels.tex", ///
-posthead("\hline \\ \multicolumn{4}{l}{\textbf{Panel A: Country level, using GDP from WDI, LCU}} \\\\[-1ex]") ///
-fragment ///
-mgroups("India, Indonesia, Brazil" "OECD" "Global", pattern(1 1 1) span prefix(\multicolumn{@span}{c}{) suffix(})) ///
-scalars("AGG Aggregation Level" "NC Number of Groups" "WR2 Adjusted Within R-squared" "Region_FE Region Fixed Effects" "Country_FE Country Fixed Effects" "Year_FE Year Fixed Effects" ) ///
-nomtitles ///
-b(3) se(3) star(* 0.10 ** 0.05 *** 0.01) sfmt(3) ///
-label booktabs nobaselevels  drop(_cons) ///
-replace
+local i = 1
 
-esttab subn1 subn2 using "$overleaf/all_log_levels.tex", ///
-posthead("\hline \\ \multicolumn{4}{l}{\textbf{Panel B: Subnational level, using GRP (Region FE)}} \\\\[-1ex]") ///
-fragment ///
-append ///
-scalars("AGG Aggregation Level" "NC Number of Groups" "WR2 Adjusted Within R-squared" "Region_FE Region Fixed Effects" "Country_FE Country Fixed Effects" "Year_FE Year Fixed Effects") ///
-nomtitles nonumbers nolines ///
-b(3) se(3) star(* 0.10 ** 0.05 *** 0.01) sfmt(3) ///
-label booktabs nobaselevels drop(_cons)
+foreach Y in WDI GRP{
+foreach location in region iso3c{
+foreach light_label in VIIRS BM{
 
-esttab subn3 subn4 using "$overleaf/all_log_levels.tex", ///
-posthead("\hline \\ \multicolumn{4}{l}{\textbf{Panel C: Subnational level, using GRP (Country FE)}} \\\\[-1ex]") ///
-fragment ///
-append ///
-scalars("AGG Aggregation Level" "NC Number of Groups" "WR2 Adjusted Within R-squared" "Region_FE Region Fixed Effects" "Country_FE Country Fixed Effects" "Year_FE Year Fixed Effects") ///
-nomtitles nonumbers nolines ///
-b(3) se(3) star(* 0.10 ** 0.05 *** 0.01) sfmt(3) ///
-label booktabs nobaselevels drop(_cons)
+if (`i' == 1) {
+    local addendum `"mgroups("Global" "Global" "OECD" "OECD" "Not OECD" "Not OECD", pattern(1 1 1 1 1 1 1 1 1 1) span prefix(\multicolumn{@span}{c}{) suffix(})) replace"'
+}
+else if (`i'!=1) {
+    capture quietly macro drop addendum
+	local addendum `"append"'
+}
 
-esttab country1 country2 using "$overleaf/all_log_levels.tex", ///
-posthead("\hline \\ \multicolumn{4}{l}{\textbf{Panel D: Country level, using GDP as  summed subnational GRP}} \\\\[-1ex]") ///
-fragment ///
-append ///
-scalars( "AGG Aggregation Level" "NC Number of Groups" "WR2 Adjusted Within R-squared" "Region_FE Region Fixed Effects" "Country_FE Country Fixed Effects" "Year_FE Year Fixed Effects") ///
-nomtitles nonumbers nolines ///
-prefoot("\hline") ///
-b(3) se(3) star(* 0.10 ** 0.05 *** 0.01) sfmt(3) ///
-label booktabs nobaselevels drop(_cons)
+// we do not have WDI for regions:
+if ("`Y'" == "WDI" & "`location'" == "region") {
+    continue
+}
 
-/////////////////////////////////////////////
+// get panel labels:
+    if (`i' == 1) {
+        local panel_label "A: Country level, VIIRS"
+    }
+    if (`i' == 2) {
+        local panel_label "B: Country level, BM"
+    }
+    if (`i' == 3) {
+        local panel_label "C: Subnational level, VIIRS"
+    }
+    if (`i' == 4) {
+        local panel_label "D: Subnational level, BM"
+    }
+    if (`i' == 5) {
+        local panel_label "E: Country level, using GDP as summed subnational GRP, VIIRS"
+    }
+    if (`i' == 6) {
+        local panel_label "F: Country level, using GDP as summed subnational GRP, BM"
+    }
 
+// output:
+    esttab reg_Glo_`light_label'_`location'_`Y' reg_Glo_`light_label'_`location'_`Y'_c ///
+    reg_OECD_`light_label'_`location'_`Y' reg_OECD_`light_label'_`location'_`Y'_c /// 
+    reg_n_O_`light_label'_`location'_`Y' reg_n_O_`light_label'_`location'_`Y'_c ///
+    using "$overleaf/all_log_levels.tex", ///
+    posthead("\hline \\ \multicolumn{4}{l}{\textbf{Panel `panel_label'}} \\\\[-1ex]") ///
+    fragment ///
+    scalars("AGG Aggregation Level" "NC Number of Groups" "WR2 Adjusted Within R-squared" "Region_FE Region Fixed Effects" "Country_FE Country Fixed Effects" "Year_FE Year Fixed Effects") ///
+    nomtitles nonumbers nolines ///
+    b(3) se(3) ar2 star(* 0.10 ** 0.05 *** 0.01) sfmt(3) ///
+    label booktabs nobaselevels  drop(_cons) ///
+    `addendum'
 
+local i = `i' + 1
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+}
+}
+}
 
 
 
