@@ -4,6 +4,11 @@ load("C:/Users/user/Dropbox/CGD GlobalSat/raw-data/ucdp_war/GED_poly.RData")
 df <-
     setDT(wrpol)[, .(OBJECTID, GID_1, GID_0, country, date_start, date_end, best)]
 df[, c("date_start", "date_end") := lapply(.SD, as.Date), .SDcols = c("date_start", "date_end")]
+
+# filter for those countries that have matching war!!!!!!!!!!!!there is some mistake here.
+df[,iso3c:=name2code(country)]
+df <- df[iso3c == GID_0]
+
 df$date <-
     as.Date(df$date_end) - ceiling((as.Date(df$date_end) - as.Date(df$date_start)) / 2)
 df[, cnf_dur := date_end - date_start + 1]
