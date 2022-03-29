@@ -1,3 +1,5 @@
+// NOTE THIS IS THE OLD DO FILE -- NEW FILE IS 04.02 ANALYSIS SYNTHETIC GDP.do
+
 // WINDOW COEFFICIENTS -------------------------------------------
 
 clear
