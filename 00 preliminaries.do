@@ -119,7 +119,7 @@ foreach i in "AUS" "AUT" "BEL" "CAN" "CHL" "COL" "CRI" "CZE" "DNK" "EST" "FIN" "
 }
 replace OECD = "no" if mi(OECD)
 replace OECD = "" if mi(`varlist')
-lable variable OECD "Is this country in the OECD?"
+label variable OECD "Is this country in the OECD?"
 end
 
 // create categorical variables:
