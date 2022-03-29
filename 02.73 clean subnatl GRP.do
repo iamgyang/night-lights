@@ -85,12 +85,12 @@ perfect) */
     keep if n==1
 
 // collapse to OECD region level
-    gcollapse (sum) del_sum_pix del_sum_area sum_pix_bm pol_area (mean) GRP, ///
+    gcollapse (sum) del_sum_pix del_sum_area sum_pix_bm_dec pol_area (mean) GRP, ///
         by(gid_1 iso3c year source)
     rename gid_1 region
 	
 	// remove fake zeros
-	foreach i in del_sum_pix del_sum_area sum_pix_bm pol_area {
+	foreach i in del_sum_pix del_sum_area sum_pix_bm_dec pol_area {
 	    replace `i' = . if `i' == 0
 	}
 	
@@ -98,10 +98,10 @@ perfect) */
 	
 // create variables of interest
     gen ln_del_sum_pix_area = ln(del_sum_pix/del_sum_area)
-    gen ln_sum_pix_bm_area = ln(sum_pix_bm/pol_area)
-    create_logvars "GRP del_sum_pix sum_pix_bm"
+    gen ln_sum_pix_bm_dec_area = ln(sum_pix_bm_dec/pol_area)
+    create_logvars "GRP del_sum_pix sum_pix_bm_dec"
     label variable ln_del_sum_pix_area "Log(VIIRS pixels/area)"
-    label variable ln_sum_pix_bm_area "Log(BM pixels/area)"
+    label variable ln_sum_pix_bm_dec_area "Log(BM Dec. pixels/area)"
     label variable ln_GRP "Log(Gross Regional Product)"
 
 	// label the OECD variables

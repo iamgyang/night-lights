@@ -66,7 +66,7 @@ foreach light_var in "VIIRS" "DMSP" "BM" {
 			else if ("`light_var'" == "BM") {
 				loc years "2013/2019"
 				loc years_group `""2013" "2014" "2015" "2016" "2017" "2018" "2019""'
-				rename ln_sum_pix_bm_area RHS_var
+				rename ln_sum_pix_bm_dec_area RHS_var
 			}
 			
 			keep RHS_var LHS_var year `fixed_effects'

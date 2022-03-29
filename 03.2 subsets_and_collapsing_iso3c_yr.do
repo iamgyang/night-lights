@@ -25,7 +25,7 @@ drop _merge
 rename pwt_rgdpna PWT
 
 // the sum of the empty set is 0--so we remove these false 0's
-foreach i in del_sum_pix del_sum_area sum_pix_bm pol_area {
+foreach i in del_sum_pix del_sum_area sum_pix_bm_dec pol_area {
     replace `i' = . if `i' == 0
 }
 
@@ -47,7 +47,7 @@ foreach i of numlist 79(5)99 {
 gen sum_pix_clb_area = sum_pix_clb / sum_area
 gen pos_sumpx_area = pos_sumpx / sum_area
 gen sum_pix_new_area = sum_pix_new / sum_area
-gen sum_pix_bm_area = sum_pix_bm / pol_area
+gen sum_pix_bm_dec_area = sum_pix_bm_dec / pol_area
 
 // label variables
 label variable rgdppc_ppp_gold "WB real GDP PPP per capita (AGJ)"
@@ -55,8 +55,8 @@ label variable del_sum_area "VIIRS (cleaned) polygon area"
 label variable del_sum_pix "VIIRS (cleaned) pixels"
 label variable del_sum_pix_area "VIIRS (cleaned) pixels / area"
 // Black Marble version
-label variable sum_pix_bm "BM pixels"
-label variable sum_pix_bm_area "BM pixels / area"
+label variable sum_pix_bm_dec "BM pixels"
+label variable sum_pix_bm_dec_area "BM pixels / area"
 // calibrated night lights versions
 label variable sum_pix_clb "VIIRS (calib.) pixels"
 label variable sum_pix "VIIRS (raw) pixels"
@@ -115,8 +115,8 @@ input str40 measure_vars
 	"del_sum_pix_94"
 	"del_sum_pix_99_area"
 	"del_sum_pix_99"
-	"sum_pix_bm"
-	"sum_pix_bm_area"
+	"sum_pix_bm_dec"
+	"sum_pix_bm_dec_area"
 	"sum_pix_area"
 	"sum_pix"
 	"sum_pix_area"
@@ -280,8 +280,8 @@ assert !(mi(del_sum_pix_79_area) & !mi(del_sum_pix_area))
 // // everywhere where VIIRS is not missing for 2017-2020, we should have BM:
 // preserve
 // keep if inlist(year, 2017, 2018, 2019, 2020) & !mi(del_sum_pix_area)
-// keep iso3c year del_sum_pix del_sum_area ln_del_sum_pix g_ln_del_sum_pix_area iso3c year sum_pix_bm sum_pix_bm_area sum_pix_bm_pc ln_sum_pix_bm ln_sum_pix_bm_area ln_sum_pix_bm_pc g_ln_sum_pix_bm g_ln_sum_pix_bm_area g_ln_sum_pix_bm_pc g_an_ln_sum_pix_bm g_an_ln_sum_pix_bm_area g_an_ln_sum_pix_bm_pc
-// assert !mi(sum_pix_bm_area)
+// keep iso3c year del_sum_pix del_sum_area ln_del_sum_pix g_ln_del_sum_pix_area iso3c year sum_pix_bm_dec sum_pix_bm_dec_area sum_pix_bm_dec_pc ln_sum_pix_bm_dec ln_sum_pix_bm_dec_area ln_sum_pix_bm_dec_pc g_ln_sum_pix_bm_dec g_ln_sum_pix_bm_dec_area g_ln_sum_pix_bm_dec_pc g_an_ln_sum_pix_bm_dec g_an_ln_sum_pix_bm_dec_area g_an_ln_sum_pix_bm_dec_pc
+// assert !mi(sum_pix_bm_dec_area)
 // restore // !!!!!!!!!!!!!!!!!!!!!!!! ok, this is not true... we're missing some countries (mostly islands?)
 
 save "$input/sample_`area'_`time'_pop_den__allvars2.dta", replace

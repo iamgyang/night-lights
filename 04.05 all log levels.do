@@ -38,7 +38,7 @@ foreach file in subnational_GRP sample_iso3c_year_pop_den__allvars2 {
 				local loc_var del_sum_area
 			}
 			if ("`light_label'" == "BM") {
-				local light_var sum_pix_bm
+				local light_var sum_pix_bm_dec
 				local loc_var pol_area
 			}
 			label variable ln_`light_var'_area "Log(`light_label' pixels/area)"

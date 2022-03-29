@@ -22,7 +22,7 @@ foreach file in `files_to_FE' {
         local light_var ln_del_sum_pix
     }
     if ("`light_label'" == "BM") {
-        local light_var ln_sum_pix_bm
+        local light_var ln_sum_pix_bm_dec
     }
 
 	keep if year >= 2012
