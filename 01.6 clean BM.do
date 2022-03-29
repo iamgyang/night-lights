@@ -1,6 +1,7 @@
 use "$raw_data/Black Marble NTL/bm_adm2.dta", clear
 decode_vars, all
 rename *, lower
+rename bm_sumpix sum_pix_bm
 quietly capture drop mon year
 
 // replace missing variables
@@ -30,7 +31,7 @@ drop mo time
 // kosovo
 quietly capture rename gid_0 iso3c
 replace iso3c = "XKX" if iso3c == "XKO"
-keep objectid bm_sumpix pol_area iso3c gid_1 gid_2 year month name_1
+keep objectid sum_pix_bm pol_area iso3c gid_1 gid_2 year month name_1
 
 // assert !mi(iso3c) & !mi(gid_1) & !mi(name_1) // !!!!!!!!!!!! SOME PROBLEM WITH THE DATA?!
 drop if mi(iso3c) | mi(gid_1) | mi(name_1)
@@ -41,11 +42,11 @@ use "$input/bm_adm2_month.dta", clear
 // COLLAPSING -----------------------------------------------------------
 
 // collapse to an ADM2 level:
-    gcollapse (sum) bm_sumpix pol_area, by(iso3c year month gid_1 name_1)
+    gcollapse (sum) sum_pix_bm pol_area, by(iso3c year month gid_1 name_1)
 	save "$input/bm_adm1_month.dta", replace
 
 // collapse across country & month
-    gcollapse (sum) bm_sumpix pol_area, by(iso3c year month)
+    gcollapse (sum) sum_pix_bm pol_area, by(iso3c year month)
     
     // CHECKS -----------------------------------------------------------
         // make sure that across time, the polygon area remains the same
@@ -77,9 +78,9 @@ use "$input/bm_adm2_month.dta", clear
 use "$input/bm_adm1_month.dta", clear
 
 // create a new variable --- BM for DECEMBER
-gen sum_pix_bm_dec = bm_sumpix if month == 12
+gen sum_pix_bm_dec = sum_pix_bm if month == 12
 
-gcollapse (sum) bm_sumpix sum_pix_bm_dec (mean) pol_area, by(iso3c gid_1 name_1 year)
+gcollapse (sum) sum_pix_bm sum_pix_bm_dec (mean) pol_area, by(iso3c gid_1 name_1 year)
 
 foreach i in iso3c gid_1 name_1 year {
     drop if mi(`i')
@@ -88,7 +89,7 @@ foreach i in iso3c gid_1 name_1 year {
 save "$input/bm_adm1_year.dta", replace
 
 // collapse by year and country
-gcollapse (sum) bm_sumpix sum_pix_bm_dec pol_area, by(iso3c year)
+gcollapse (sum) sum_pix_bm sum_pix_bm_dec pol_area, by(iso3c year)
 
 drop if mi(iso3c) | mi(year)
 

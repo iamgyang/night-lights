@@ -12,7 +12,6 @@ foreach file in subnational_GRP sample_iso3c_year_pop_den__allvars2 {
 		foreach income_group in OECD n_O Glo {
 			use "$input/`file'.dta", clear
 			keep if year >= 2012
-			capture quietly rename bm_sumpix sum_pix_bm // this just makes running the loop easier
 
 			// restrict the countries to those of interest
 			if ("`income_group'" == "OECD") {

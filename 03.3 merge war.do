@@ -29,7 +29,7 @@ capture quietly drop _merge
 mmerge objectid month year using "$input/aggregated_objectID_deaths_cleaned.dta"
 mmerge objectid month year using "$input/nat_disaster_cleaned.dta"
 
-keep objectid iso3c del_sum_pix bm_sumpix del_sum_area sum_pix sum_area year month deaths *dur _merge affected pol_area
+keep objectid iso3c del_sum_pix sum_pix_bm del_sum_area sum_pix sum_area year month deaths *dur _merge affected pol_area
 drop _merge
 fillin objectid year month
 replace deaths = 0 if deaths == .
@@ -44,9 +44,9 @@ gr export "$overleaf/scatterplot of polygon area of BM vs VIIRS.png", replace
 // get outcome variable:
 g ln_del_sum_pix_area = ln(del_sum_pix/del_sum_area)
 g ln_sum_pix_area = ln(sum_pix/sum_area)
-g ln_sum_pix_bm_area = ln(bm_sumpix/pol_area)
+g ln_sum_pix_bm_area = ln(sum_pix_bm/pol_area)
 
-drop del_sum_pix bm_sumpix del_sum_area sum_pix sum_area _fillin sum_pix pol_area
+drop del_sum_pix sum_pix_bm del_sum_area sum_pix sum_area _fillin sum_pix pol_area
 
 // encode categorical variables (numeric --> categorical)
 foreach i in year {

@@ -33,7 +33,7 @@ save `ox_str'
 			}
 			else if ("`light_var'"== "BM") {
 				use "$input/bm_iso3c_month.dta", clear
-				gen sum_pix_bm_area = bm_sumpix / pol_area
+				gen sum_pix_bm_area = sum_pix_bm / pol_area
 				local light sum_pix_bm_area
 				label variable `light' "BM pixels / area"
 			}
