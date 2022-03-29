@@ -65,11 +65,11 @@ foreach file in `files_to_FE' {
 
 /* EXPORT ----------- */
 
-esttab reg_Global_VIIRS_country reg_Global_BM_country reg_OECD_VIIRS_country ///
-reg_OECD_BM_country reg_Not_OECD_VIIRS_country reg_Not_OECD_BM_country using "$overleaf/covid_levels.tex", ///
+esttab reg_Global_VIIRS_iso3c reg_Global_BM_iso3c reg_OECD_VIIRS_iso3c ///
+reg_OECD_BM_iso3c reg_Not_OECD_VIIRS_iso3c reg_Not_OECD_BM_iso3c using "$overleaf/covid_levels.tex", ///
 posthead("\hline \\ \multicolumn{4}{l}{\textbf{Panel A: Country level}} \\\\[-1ex]") ///
 fragment ///
-mgroups("Global VIIRS" "Global BM" "OECD VIIRS" "OECD BM" "Not OECD VIIRS" "Not OECD BM", pattern(1 1 1) span prefix(\multicolumn{@span}{c}{) suffix(})) ///
+mgroups("Global VIIRS" "Global BM" "OECD VIIRS" "OECD BM" "Not OECD VIIRS" "Not OECD BM", pattern(1 1 1 1 1 1 1 1 1 1 1 1) span prefix(\multicolumn{@span}{c}{) suffix(})) ///
 scalars("AGG Aggregation Level" "NC Number of Groups" "WR2 Adjusted Within R-squared" "Region_FE Region Fixed Effects" "Country_FE Country Fixed Effects") ///
 nomtitles ///
 b(3) se(3) ar2 star(* 0.10 ** 0.05 *** 0.01) sfmt(3) ///
