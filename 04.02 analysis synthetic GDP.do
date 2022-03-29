@@ -14,8 +14,8 @@ tempfile base
 save `base'
 
 /*
-	   For each year, regress log(GDP)~log(NTL) and plot the coefficients.
-	   Do this for both DMSP and VIIRS, global, OECD, etc.
+For each year, regress log(GDP)~log(NTL) and plot the coefficients.
+Do this for both DMSP and VIIRS, global, OECD, etc.
 */
 foreach agg_level in "cat_iso3c" "cat_region" {
 foreach income_group in "Global" "OECD" "Not OECD" {
@@ -64,8 +64,8 @@ foreach light_var in "VIIRS" "DMSP" "BM" {
 				rename ln_sum_light_dmsp_div_area RHS_var
 			}
 			else if ("`light_var'" == "BM") {
-				loc years "2016/2019"
-				loc years_group `""2016" "2017" "2018" "2019""'
+				loc years "2013/2019"
+				loc years_group `""2013" "2014" "2015" "2016" "2017" "2018" "2019""'
 				rename ln_sum_pix_bm_area RHS_var
 			}
 			
