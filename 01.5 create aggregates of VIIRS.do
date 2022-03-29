@@ -53,11 +53,3 @@ drop *L1 _merge
 
 save "$input/iso3c_year_viirs_new.dta", replace
 
-// Create ISO3C-month aggregation of VIIRS product: -----------------
-
-clear
-"$input/NTL_appended_cleaned.dta"
-
-
-
-
