@@ -34,6 +34,7 @@ keep objectid bm_sumpix pol_area iso3c gid_1 gid_2 year month name_1
 
 // assert !mi(iso3c) & !mi(gid_1) & !mi(name_1) // !!!!!!!!!!!! SOME PROBLEM WITH THE DATA?!
 drop if mi(iso3c) | mi(gid_1) | mi(name_1)
+
 save "$input/bm_adm2_month.dta", replace
 use "$input/bm_adm2_month.dta", clear
 
@@ -72,8 +73,13 @@ use "$input/bm_adm2_month.dta", clear
     save "$input/bm_iso3c_month.dta", replace
 
 // collapse across years
+
 use "$input/bm_adm1_month.dta", clear
-gcollapse (sum) bm_sumpix (mean) pol_area, by(iso3c gid_1 name_1 year)
+
+// create a new variable --- BM for DECEMBER
+gen sum_pix_bm_dec = bm_sumpix if month == 12
+
+gcollapse (sum) bm_sumpix sum_pix_bm_dec (mean) pol_area, by(iso3c gid_1 name_1 year)
 
 foreach i in iso3c gid_1 name_1 year {
     drop if mi(`i')
@@ -82,7 +88,7 @@ foreach i in iso3c gid_1 name_1 year {
 save "$input/bm_adm1_year.dta", replace
 
 // collapse by year and country
-gcollapse (sum) bm_sumpix pol_area, by(iso3c year)
+gcollapse (sum) bm_sumpix sum_pix_bm_dec pol_area, by(iso3c year)
 
 drop if mi(iso3c) | mi(year)
 
