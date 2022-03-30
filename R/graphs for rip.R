@@ -79,7 +79,8 @@ make_graph <- function(data_f, x, y, xlab, ylab, filename) {
       colour = 'red'
     ) +
     labs(x = xlab,
-         y = ylab)
+         y = ylab) + 
+    coord_cartesian(ylim=c(-0.3, 0.3))
   
   ggsave(glue("{filename}.png"),
          plot,
