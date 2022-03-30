@@ -28,20 +28,18 @@ foreach file in `files_to_FE' {
 	keep if year >= 2012
     if ("`file'" == "sample_iso3c_year_pop_den__allvars2") {
         local location iso3c
-        local Y WDI_ppp
         local AGG "Country"
         local Region_FE ""
         local Country_FE "X"
     }
     else if ("`file'" == "subnational_GRP") {
         local location region
-        local Y GRP
         local AGG "Admin1"
         local Region_FE "X"
         local Country_FE ""
     }
     
-    keep ln_`Y' `location' year `light_var' `extra_NTL_var' iso3c
+    keep `location' year `light_var' `extra_NTL_var' iso3c
     naomit
     create_categ(`location')
     
