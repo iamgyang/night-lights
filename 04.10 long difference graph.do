@@ -26,7 +26,11 @@ replace income = "LMIC" if cat_income2012 == 2
 replace income = "UMIC" if cat_income2012 == 3
 replace income = "HIC" if cat_income2012 == 4
 
+// drop outliers
+drop if iso3c == "GNQ" | iso3c == "MAC"
+
 save "$input/long_diff_concavity_dataset.dta", replace
+
 
 // regress long diff log GDP ~ long diff log lights + log lights 2012 : long diff log lights
 reg lg_ln_WDI lg_`light_var' c.lg_`light_var'#c.`light_var', vce(hc3)
@@ -39,29 +43,15 @@ use "$input/long_diff_concavity_dataset.dta", clear
 # delimit ;
 twoway  
 
-(lpoly lg_ln_WDI lg_`light_var' if income == "LIC", 
-lcolor(cranberry))
+(lfit lg_ln_WDI lg_`light_var' if income == "LIC", 
+lcolor(cranberry) )
 
-(lpoly lg_ln_WDI lg_`light_var' if income == "LMIC", 
-lcolor(blue))
-
-(lpoly lg_ln_WDI lg_`light_var' if income == "UMIC", 
-lcolor(green))
-
-(lpoly lg_ln_WDI lg_`light_var' if income == "HIC", 
-lcolor(purple))
+(lfit lg_ln_WDI lg_`light_var' if income == "HIC", 
+lcolor(purple) )
 
 
 (scatter lg_ln_WDI lg_`light_var' if 
 income == "LIC", mcolor(cranberry) msize(tiny) 
-mlabel(iso3c) mlabsize(vsmall))
-
-(scatter lg_ln_WDI lg_`light_var' if 
-income == "LMIC", mcolor(blue) msize(tiny) 
-mlabel(iso3c) mlabsize(vsmall))
-
-(scatter lg_ln_WDI lg_`light_var' if 
-income == "UMIC", mcolor(green) msize(tiny) 
 mlabel(iso3c) mlabsize(vsmall))
 
 (scatter lg_ln_WDI lg_`light_var' if 
@@ -76,9 +66,7 @@ subtitle("`income_group'")
  
 legend(on order(
 1 "LIC" 
-2 "LMIC"
-3 "UMIC"
-4 "HIC"
+2 "HIC"
 ) 
 margin(zero) nobox region(fcolor(none) margin(zero) lcolor(none)) 
 position(12))
@@ -96,8 +84,8 @@ foreach income_group in LIC LMIC UMIC HIC {
 
 # delimit ;
 twoway  
-(lpoly lg_ln_WDI lg_`light_var' if income == "`income_group'", 
-lcolor(cranberry))
+(lfit lg_ln_WDI lg_`light_var' if income == "`income_group'", 
+lcolor(cranberry) )
 (scatter lg_ln_WDI lg_`light_var' if 
 income == "`income_group'", mcolor(%50) msize(tiny) 
 mlabel(iso3c) mlabsize(vsmall))
