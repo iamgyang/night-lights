@@ -4,6 +4,52 @@ pause off // CHANGE!!!!
 est clear
 clear	
 
+
+// just basic DMSP vs. BM Dec at country level:
+use "$input/sample_iso3c_year_pop_den__allvars2.dta", clear
+label variable lndn "Log(DMSP pixels/area)"
+label variable sum_pix_bm_dec_area "BM Dec. pixels/area"
+quietly capture drop ln_sum_pix_bm_dec_area 
+create_logvars "sum_pix_bm_dec_area"
+
+// do the HWS regression for the same variable and same year as them:
+bootstrap, rep(50) cluster(cat_iso3c) : ///
+reghdfe ln_WDI lndn if year <= 2008 & !(inlist(iso3c, "GNQ", "BHR", "SGP", "HKG")), absorb(cat_iso3c cat_year) vce(cluster cat_iso3c)
+	eststo reg_DMSP
+	estadd local AGG "Country"
+	estadd local NC `e(N_clust)'
+	local y = round(`e(r2_a_within)', .001)
+	estadd local WR2 `y'
+	estadd local Region_FE ""
+	estadd local Country_FE "X"
+	estadd local Year_FE "X"
+
+// do the BM regression
+bootstrap, rep(50) cluster(cat_iso3c) : ///
+reghdfe ln_WDI ln_sum_pix_bm_dec_area, absorb(cat_iso3c cat_year) vce(cluster cat_iso3c)
+	eststo reg_VIIRS
+	estadd local AGG "Country"
+	estadd local NC `e(N_clust)'
+	local y = round(`e(r2_a_within)', .001)
+	estadd local WR2 `y'
+	estadd local Region_FE ""
+	estadd local Country_FE "X"
+	estadd local Year_FE "X"
+
+// output:
+    esttab reg_DMSP reg_VIIRS using "$overleaf/basic_DMSP_vs_VIIRS.tex", ///
+    fragment ///
+    scalars("AGG Aggregation Level" "NC Number of Groups" "WR2 Adjusted Within R-squared" "Region_FE Region Fixed Effects" "Country_FE Country Fixed Effects" "Year_FE Year Fixed Effects") ///
+    nonumbers ///
+    b(3) se(3) ar2 star(* 0.10 ** 0.05 *** 0.01) sfmt(3) ///
+    label booktabs nobaselevels  drop(_cons) replace
+
+/* Do all log levels regressions */
+pause off // CHANGE!!!!
+
+est clear
+clear	
+
 // macro stores which nonOECD countries are present in the subnational GRP data
 capture macro drop isos_in_subnat
 
@@ -20,16 +66,20 @@ foreach file in subnational_GRP sample_iso3c_year_pop_den__allvars2 {
 			if ("`income_group'" == "n_O") {
 				drop_oecd iso3c
 			}
-			if ("`income_group'" == "n_O" & "`file'" == "sample_iso3c_year_pop_den__allvars2") {
-				gen to_keep = "no"
-				foreach i in `isos_in_subnat' {
-					replace to_keep = "yes" if iso3c == "`i'"
-				}
-				replace to_keep = "" if mi(iso3c)
-				pause checking whether the to_keep variable is labeled correctly
-				keep if to_keep == "yes"
-				drop to_keep        
-			}
+
+			// !!!!!!!!!!! PERHAPS CHANGE BACK: THIS BELOW CODE RESTRICTED ATTENTION TO
+			// NON-OECD COUNTRIES (BRICS MAINLY) THAT WE HAVE SUBNATIONAL DATA ON
+
+			// if ("`income_group'" == "n_O" & "`file'" == "sample_iso3c_year_pop_den__allvars2") {
+			// 	gen to_keep = "no"
+			// 	foreach i in `isos_in_subnat' {
+			// 		replace to_keep = "yes" if iso3c == "`i'"
+			// 	}
+			// 	replace to_keep = "" if mi(iso3c)
+			// 	pause checking whether the to_keep variable is labeled correctly
+			// 	keep if to_keep == "yes"
+			// 	drop to_keep        
+			// }
 
 			// define local macros that will help us label & run the regression
 
@@ -80,6 +130,7 @@ foreach file in subnational_GRP sample_iso3c_year_pop_den__allvars2 {
 
 				// regression
 				pause `file' `light_label' `income_group' FIRST REGRESSION
+				bootstrap, rep(50) cluster(cat_`location') : ///
 				reghdfe ln_`Y' ln_`light_var'_area c.ln_`light_var'_area#covid_dummy, absorb(cat_`location' cat_year) vce(cluster cat_`location')
 				eststo reg_`income_group'_`light_label'_`location'_`Y'_c
 				di "reg_`income_group'_`light_label'_`location'_`Y'_c"
@@ -92,6 +143,7 @@ foreach file in subnational_GRP sample_iso3c_year_pop_den__allvars2 {
 				estadd local Year_FE "X"
 
 				pause `file' `light_label' `income_group' SECOND REGRESSION
+				bootstrap, rep(50) cluster(cat_`location') : ///
 				reghdfe ln_`Y' ln_`light_var'_area, absorb(cat_`location' cat_year) vce(cluster cat_`location')
 				eststo reg_`income_group'_`light_label'_`location'_`Y'
 				di "reg_`income_group'_`light_label'_`location'_`Y'"
@@ -131,6 +183,7 @@ foreach file in subnational_GRP sample_iso3c_year_pop_den__allvars2 {
 				
 				// regression
 				pause `file' `light_label' `income_group' COLLAPSED REGRESSION FIRST
+				bootstrap, rep(50) cluster(cat_iso3c) : ///
 				reghdfe ln_`Y' ln_`light_var'_area c.ln_`light_var'_area#covid_dummy, absorb(cat_iso3c cat_year) vce(cluster cat_iso3c)
                 eststo reg_`income_group'_`light_label'_`location'_`Y'_c
                 estadd local AGG "`AGG'"
@@ -142,6 +195,7 @@ foreach file in subnational_GRP sample_iso3c_year_pop_den__allvars2 {
                 estadd local Year_FE "X"
 				
 				pause `file' `light_label' `income_group' COLLAPSED REGRESSION SECOND
+				bootstrap, rep(50) cluster(cat_iso3c) : ///
 				reghdfe ln_`Y' ln_`light_var'_area, absorb(cat_iso3c cat_year) vce(cluster cat_iso3c)
                 eststo reg_`income_group'_`light_label'_`location'_`Y'
                 estadd local AGG "`AGG'"
