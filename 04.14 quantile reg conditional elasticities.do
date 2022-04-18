@@ -1,4 +1,7 @@
-// OLS w/ FE with quadratic term
+// A paper was published that showed that NTL diminished at higher GDP levels.
+// This regression puts NTL on the LHS and GDP and GDP^2 on the RHS with fixed
+// effects to see whether this is true. 
+
 foreach agg_level in cat_iso3c cat_region {
 	est clear
 	if ("`agg_level'" == "cat_iso3c") {

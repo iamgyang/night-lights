@@ -1,3 +1,7 @@
+// This merges all the relevant country year datasets into one big file. It also
+// creates a lot of meaningful variables, such as logged variables, first
+// differenced variables, seasonally differenced variables, etc.
+
 local area iso3c
 local time year
 

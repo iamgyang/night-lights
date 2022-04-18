@@ -1,4 +1,4 @@
-/* Do all long difference regressions */
+/* Do all long difference regressions (i.e. difference across multiple years) */
 
 est clear
 

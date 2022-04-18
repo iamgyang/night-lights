@@ -1,3 +1,5 @@
+// do all war difference in difference regressions & event studies
+
 local sample 0
 pause off
 

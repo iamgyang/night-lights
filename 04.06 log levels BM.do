@@ -1,4 +1,4 @@
-/* Do all log levels regressions */
+/* Do all log levels regressions for black marble (i.e. HWS regressions) */
 
 est clear
 use "C:/Users/gyang/Dropbox/CGD GlobalSat/raw-data/Black Marble NTL/bm_adm1_1622.dta"

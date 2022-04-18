@@ -1,3 +1,8 @@
+// This cleans the World Bank historical income classifications. That is, the
+// World Bank classifies countries based on gross national income, and many
+// countries have historically progressed from low income status to lower middle
+// income status or upper middle income status.
+
 // WB historical income classifications --------------
 import excel ///
 "$raw_data/Other/OGHIST_historical_WB_country_income_classification.xls", ///

@@ -1,3 +1,6 @@
+// This cleans a file of India's subnational gross value added. Note that this
+// is different than GDP.
+
 import excel  "C:/Users/user/Dropbox/CGD GlobalSat/raw-data/National Accounts/IND/India_State_wise_GDP growth rates.xls", clear
 assert L[4] == "(% Growth over previous year)"
 assert L[5] == "2012-13"

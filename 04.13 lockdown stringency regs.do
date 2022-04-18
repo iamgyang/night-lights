@@ -1,3 +1,6 @@
+// This produces regressions of how NTL are associated with covid stringency at
+// a country-month level.
+
 // for subnational and national level:
 // regress feols(log(light) – log(light in same month in 2019) ~ stringency|province + month)
 

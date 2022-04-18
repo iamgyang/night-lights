@@ -1,4 +1,5 @@
-/* Do all log levels regressions */
+/* Do all log levels regressions (i.e. HWS regressions) */
+
 pause off // CHANGE!!!!
 
 est clear

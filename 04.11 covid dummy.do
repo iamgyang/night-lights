@@ -1,3 +1,6 @@
+// This produces a regression on how much COVID-19 ended up depressing night
+// lights in 2020 at an annual country level.
+
 est clear
 clear
 

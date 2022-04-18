@@ -1,3 +1,5 @@
+// This produces all the windowed regressions
+
 // create table to store output
 clear
 set obs 1

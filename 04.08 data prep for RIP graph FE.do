@@ -1,3 +1,6 @@
+// This manually creates fixed effects for each of the variables of interest. We
+// can then plot these differenced variables on a graph.
+
 /* List out the files we want to create manual FE for: */
 	clear	
 		input str40 files_to_FE

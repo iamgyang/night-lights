@@ -1,4 +1,13 @@
-// get all files in directory; store in macro `dirs_toloop':
+// This file cleans subnational Gross regional product of Brazil. One thing that
+// the file has to do differently is that Brazil ends up reporting its GDP in
+// terms of the immediately previous year's price, as opposed to a constant real
+// measure, since it has high inflation. So, we have to convert this GDP to a
+// real priced GDP by doing a cumulative product. Unfortunately the GDP measures
+// don't look that accurate when I'm taking levels, but the growth of values is
+// pretty good.
+
+// get all files in directory; store in macro
+// `dirs_toloop':
 filelist , dir("$raw_data/National Accounts/BRA/Conta_da_Producao_2002_2019_xls") pattern(*.xls)
 keep filename
 levelsof filename, local(dirs_toloop)
