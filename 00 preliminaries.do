@@ -1,3 +1,9 @@
+// This is a file that installs all of the packages and sets directories. It
+// also provides some options such as turning off variable abbreviations,
+// setting numeric digits to always be of type double and it also imports a lot
+// of my personal programs. In other languages programs are referred to as
+// functions.
+
 // 0. Preliminaries
 
 clear all 
