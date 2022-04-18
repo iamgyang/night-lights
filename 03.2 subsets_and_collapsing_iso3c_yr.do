@@ -47,6 +47,7 @@ foreach i of numlist 79(5)99 {
 gen sum_pix_clb_area = sum_pix_clb / sum_area
 gen pos_sumpx_area = pos_sumpx / sum_area
 gen sum_pix_new_area = sum_pix_new / sum_area
+gen sum_pix_bm_area = sum_pix_bm / pol_area
 gen sum_pix_bm_dec_area = sum_pix_bm_dec / pol_area
 
 // label variables
@@ -55,8 +56,10 @@ label variable del_sum_area "VIIRS (cleaned) polygon area"
 label variable del_sum_pix "VIIRS (cleaned) pixels"
 label variable del_sum_pix_area "VIIRS (cleaned) pixels / area"
 // Black Marble version
-label variable sum_pix_bm_dec "BM pixels"
-label variable sum_pix_bm_dec_area "BM pixels / area"
+label variable sum_pix_bm_dec "BM Dec. pixels"
+label variable sum_pix_bm_dec_area "BM Dec. pixels / area"
+label variable sum_pix_bm "BM pixels"
+label variable sum_pix_bm_area "BM pixels / area"
 // calibrated night lights versions
 label variable sum_pix_clb "VIIRS (calib.) pixels"
 label variable sum_pix "VIIRS (raw) pixels"
@@ -115,6 +118,8 @@ input str40 measure_vars
 	"del_sum_pix_94"
 	"del_sum_pix_99_area"
 	"del_sum_pix_99"
+	"sum_pix_bm"
+	"sum_pix_bm_area"
 	"sum_pix_bm_dec"
 	"sum_pix_bm_dec_area"
 	"sum_pix_area"
