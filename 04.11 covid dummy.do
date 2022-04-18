@@ -1,15 +1,9 @@
-
 est clear
-	clear	
-		input str40 files_to_FE
-		"sample_iso3c_year_pop_den__allvars2"
-        "subnational_GRP"
-		end
-	levelsof files_to_FE, local(files_to_FE)
+clear
 
 foreach light_label in VIIRS BM {
 foreach income_group in OECD Not_OECD Global {
-foreach file in `files_to_FE' {
+foreach file in sample_iso3c_year_pop_den__allvars2 subnational_GRP {
     use "$input/`file'.dta", clear
 	if ("`income_group'" == "OECD") {
 		keep_oecd iso3c
@@ -22,7 +16,7 @@ foreach file in `files_to_FE' {
         local light_var ln_del_sum_pix
     }
     if ("`light_label'" == "BM") {
-        local light_var ln_sum_pix_bm_dec
+        local light_var ln_sum_pix_bm
     }
 
 	keep if year >= 2012
