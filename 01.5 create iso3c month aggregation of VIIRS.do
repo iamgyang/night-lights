@@ -1,6 +1,6 @@
-// Create annual ISO3C aggregation of VIIRS annual product:
+// Create annual ISO3C aggregation of VIIRS monthly product:
 
-// collapse by iso3c year:
+// collapse by iso3c month:
 use "$input/NTL_appended_cleaned.dta", clear
 keep del_sum_pix sum_pix del_sum_area sum_area iso3c year month objectid
 gcollapse (sum) del_sum_pix sum_pix del_sum_area sum_area, by(iso3c year month)

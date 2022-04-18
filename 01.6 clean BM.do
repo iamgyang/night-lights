@@ -1,3 +1,11 @@
+// This file cleans the black marble p.m. to data. The black marble area them to
+// data comes originally from in our data file that Park provides. That our data
+// file is been converted to a DTA file within an hour. This file converts that
+// DTA file into different aggregations of the Black Marble data (ADM2 - month,
+// ADM2 - year, ISO3C - year). Note that when comparing the Black Marble data to
+// VIIRS data, there are some discrepancies with polygon area. This is due to
+// something called "raster extent". (ask Parth)
+
 use "$raw_data/Black Marble NTL/bm_adm2.dta", clear
 decode_vars, all
 rename *, lower
@@ -67,7 +75,8 @@ use "$input/bm_adm2_month.dta", clear
         mmerge iso3c using `areas'
         keep if _merge == 3
         pause checking polygon area
-        // assert abs(pol_area - other_pol_area) < 1 !!!!!!! polygon area doesn't match up? parth says something to do with raster "extent"...
+        // assert abs(pol_area - other_pol_area) < 1 !!!!!!! polygon area
+        // doesn't match up? parth says something to do with raster "extent"...
         restore
 
 	// export

@@ -1,3 +1,12 @@
+// This file takes the two VIIRS data (monthly and annual) and aggregates that
+// data to an annual country level. First, you have to aggregate to an ADM2 year
+// level. And then, you have to aggregate to a country-year level. I did a check
+// at the end, and it does seem like the annual product is missing some data in
+// 2014 and 2015. This  doesn’t matter too much, because in the end, we use the
+// monthly product that we manually obtained, as well as the Black Marble
+// version of nightlights, not the annual product. We mostly use the annual
+// product as a validation that we've obtained the monthly product correctly.
+
 // Create annual ISO3C aggregation of VIIRS product: -----------------
 
 // get the VIIRS versions (annual product)

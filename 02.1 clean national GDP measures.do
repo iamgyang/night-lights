@@ -1,3 +1,4 @@
+// This imports GDP data from a few sources and cleans and merges them.
 
 *** QUATERLY =================================================================
 

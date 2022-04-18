@@ -84,37 +84,3 @@ save "$input/covid_oxford_cleaned.dta", replace
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

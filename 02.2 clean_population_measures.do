@@ -1,3 +1,4 @@
+// This obtains population data from the world bank API.
 
 // WDI population estimates --------------------------------------------------
 clear

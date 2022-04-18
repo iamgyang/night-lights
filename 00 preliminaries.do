@@ -1,9 +1,16 @@
 // This is a file that installs all of the packages and sets directories. It
 // also provides some options such as turning off variable abbreviations,
-// setting numeric digits to always be of type double and it also imports a lot
-// of my personal programs. In other languages programs are referred to as
-// functions.
+// setting numeric digits to always be of type 'double' and it also imports a
+// lot of my personal programs. In other languages 'programs' are referred to as
+// 'functions'. 
 
+// Broadly, the files are organized such that 00.XXXX means it's a preliminary
+// file. 01.XXXX means that it is a file that cleans and imports night lights
+// data. 02.XXXX means that it is a file that cleans and imports other data (non
+// night lights). 03.XXXX means that it is a file that aids in merging relevant
+// cleaned datasets. 04.XXXX means that it is a file pertaining to analysis.
+
+// ------------------------------------------------------------------------------
 // 0. Preliminaries
 
 clear all 
@@ -49,7 +56,6 @@ if ("`install_user_defined_functions'" == "Yes") {
 // * Finally, install this package
 // cap ado uninstall ivreghdfe
 // net install ivreghdfe, from(https://raw.githubusercontent.com/sergiocorreia/ivreghdfe/master/src/)
-
 
 
 // CHANGE THIS!! --- Do we want to import nightlights from the tabular raw data? 
@@ -170,8 +176,5 @@ else if "`all'" == "" {
 	drop *_old
 }
 end
-
-
-
 
 

@@ -1,3 +1,6 @@
+// There are three sources of the DMSP data, and they are all annual. This file
+// cleans and merges all of the annual DMSP data.
+
 tempfile dmsp dmsp_hender dmsp_goldberg
 
 // DMSP from Australian website (Hodler and Raschky) --------------------
@@ -8,7 +11,7 @@ keep iso3c year sum_light_dmsp
 
 save `dmsp'
 
-// DMSP Henderson --------------------
+// DMSP Henderson -----------------------------------------------------
 use "$raw_data/HWS AER replication/hsw_final_tables_replication/global_total_dn_uncal.dta", clear
 keep year iso3v10 country lngdpwdilocal lndn wbdqtotal wbdqcat
 rename iso3v10 iso3c
