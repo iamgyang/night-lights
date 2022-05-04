@@ -14,3 +14,5 @@ do "04.13 lockdown stringency regs.do"
 // run like so:
 // cd "C:\Users\gyang\Dropbox\CGD GlobalSat\HF_measures\input"
 // "C:\Program Files\Stata16\StataMP-64.exe"  /e do "C:\Users\gyang\Dropbox\CGD GlobalSat\HF_measures\code\00 batch run scratch file.do"
+
+do "04.15 regressions across latitude bands.do"
