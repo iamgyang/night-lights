@@ -47,3 +47,10 @@ po/*~
 
 # RStudio Connect folder
 rsconnect/
+
+# Excel
+*xls
+*xlsx
+
+# DTA files
+*dta
