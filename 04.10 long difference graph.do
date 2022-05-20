@@ -5,7 +5,7 @@ set graphics off
 
 foreach light_var in ln_sum_pix_bm_dec_area  ln_del_sum_pix_area {
 
-use "$input/sample_iso3c_year_pop_den__allvars2.dta", clear
+use "$input/iso3c_year_aggregation.dta", clear
 keep if year == `start_yr' | year == `end_yr' // this is for BM (which we only have up to 2014)
 keep iso3c year cat_income2012 ln_WDI_ppp_pc ln_WDI `light_var'
 naomit

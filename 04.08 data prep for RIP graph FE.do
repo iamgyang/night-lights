@@ -4,7 +4,7 @@
 /* List out the files we want to create manual FE for: */
 	clear	
 		input str40 files_to_FE
-		"sample_iso3c_year_pop_den__allvars2"
+		"iso3c_year_aggregation"
         "subnational_GRP", clear
 		end
 	levelsof files_to_FE, local(files_to_FE)
@@ -23,7 +23,7 @@ foreach file in `files_to_FE' {
 	}
 	
 	keep if year >= 2012
-    if ("`file'" == "sample_iso3c_year_pop_den__allvars2") {
+    if ("`file'" == "iso3c_year_aggregation") {
         local location iso3c
         local Y WDI_ppp
     }

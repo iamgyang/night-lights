@@ -3,7 +3,7 @@ global datasets pwt mad wdi bm dmsp
 // first, get a dataset of country-level "night-lights-imputed" GDP. then, feed
 // this into Dev's code to get the beta convergence graphs.
 
-use "$input/sample_iso3c_year_pop_den__allvars2.dta", clear
+use "$input/iso3c_year_aggregation.dta", clear
 
 // black marble December 
 keep ln_WDI_ppp ln_sum_pix_bm_dec_area ln_sum_light_dmsp_div_area cat_iso3c cat_year year iso3c

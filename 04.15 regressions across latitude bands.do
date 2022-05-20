@@ -7,7 +7,7 @@ foreach XVAR in ln_sum_pix_bm_dec_area ln_sum_pix_bm_area ln_del_sum_pix_area {
 		gen point = 999999999
 		tempfile base
 		save `base'
-		use "$input/sample_iso3c_year_pop_den__allvars2.dta", clear
+		use "$input/iso3c_year_aggregation.dta", clear
 		local lab: variable label `XVAR'
 		local lab = subinstr("`lab'", " pixels / area", "",.)
 		local lab = subinstr("`lab'", "Log ", "",.)
@@ -112,7 +112,7 @@ foreach XVAR in ln_sum_pix_bm_dec_area ln_sum_pix_bm_area ln_del_sum_pix_area {
 		gen point = 999999999
 		tempfile base
 		save `base'
-		use "$input/sample_iso3c_year_pop_den__allvars2.dta", clear
+		use "$input/iso3c_year_aggregation.dta", clear
 		local lab: variable label `XVAR'
 		local lab = subinstr("`lab'", " pixels / area", "",.)
 		local lab = subinstr("`lab'", "Log ", "",.)

@@ -88,14 +88,14 @@ make_graph <- function(data_f, x, y, xlab, ylab, filename) {
          height = 6)
 }
 
-for (file in c ("subnational_GRP", "sample_iso3c_year_pop_den__allvars2")) {
+for (file in c ("subnational_GRP", "iso3c_year_aggregation")) {
   for (RHS in c("ln_del_sum_pix_area", "ln_sum_pix_bm_dec_area")) {
     for (income_group in c("OECD", "Not_OECD")) {
       if (file == "subnational_GRP") {
         LHS <- "ln_GRP"
         FE <- "region"
       }
-      if (file == "sample_iso3c_year_pop_den__allvars2") {
+      if (file == "iso3c_year_aggregation") {
         LHS <- "ln_WDI_ppp"
         FE <- "iso3c"
       }

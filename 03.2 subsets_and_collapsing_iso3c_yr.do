@@ -293,10 +293,10 @@ assert !(mi(del_sum_pix_79_area) & !mi(del_sum_pix_area))
 // assert !mi(sum_pix_bm_dec_area)
 // restore // !!!!!!!!!!!!!!!!!!!!!!!! ok, this is not true... we're missing some countries (mostly islands?)
 
-save "$input/sample_`area'_`time'_pop_den__allvars2.dta", replace
+save "$input/iso3c_year_aggregation.dta", replace
 
 // check with other version of lights (different calibration) from Parth's data:
-use "$input/sample_iso3c_year_pop_den__allvars2.dta", clear
+use "$input/iso3c_year_aggregation.dta", clear
 
 
 

@@ -128,7 +128,7 @@ estadd local Country_FE "X"
 /* COUNTRY LEVEL USING WDI LCU ----------- */
 
 /* Global */
-use "$input/sample_iso3c_year_pop_den__allvars2.dta", clear
+use "$input/iso3c_year_aggregation.dta", clear
 reghdfe g_ln_WDI g_ln_del_sum_pix_area, absorb(cat_iso3c cat_year) vce(cluster cat_iso3c)
 eststo country_wdi3
 estadd local NC `e(N_clust)'
@@ -140,7 +140,7 @@ estadd local Year_FE "X"
 estadd local Country_FE "X"
 
 /* India, Indonesia, Brazil */
-use "$input/sample_iso3c_year_pop_den__allvars2.dta", clear
+use "$input/iso3c_year_aggregation.dta", clear
 keep if iso3c == "IND" | iso3c == "BRA" | iso3c == "IDN"
 reghdfe g_ln_WDI g_ln_del_sum_pix_area, absorb(cat_iso3c cat_year) vce(cluster cat_iso3c)
 eststo country_wdi1
@@ -158,7 +158,7 @@ estadd local Country_FE "X"
 use "$input/adm1_oecd_ntl_grp.dta", clear
 levelsof iso3c, local(country_codes)
 
-use "$input/sample_iso3c_year_pop_den__allvars2.dta", clear
+use "$input/iso3c_year_aggregation.dta", clear
 gen tokeep = "No"
 foreach i in `country_codes' {
     replace tokeep = "Yes" if iso3c == "`i'"

@@ -5,7 +5,7 @@
 foreach agg_level in cat_iso3c cat_region {
 	est clear
 	if ("`agg_level'" == "cat_iso3c") {
-		use "$input/sample_iso3c_year_pop_den__allvars2.dta", clear
+		use "$input/iso3c_year_aggregation.dta", clear
 		loc AGG "Country"
 		label variable ln_WDI "Log(GDP)"
 		rename ln_WDI gdp_var

@@ -6,7 +6,7 @@ NTL data with the other country's NTL data. Run the HWS regressions here as
 well, and compare the regressions. */
 
 /* Global log levels regression is highly significant */
-    use "$input/sample_iso3c_year_pop_den__allvars2.dta", clear
+    use "$input/iso3c_year_aggregation.dta", clear
     reghdfe ln_WDI ln_del_sum_pix_area, absorb(cat_iso3c cat_year) vce(cluster cat_iso3c)
     eststo country_wdi3
     estadd local NC `e(N_clust)'
@@ -24,7 +24,7 @@ bootstrap, rep(50) cluster(cat_iso3c) size(50): ///
 
 /* does the result hold if I randomize which countries get which lights? No!
 (which is a good thing) */
-    use "$input/sample_iso3c_year_pop_den__allvars2.dta", clear
+    use "$input/iso3c_year_aggregation.dta", clear
     keep ln_WDI ln_del_sum_pix_area iso3c year
     naomit
 	fillin iso3c year

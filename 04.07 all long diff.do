@@ -99,7 +99,7 @@ estadd local AGG "Country"
 /* COUNTRY LEVEL USING WDI LCU ----------- */
 
 /* Global */
-use "$input/sample_iso3c_year_pop_den__allvars2.dta", clear
+use "$input/iso3c_year_aggregation.dta", clear
 fillin iso3c year
 keep if year == 2013 | year == 2019
 sort iso3c year
@@ -119,7 +119,7 @@ estadd local AGG "Country"
 
 
 /* India, Indonesia, Brazil */
-use "$input/sample_iso3c_year_pop_den__allvars2.dta", clear
+use "$input/iso3c_year_aggregation.dta", clear
 keep if iso3c == "IND" | iso3c == "BRA" | iso3c == "IDN"
 fillin iso3c year
 keep if year == 2013 | year == 2019
@@ -145,7 +145,7 @@ estadd local AGG "Country"
 use "$input/adm1_oecd_ntl_grp.dta", clear
 levelsof iso3c, local(country_codes)
 
-use "$input/sample_iso3c_year_pop_den__allvars2.dta", clear
+use "$input/iso3c_year_aggregation.dta", clear
 gen tokeep = "No"
 foreach i in `country_codes' {
     replace tokeep = "Yes" if iso3c == "`i'"

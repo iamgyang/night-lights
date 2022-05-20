@@ -6,7 +6,7 @@ clear
 
 foreach light_label in VIIRS BM {
 foreach income_group in OECD Not_OECD Global {
-foreach file in sample_iso3c_year_pop_den__allvars2 subnational_GRP {
+foreach file in iso3c_year_aggregation subnational_GRP {
     use "$input/`file'.dta", clear
 	if ("`income_group'" == "OECD") {
 		keep_oecd iso3c
@@ -23,7 +23,7 @@ foreach file in sample_iso3c_year_pop_den__allvars2 subnational_GRP {
     }
 
 	keep if year >= 2012
-    if ("`file'" == "sample_iso3c_year_pop_den__allvars2") {
+    if ("`file'" == "iso3c_year_aggregation") {
         local location iso3c
         local AGG "Country"
         local Region_FE ""

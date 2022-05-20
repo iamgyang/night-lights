@@ -16,8 +16,8 @@ tempfile base
 save `base'
 
 /*
-For each year, regress log(GDP)~log(NTL) and plot the coefficients.
-Do this for both DMSP and VIIRS, global, OECD, etc.
+For each year, regress log(GDP)~log(NTL) and plot the coefficients. Do this for
+both DMSP and VIIRS, global, OECD, etc.
 */
 foreach agg_level in "cat_iso3c" "cat_region" {
 foreach income_group in "Global" "OECD" "Not OECD" {
@@ -32,7 +32,7 @@ foreach light_var in "VIIRS" "DMSP" "BM" {
 			}
 			
 			if ("`agg_level'" == "cat_iso3c") {
-				use "$input/sample_iso3c_year_pop_den__allvars2.dta", clear
+				use "$input/iso3c_year_aggregation.dta", clear
 				// define the LHS var:
 				rename ln_WDI LHS_var
 				// define fixed effects

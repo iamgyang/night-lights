@@ -7,7 +7,7 @@ clear
 
 
 // just basic DMSP vs. BM Dec at country level:
-use "$input/sample_iso3c_year_pop_den__allvars2.dta", clear
+use "$input/iso3c_year_aggregation.dta", clear
 label variable lndn "Log(DMSP pixels/area)"
 label variable sum_pix_bm_dec_area "BM Dec. pixels/area"
 quietly capture drop ln_sum_pix_bm_dec_area 
@@ -54,7 +54,7 @@ clear
 // macro stores which nonOECD countries are present in the subnational GRP data
 capture macro drop isos_in_subnat
 
-foreach file in subnational_GRP sample_iso3c_year_pop_den__allvars2 {
+foreach file in subnational_GRP iso3c_year_aggregation {
 	foreach light_label in VIIRS BM {
 		foreach income_group in OECD n_O Glo {
 			use "$input/`file'.dta", clear
@@ -71,7 +71,7 @@ foreach file in subnational_GRP sample_iso3c_year_pop_den__allvars2 {
 			// !!!!!!!!!!! PERHAPS CHANGE BACK: THIS BELOW CODE RESTRICTED ATTENTION TO
 			// NON-OECD COUNTRIES (BRICS MAINLY) THAT WE HAVE SUBNATIONAL DATA ON
 
-			// if ("`income_group'" == "n_O" & "`file'" == "sample_iso3c_year_pop_den__allvars2") {
+			// if ("`income_group'" == "n_O" & "`file'" == "iso3c_year_aggregation") {
 			// 	gen to_keep = "no"
 			// 	foreach i in `isos_in_subnat' {
 			// 		replace to_keep = "yes" if iso3c == "`i'"
@@ -95,7 +95,7 @@ foreach file in subnational_GRP sample_iso3c_year_pop_den__allvars2 {
 			label variable ln_`light_var'_area "Log(`light_label' pixels/area)"
 			pause u9090uu90r0
 
-			if ("`file'" == "sample_iso3c_year_pop_den__allvars2") {
+			if ("`file'" == "iso3c_year_aggregation") {
 				local location iso3c
 				local Y WDI
 				local AGG "Country"
@@ -213,12 +213,12 @@ foreach file in subnational_GRP sample_iso3c_year_pop_den__allvars2 {
 
 
 
-foreach file in subnational_GRP sample_iso3c_year_pop_den__allvars2 {
+foreach file in subnational_GRP iso3c_year_aggregation {
 	foreach light_label in VIIRS BM {
 		foreach income_group in OECD n_O Glo {
 
 
-            if ("`file'" == "sample_iso3c_year_pop_den__allvars2") {
+            if ("`file'" == "iso3c_year_aggregation") {
 				local location iso3c
 				local Y WDI
 				local AGG "Country"
