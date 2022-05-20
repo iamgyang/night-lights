@@ -93,7 +93,7 @@ for (file in c ("adm1_year_aggregation", "iso3c_year_aggregation")) {
     for (income_group in c("OECD", "Not_OECD")) {
       if (file == "adm1_year_aggregation") {
         LHS <- "ln_GRP"
-        FE <- "region"
+        FE <- "ADM1"
       }
       if (file == "iso3c_year_aggregation") {
         LHS <- "ln_WDI_ppp"
@@ -102,7 +102,7 @@ for (file in c ("adm1_year_aggregation", "iso3c_year_aggregation")) {
       
       natl <- readstata13::read.dta13(glue("{file}_{RHS}_{income_group}_FE.dta"))
       natl <- as.data.table(natl)
-      # try(natl <- rename(natl, "region" = "cat_region") %>% as.data.table())
+      # try(natl <- rename(natl, "ADM1" = "cat_ADM1") %>% as.data.table())
       
       # # checks
       # feols(eval(as.name(LHS)) ~ eval(as.name(RHS)) |

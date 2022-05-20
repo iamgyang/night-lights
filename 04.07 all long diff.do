@@ -7,17 +7,17 @@ est clear
 /* India, Indonesia, Brazil */
 use "$input/India_Indonesia_Brazil_subnational.dta", clear
 create_categ(iso3c)
-fillin region year
+fillin ADM1 year
 keep if year == 2013 | year == 2019
-sort region year
+sort ADM1 year
 foreach var of varlist ln_* {
-	bys region: gen lg_`var' =  `var' - `var'[_n-1] if region==region[_n-1]
+	bys ADM1: gen lg_`var' =  `var' - `var'[_n-1] if ADM1==ADM1[_n-1]
 	loc lab: variable label `var'
 	label variable lg_`var' "Long Difference `lab'"
 }
 drop if mi(lg_ln_del_sum_pix_area) | mi(lg_ln_GRP)
 drop if iso3c == "USA"
-check_dup_id "region"
+check_dup_id "ADM1"
 reg lg_ln_GRP lg_ln_del_sum_pix_area, vce(hc3)
 eststo subn1
 estadd local NC `e(N_clust)'
@@ -26,17 +26,17 @@ estadd local AGG "Admin 1"
 
 /* OECD */
 use "$input/adm1_oecd_ntl_grp.dta", clear
-fillin region year
+fillin ADM1 year
 keep if year == 2013 | year == 2019
-sort region year
+sort ADM1 year
 foreach var of varlist ln_* {
-	sort region year
-    by region: generate lg_`var' = `var' - `var'[_n-1] if region==region[_n-1]
+	sort ADM1 year
+    by ADM1: generate lg_`var' = `var' - `var'[_n-1] if ADM1==ADM1[_n-1]
 	loc lab: variable label `var'
 	label variable lg_`var' "Long Difference `lab'"
 }
 drop if mi(lg_ln_del_sum_pix_area) | mi(lg_ln_GRP)
-check_dup_id "region"
+check_dup_id "ADM1"
 reg lg_ln_GRP lg_ln_del_sum_pix_area, vce(hc3)
 eststo subn2
 estadd local NC `e(N_clust)'

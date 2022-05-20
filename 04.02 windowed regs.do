@@ -19,15 +19,15 @@ save `base'
 For each year, regress log(GDP)~log(NTL) and plot the coefficients. Do this for
 both DMSP and VIIRS, global, OECD, etc.
 */
-foreach agg_level in "cat_iso3c" "cat_region" {
+foreach agg_level in "cat_iso3c" "cat_ADM1" {
 foreach income_group in "Global" "OECD" "Not OECD" {
 foreach light_var in "VIIRS" "DMSP" "BM" {
 		
 			// Here, we don't have information subnationally
-			if ("`agg_level'" == "cat_region") & ("`light_var'" == "DMSP") {
+			if ("`agg_level'" == "cat_ADM1") & ("`light_var'" == "DMSP") {
 				continue
 			}
-			if ("`agg_level'" == "cat_region") & ("`income_group'" == "Global") {
+			if ("`agg_level'" == "cat_ADM1") & ("`income_group'" == "Global") {
 				continue
 			}
 			
@@ -38,12 +38,12 @@ foreach light_var in "VIIRS" "DMSP" "BM" {
 				// define fixed effects
 				local fixed_effects "cat_year cat_iso3c"
 			}
-			else if ("`agg_level'" == "cat_region") {
+			else if ("`agg_level'" == "cat_ADM1") {
 				use "$input/adm1_year_aggregation.dta", clear
 				// define the LHS var:
 				rename ln_GRP LHS_var
 				// define fixed effects
-				local fixed_effects "cat_year cat_region"
+				local fixed_effects "cat_year cat_ADM1"
 			}
 			
 			// define which countries we keep
@@ -134,7 +134,7 @@ sort light_var yr_start
 gduplicates drop
 save "$input/synthetic_gdp_results.dta", replace
 
-foreach agg_level in "cat_iso3c" "cat_region" {
+foreach agg_level in "cat_iso3c" "cat_ADM1" {
 foreach income_group in "Global" "OECD" "Not OECD" {
 foreach light_var in "VIIRS" "DMSP" "BM" {
 

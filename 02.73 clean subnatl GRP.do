@@ -108,9 +108,12 @@ perfect) */
 
 	// label the OECD variables
     label_oecd iso3c
-	
+
+    // change from "region" to "ADM1"
+    rename region ADM1
+
 	// create categorical variables
-	create_categ(region iso3c year)
+	create_categ(ADM1 iso3c year)
 
 // save:
 save "$input/adm1_year_aggregation.dta", replace

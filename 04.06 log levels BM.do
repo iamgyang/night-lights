@@ -9,13 +9,13 @@ use "C:/Users/gyang/Dropbox/CGD GlobalSat/raw-data/Black Marble NTL/bm_adm1_1622
 use "$input/India_Indonesia_Brazil_subnational.dta", clear
 create_categ(iso3c)
 drop if iso3c == "USA"
-reghdfe ln_GRP ln_del_sum_pix_area, absorb(cat_region cat_year) vce(cluster cat_region)
+reghdfe ln_GRP ln_del_sum_pix_area, absorb(cat_ADM1 cat_year) vce(cluster cat_ADM1)
 eststo subn1
 estadd local NC `e(N_clust)'
 local y = round(`e(r2_a_within)', .001)
 estadd local WR2 `y'	
 estadd local AGG "Admin 1"
-estadd local Region_FE "X"
+estadd local ADM1_FE "X"
 estadd local Year_FE "X"
 estadd local Country_FE ""
 
@@ -25,19 +25,19 @@ estadd local NC `e(N_clust)'
 local y = round(`e(r2_a_within)', .001)
 estadd local WR2 `y'	
 estadd local AGG "Admin 1"
-estadd local Region_FE ""
+estadd local ADM1_FE ""
 estadd local Year_FE "X"
 estadd local Country_FE "X"
 
 /* OECD */
 use "$input/adm1_oecd_ntl_grp.dta", clear
-reghdfe ln_GRP ln_del_sum_pix_area, absorb(cat_region cat_year) vce(cluster cat_region)
+reghdfe ln_GRP ln_del_sum_pix_area, absorb(cat_ADM1 cat_year) vce(cluster cat_ADM1)
 eststo subn2
 estadd local NC `e(N_clust)'
 local y = round(`e(r2_a_within)', .001)
 estadd local WR2 `y'	
 estadd local AGG "Admin 1"
-estadd local Region_FE "X"
+estadd local ADM1_FE "X"
 estadd local Year_FE "X"
 estadd local Country_FE ""
 
@@ -47,7 +47,7 @@ estadd local NC `e(N_clust)'
 local y = round(`e(r2_a_within)', .001)
 estadd local WR2 `y'	
 estadd local AGG "Admin 1"
-estadd local Region_FE ""
+estadd local ADM1_FE ""
 estadd local Year_FE "X"
 estadd local Country_FE "X"
 
@@ -68,7 +68,7 @@ estadd local NC `e(N_clust)'
 local y = round(`e(r2_a_within)', .001)
 estadd local WR2 `y'	
 estadd local AGG "Country"
-estadd local Region_FE ""
+estadd local ADM1_FE ""
 estadd local Year_FE "X"
 estadd local Country_FE "X"
 
@@ -86,7 +86,7 @@ estadd local NC `e(N_clust)'
 local y = round(`e(r2_a_within)', .001)
 estadd local WR2 `y'	
 estadd local AGG "Country"
-estadd local Region_FE ""
+estadd local ADM1_FE ""
 estadd local Year_FE "X"
 estadd local Country_FE "X"
 
@@ -100,7 +100,7 @@ estadd local NC `e(N_clust)'
 local y = round(`e(r2_a_within)', .001)
 estadd local WR2 `y'	
 estadd local AGG "Country"
-estadd local Region_FE ""
+estadd local ADM1_FE ""
 estadd local Year_FE "X"
 estadd local Country_FE "X"
 
@@ -113,7 +113,7 @@ estadd local NC `e(N_clust)'
 local y = round(`e(r2_a_within)', .001)
 estadd local WR2 `y'	
 estadd local AGG "Country"
-estadd local Region_FE ""
+estadd local ADM1_FE ""
 estadd local Year_FE "X"
 estadd local Country_FE "X"
 
@@ -136,7 +136,7 @@ estadd local NC `e(N_clust)'
 local y = round(`e(r2_a_within)', .001)
 estadd local WR2 `y'
 estadd local AGG "Country"
-estadd local Region_FE ""
+estadd local ADM1_FE ""
 estadd local Year_FE "X"
 estadd local Country_FE "X"
 
@@ -146,17 +146,17 @@ esttab country_wdi1 country_wdi2 country_wdi3 using "$overleaf/all_log_levels.te
 posthead("\hline \\ \multicolumn{4}{l}{\textbf{Panel A: Country level, using GDP from WDI, LCU}} \\\\[-1ex]") ///
 fragment ///
 mgroups("India, Indonesia, Brazil" "OECD" "Global", pattern(1 1 1) span prefix(\multicolumn{@span}{c}{) suffix(})) ///
-scalars("AGG Aggregation Level" "NC Number of Groups" "WR2 Adjusted Within R-squared" "Region_FE Region Fixed Effects" "Country_FE Country Fixed Effects" "Year_FE Year Fixed Effects" ) ///
+scalars("AGG Aggregation Level" "NC Number of Groups" "WR2 Adjusted Within R-squared" "ADM1_FE ADM1 Fixed Effects" "Country_FE Country Fixed Effects" "Year_FE Year Fixed Effects" ) ///
 nomtitles ///
 b(3) se(3) star(* 0.10 ** 0.05 *** 0.01) sfmt(3) ///
 label booktabs nobaselevels  drop(_cons) ///
 replace
 
 esttab subn1 subn2 using "$overleaf/all_log_levels.tex", ///
-posthead("\hline \\ \multicolumn{4}{l}{\textbf{Panel B: Subnational level, using GRP (Region FE)}} \\\\[-1ex]") ///
+posthead("\hline \\ \multicolumn{4}{l}{\textbf{Panel B: Subnational level, using GRP (ADM1 FE)}} \\\\[-1ex]") ///
 fragment ///
 append ///
-scalars("AGG Aggregation Level" "NC Number of Groups" "WR2 Adjusted Within R-squared" "Region_FE Region Fixed Effects" "Country_FE Country Fixed Effects" "Year_FE Year Fixed Effects") ///
+scalars("AGG Aggregation Level" "NC Number of Groups" "WR2 Adjusted Within R-squared" "ADM1_FE ADM1 Fixed Effects" "Country_FE Country Fixed Effects" "Year_FE Year Fixed Effects") ///
 nomtitles nonumbers nolines ///
 b(3) se(3) star(* 0.10 ** 0.05 *** 0.01) sfmt(3) ///
 label booktabs nobaselevels drop(_cons)
@@ -165,7 +165,7 @@ esttab subn3 subn4 using "$overleaf/all_log_levels.tex", ///
 posthead("\hline \\ \multicolumn{4}{l}{\textbf{Panel C: Subnational level, using GRP (Country FE)}} \\\\[-1ex]") ///
 fragment ///
 append ///
-scalars("AGG Aggregation Level" "NC Number of Groups" "WR2 Adjusted Within R-squared" "Region_FE Region Fixed Effects" "Country_FE Country Fixed Effects" "Year_FE Year Fixed Effects") ///
+scalars("AGG Aggregation Level" "NC Number of Groups" "WR2 Adjusted Within R-squared" "ADM1_FE ADM1 Fixed Effects" "Country_FE Country Fixed Effects" "Year_FE Year Fixed Effects") ///
 nomtitles nonumbers nolines ///
 b(3) se(3) star(* 0.10 ** 0.05 *** 0.01) sfmt(3) ///
 label booktabs nobaselevels drop(_cons)
@@ -174,7 +174,7 @@ esttab country1 country2 using "$overleaf/all_log_levels.tex", ///
 posthead("\hline \\ \multicolumn{4}{l}{\textbf{Panel D: Country level, using GDP as  summed subnational GRP}} \\\\[-1ex]") ///
 fragment ///
 append ///
-scalars( "AGG Aggregation Level" "NC Number of Groups" "WR2 Adjusted Within R-squared" "Region_FE Region Fixed Effects" "Country_FE Country Fixed Effects" "Year_FE Year Fixed Effects") ///
+scalars( "AGG Aggregation Level" "NC Number of Groups" "WR2 Adjusted Within R-squared" "ADM1_FE ADM1 Fixed Effects" "Country_FE Country Fixed Effects" "Year_FE Year Fixed Effects") ///
 nomtitles nonumbers nolines ///
 prefoot("\hline") ///
 b(3) se(3) star(* 0.10 ** 0.05 *** 0.01) sfmt(3) ///

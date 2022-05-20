@@ -2,7 +2,7 @@
 // This regression puts NTL on the LHS and GDP and GDP^2 on the RHS with fixed
 // effects to see whether this is true. 
 
-foreach agg_level in cat_iso3c cat_region {
+foreach agg_level in cat_iso3c cat_ADM1 {
 	est clear
 	if ("`agg_level'" == "cat_iso3c") {
 		use "$input/iso3c_year_aggregation.dta", clear
@@ -10,7 +10,7 @@ foreach agg_level in cat_iso3c cat_region {
 		label variable ln_WDI "Log(GDP)"
 		rename ln_WDI gdp_var
 	}
-	if ("`agg_level'" == "cat_region") {
+	if ("`agg_level'" == "cat_ADM1") {
 		use "$input/adm1_year_aggregation.dta", clear
 		loc AGG "Admin 1"
 		label variable ln_GRP "Log(GRP)"
@@ -35,7 +35,7 @@ foreach agg_level in cat_iso3c cat_region {
         estadd local NC `e(N_clust)'
         local y = round(`e(r2_a_within)', .001)
         estadd local WR2 `y'
-        estadd local Region_FE "X"
+        estadd local ADM1_FE "X"
         estadd local Country_FE ""
         estadd local Year_FE "X"
 		
@@ -46,7 +46,7 @@ foreach agg_level in cat_iso3c cat_region {
 			xtqreg gdp_var `var' i.cat_year, quantile(`quant') i(`agg_level')
 			eststo qr`i'`j'_`agg_level'
 			estadd local AGG "`AGG'"
-			estadd local Region_FE "X"
+			estadd local ADM1_FE "X"
 			estadd local Country_FE ""
 			estadd local Year_FE "X"
 
@@ -61,13 +61,13 @@ foreach agg_level in cat_iso3c cat_region {
 	esttab `olsregs' using "$overleaf/quadratic_`agg_level'_1.tex", replace f ///
 		b(3) se(3) ar2 label star(* 0.10 ** 0.05 *** 0.01) ///
 		booktabs ///
-		scalars("AGG Aggregation Level" "NC Number of Groups" "WR2 Adjusted Within R-squared" "Region_FE Region Fixed Effects" "Country_FE Country Fixed Effects" "Year_FE Year Fixed Effects") ///
+		scalars("AGG Aggregation Level" "NC Number of Groups" "WR2 Adjusted Within R-squared" "ADM1_FE ADM1 Fixed Effects" "Country_FE Country Fixed Effects" "Year_FE Year Fixed Effects") ///
 		nobaselevels  drop(_cons)
 
 	esttab `quantregs' using "$overleaf/quadratic_`agg_level'_2.tex", replace f ///
 		b(3) se(3) ar2 label star(* 0.10 ** 0.05 *** 0.01) ///
 		booktabs ///
-		scalars("AGG Aggregation Level" "Region_FE Region Fixed Effects" "Country_FE Country Fixed Effects" "Year_FE Year Fixed Effects") ///
+		scalars("AGG Aggregation Level" "ADM1_FE ADM1 Fixed Effects" "Country_FE Country Fixed Effects" "Year_FE Year Fixed Effects") ///
 		nobaselevels  drop(*.cat_year)
 
 

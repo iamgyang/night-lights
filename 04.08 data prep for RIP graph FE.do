@@ -28,7 +28,7 @@ foreach file in `files_to_FE' {
         local Y WDI_ppp
     }
     else if ("`file'" == "adm1_year_aggregation") {
-        local location region
+        local location ADM1
         local Y GRP
     }
 

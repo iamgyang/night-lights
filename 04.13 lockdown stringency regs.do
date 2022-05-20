@@ -24,7 +24,7 @@ tempfile ox_str
 save `ox_str'
 
 // run regressions
-// foreach agg_level in "cat_iso3c" "cat_region" {
+// foreach agg_level in "cat_iso3c" "cat_ADM1" {
 	foreach income_group in "Global" "OECD" "Not_OECD" {
 		foreach light_var in "VIIRS" "BM" {
 

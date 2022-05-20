@@ -13,7 +13,7 @@ well, and compare the regressions. */
     local y = round(`e(r2_a_within)', .001)
     estadd local WR2 `y'	
     estadd local AGG "Country"
-    estadd local Region_FE ""
+    estadd local ADM1_FE ""
     estadd local Year_FE "X"
     estadd local Country_FE "X"
 
@@ -66,7 +66,7 @@ bootstrap, rep(50) cluster(cat_iso3c) size(50): ///
     local y = round(`e(r2_a_within)', .001)
     estadd local WR2 `y'	
     estadd local AGG "Country"
-    estadd local Region_FE ""
+    estadd local ADM1_FE ""
     estadd local Year_FE "X"
     estadd local Country_FE "X"
 	
@@ -77,7 +77,7 @@ bootstrap, rep(50) cluster(cat_iso3c) size(50): ///
     local y = round(`e(r2_a_within)', .001)
     estadd local WR2 `y'	
     estadd local AGG "Country"
-    estadd local Region_FE ""
+    estadd local ADM1_FE ""
     estadd local Year_FE "X"
     estadd local Country_FE "X"
 	

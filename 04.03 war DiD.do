@@ -165,7 +165,7 @@ foreach week_restriction in "3wk" " " {
 cls
 foreach week_restriction in "3wk" " " {
 	foreach treat_var in affected deaths {
-		foreach pctile in  50 75 90 95 98 { 
+		foreach pctile in  50 75 90 95 98 {
 
 			if ("`treat_var'" == "affected") {
 				loc treat_var "Natural Disaster"

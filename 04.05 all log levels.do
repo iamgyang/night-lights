@@ -21,7 +21,7 @@ reghdfe ln_WDI lndn if year <= 2008 & !(inlist(iso3c, "GNQ", "BHR", "SGP", "HKG"
 	estadd local NC `e(N_clust)'
 	local y = round(`e(r2_a_within)', .001)
 	estadd local WR2 `y'
-	estadd local Region_FE ""
+	estadd local ADM1_FE ""
 	estadd local Country_FE "X"
 	estadd local Year_FE "X"
 
@@ -33,14 +33,14 @@ reghdfe ln_WDI ln_sum_pix_bm_dec_area, absorb(cat_iso3c cat_year) vce(cluster ca
 	estadd local NC `e(N_clust)'
 	local y = round(`e(r2_a_within)', .001)
 	estadd local WR2 `y'
-	estadd local Region_FE ""
+	estadd local ADM1_FE ""
 	estadd local Country_FE "X"
 	estadd local Year_FE "X"
 
 // output:
     esttab reg_DMSP reg_VIIRS using "$overleaf/basic_DMSP_vs_VIIRS.tex", ///
     fragment ///
-    scalars("AGG Aggregation Level" "NC Number of Groups" "WR2 Adjusted Within R-squared" "Region_FE Region Fixed Effects" "Country_FE Country Fixed Effects" "Year_FE Year Fixed Effects") ///
+    scalars("AGG Aggregation Level" "NC Number of Groups" "WR2 Adjusted Within R-squared" "ADM1_FE ADM1 Fixed Effects" "Country_FE Country Fixed Effects" "Year_FE Year Fixed Effects") ///
     nonumbers ///
     b(3) se(3) ar2 star(* 0.10 ** 0.05 *** 0.01) sfmt(3) ///
     label booktabs nobaselevels  drop(_cons) replace
@@ -99,15 +99,15 @@ foreach file in adm1_year_aggregation iso3c_year_aggregation {
 				local location iso3c
 				local Y WDI
 				local AGG "Country"
-				local Region_FE ""
+				local ADM1_FE ""
 				local Country_FE "X"
 				label variable ln_`Y' "Log(GDP, LCU)"
 			}
 			else if ("`file'" == "adm1_year_aggregation") {
-				local location region
+				local location ADM1
 				local Y GRP
 				local AGG "Admin1"
-				local Region_FE "X"
+				local ADM1_FE "X"
 				local Country_FE ""
 				label variable ln_`Y' "Log(GRP)"
 			}
@@ -139,7 +139,7 @@ foreach file in adm1_year_aggregation iso3c_year_aggregation {
 				estadd local NC `e(N_clust)'
 				local y = round(`e(r2_a_within)', .001)
 				estadd local WR2 `y'
-				estadd local Region_FE "`Region_FE'"
+				estadd local ADM1_FE "`ADM1_FE'"
 				estadd local Country_FE "`Country_FE'"
 				estadd local Year_FE "X"
 
@@ -152,7 +152,7 @@ foreach file in adm1_year_aggregation iso3c_year_aggregation {
 				estadd local NC `e(N_clust)'
 				local y = round(`e(r2_a_within)', .001)
 				estadd local WR2 `y'
-				estadd local Region_FE "`Region_FE'"
+				estadd local ADM1_FE "`ADM1_FE'"
 				estadd local Country_FE "`Country_FE'"
 				estadd local Year_FE "X"
 			restore
@@ -162,7 +162,7 @@ foreach file in adm1_year_aggregation iso3c_year_aggregation {
 				local location iso3c
 				local Y GRP
 				local AGG "Country"
-				local Region_FE ""
+				local ADM1_FE ""
 				local Country_FE "X"
 
 				// aggregate / collapse GRP
@@ -191,7 +191,7 @@ foreach file in adm1_year_aggregation iso3c_year_aggregation {
                 estadd local NC `e(N_clust)'
                 local y = round(`e(r2_a_within)', .001)
                 estadd local WR2 `y'
-                estadd local Region_FE "`Region_FE'"
+                estadd local ADM1_FE "`ADM1_FE'"
                 estadd local Country_FE "`Country_FE'"
                 estadd local Year_FE "X"
 				
@@ -203,7 +203,7 @@ foreach file in adm1_year_aggregation iso3c_year_aggregation {
                 estadd local NC `e(N_clust)'
                 local y = round(`e(r2_a_within)', .001)
                 estadd local WR2 `y'
-                estadd local Region_FE "`Region_FE'"
+                estadd local ADM1_FE "`ADM1_FE'"
                 estadd local Country_FE "`Country_FE'"
                 estadd local Year_FE "X"
 			}
@@ -222,14 +222,14 @@ foreach file in adm1_year_aggregation iso3c_year_aggregation {
 				local location iso3c
 				local Y WDI
 				local AGG "Country"
-				local Region_FE ""
+				local ADM1_FE ""
 				local Country_FE "X"
 			}
 			else if ("`file'" == "adm1_year_aggregation") {
-				local location region
+				local location ADM1
 				local Y GRP
 				local AGG "Admin1"
-				local Region_FE "X"
+				local ADM1_FE "X"
 				local Country_FE ""
 			}
 			di "reg_`income_group'_`light_label'_`location'_`Y'"
@@ -240,7 +240,7 @@ foreach file in adm1_year_aggregation iso3c_year_aggregation {
 				local location iso3c
 				local Y GRP
 				local AGG "Country"
-				local Region_FE ""
+				local ADM1_FE ""
 				local Country_FE "X"
 			}
 
@@ -260,7 +260,7 @@ foreach file in adm1_year_aggregation iso3c_year_aggregation {
 local i = 1
 
 foreach Y in WDI GRP{
-foreach location in region iso3c{
+foreach location in ADM1 iso3c{
 foreach light_label in VIIRS BM{
 
 if (`i' == 1) {
@@ -271,8 +271,8 @@ else if (`i'!=1) {
 	local addendum `"append"'
 }
 
-// we do not have WDI for regions:
-if ("`Y'" == "WDI" & "`location'" == "region") {
+// we do not have WDI for ADM1s:
+if ("`Y'" == "WDI" & "`location'" == "ADM1") {
     continue
 }
 
@@ -303,7 +303,7 @@ if ("`Y'" == "WDI" & "`location'" == "region") {
     using "$overleaf/all_log_levels.tex", ///
     posthead("\hline \\ \multicolumn{4}{l}{\textbf{Panel `panel_label'}} \\\\[-1ex]") ///
     fragment ///
-    scalars("AGG Aggregation Level" "NC Number of Groups" "WR2 Adjusted Within R-squared" "Region_FE Region Fixed Effects" "Country_FE Country Fixed Effects" "Year_FE Year Fixed Effects") ///
+    scalars("AGG Aggregation Level" "NC Number of Groups" "WR2 Adjusted Within R-squared" "ADM1_FE ADM1 Fixed Effects" "Country_FE Country Fixed Effects" "Year_FE Year Fixed Effects") ///
     nomtitles nonumbers nolines ///
     b(3) se(3) ar2 star(* 0.10 ** 0.05 *** 0.01) sfmt(3) ///
     label booktabs nobaselevels  drop(_cons) ///

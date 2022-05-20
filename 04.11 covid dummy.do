@@ -26,13 +26,13 @@ foreach file in iso3c_year_aggregation adm1_year_aggregation {
     if ("`file'" == "iso3c_year_aggregation") {
         local location iso3c
         local AGG "Country"
-        local Region_FE ""
+        local ADM1_FE ""
         local Country_FE "X"
     }
     else if ("`file'" == "adm1_year_aggregation") {
-        local location region
+        local location ADM1
         local AGG "Admin1"
-        local Region_FE "X"
+        local ADM1_FE "X"
         local Country_FE ""
     }
     
@@ -52,7 +52,7 @@ foreach file in iso3c_year_aggregation adm1_year_aggregation {
         estadd local NC `e(N_clust)'
         local y = round(`e(r2_a_within)', .001)
         estadd local WR2 `y'
-        estadd local Region_FE "`Region_FE'"
+        estadd local ADM1_FE "`ADM1_FE'"
         estadd local Country_FE "`Country_FE'"
 }
 }
@@ -65,18 +65,18 @@ reg_OECD_BM_iso3c reg_Not_OECD_VIIRS_iso3c reg_Not_OECD_BM_iso3c using "$overlea
 posthead("\hline \\ \multicolumn{4}{l}{\textbf{Panel A: Country level}} \\\\[-1ex]") ///
 fragment ///
 mgroups("Global VIIRS" "Global BM" "OECD VIIRS" "OECD BM" "Not OECD VIIRS" "Not OECD BM", pattern(1 1 1 1 1 1 1 1 1 1 1 1) span prefix(\multicolumn{@span}{c}{) suffix(})) ///
-scalars("AGG Aggregation Level" "NC Number of Groups" "WR2 Adjusted Within R-squared" "Region_FE Region Fixed Effects" "Country_FE Country Fixed Effects") ///
+scalars("AGG Aggregation Level" "NC Number of Groups" "WR2 Adjusted Within R-squared" "ADM1_FE ADM1 Fixed Effects" "Country_FE Country Fixed Effects") ///
 nomtitles ///
 b(3) se(3) ar2 star(* 0.10 ** 0.05 *** 0.01) sfmt(3) ///
 label booktabs nobaselevels  drop(_cons) ///
 replace
 
-esttab reg_Global_VIIRS_region reg_Global_BM_region reg_OECD_VIIRS_region ///
-reg_OECD_BM_region reg_Not_OECD_VIIRS_region reg_Not_OECD_BM_region using "$overleaf/covid_levels.tex", ///
-posthead("\hline \\ \multicolumn{4}{l}{\textbf{Panel B: Region level}} \\\\[-1ex]") ///
+esttab reg_Global_VIIRS_ADM1 reg_Global_BM_ADM1 reg_OECD_VIIRS_ADM1 ///
+reg_OECD_BM_ADM1 reg_Not_OECD_VIIRS_ADM1 reg_Not_OECD_BM_ADM1 using "$overleaf/covid_levels.tex", ///
+posthead("\hline \\ \multicolumn{4}{l}{\textbf{Panel B: ADM1 level}} \\\\[-1ex]") ///
 fragment ///
 append ///
-scalars("AGG Aggregation Level" "NC Number of Groups" "WR2 Adjusted Within R-squared" "Region_FE Region Fixed Effects" "Country_FE Country Fixed Effects") ///
+scalars("AGG Aggregation Level" "NC Number of Groups" "WR2 Adjusted Within R-squared" "ADM1_FE ADM1 Fixed Effects" "Country_FE Country Fixed Effects") ///
 nomtitles nonumbers nolines ///
 b(3) se(3) ar2 star(* 0.10 ** 0.05 *** 0.01) sfmt(3) ///
 label booktabs nobaselevels drop(_cons)
