@@ -11,7 +11,7 @@ foreach agg_level in cat_iso3c cat_region {
 		rename ln_WDI gdp_var
 	}
 	if ("`agg_level'" == "cat_region") {
-		use "$input/subnational_GRP.dta", clear
+		use "$input/adm1_year_aggregation.dta", clear
 		loc AGG "Admin 1"
 		label variable ln_GRP "Log(GRP)"
 		rename ln_GRP gdp_var

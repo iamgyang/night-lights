@@ -54,7 +54,7 @@ clear
 // macro stores which nonOECD countries are present in the subnational GRP data
 capture macro drop isos_in_subnat
 
-foreach file in subnational_GRP iso3c_year_aggregation {
+foreach file in adm1_year_aggregation iso3c_year_aggregation {
 	foreach light_label in VIIRS BM {
 		foreach income_group in OECD n_O Glo {
 			use "$input/`file'.dta", clear
@@ -103,7 +103,7 @@ foreach file in subnational_GRP iso3c_year_aggregation {
 				local Country_FE "X"
 				label variable ln_`Y' "Log(GDP, LCU)"
 			}
-			else if ("`file'" == "subnational_GRP") {
+			else if ("`file'" == "adm1_year_aggregation") {
 				local location region
 				local Y GRP
 				local AGG "Admin1"
@@ -124,7 +124,7 @@ foreach file in subnational_GRP iso3c_year_aggregation {
 				create_categ(`location' year)
 
 				// get which countries were used for the subnational bit:
-				if ("`file'" == "subnational_GRP" & "`income_group'" == "n_O") {
+				if ("`file'" == "adm1_year_aggregation" & "`income_group'" == "n_O") {
 					levelsof iso3c, local(isos_in_subnat)
 				}
 
@@ -158,7 +158,7 @@ foreach file in subnational_GRP iso3c_year_aggregation {
 			restore
 
 			// another regression with aggregated collapsed GDP = sum(GRP)
-			if ("`file'" == "subnational_GRP") {
+			if ("`file'" == "adm1_year_aggregation") {
 				local location iso3c
 				local Y GRP
 				local AGG "Country"
@@ -213,7 +213,7 @@ foreach file in subnational_GRP iso3c_year_aggregation {
 
 
 
-foreach file in subnational_GRP iso3c_year_aggregation {
+foreach file in adm1_year_aggregation iso3c_year_aggregation {
 	foreach light_label in VIIRS BM {
 		foreach income_group in OECD n_O Glo {
 
@@ -225,7 +225,7 @@ foreach file in subnational_GRP iso3c_year_aggregation {
 				local Region_FE ""
 				local Country_FE "X"
 			}
-			else if ("`file'" == "subnational_GRP") {
+			else if ("`file'" == "adm1_year_aggregation") {
 				local location region
 				local Y GRP
 				local AGG "Admin1"
@@ -236,7 +236,7 @@ foreach file in subnational_GRP iso3c_year_aggregation {
 			di "reg_`income_group'_`light_label'_`location'_`Y'_c"
 
 
-			if ("`file'" == "subnational_GRP") {
+			if ("`file'" == "adm1_year_aggregation") {
 				local location iso3c
 				local Y GRP
 				local AGG "Country"

@@ -39,7 +39,7 @@ foreach light_var in "VIIRS" "DMSP" "BM" {
 				local fixed_effects "cat_year cat_iso3c"
 			}
 			else if ("`agg_level'" == "cat_region") {
-				use "$input/subnational_GRP.dta", clear
+				use "$input/adm1_year_aggregation.dta", clear
 				// define the LHS var:
 				rename ln_GRP LHS_var
 				// define fixed effects

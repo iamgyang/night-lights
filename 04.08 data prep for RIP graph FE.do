@@ -5,7 +5,7 @@
 	clear	
 		input str40 files_to_FE
 		"iso3c_year_aggregation"
-        "subnational_GRP", clear
+        "adm1_year_aggregation", clear
 		end
 	levelsof files_to_FE, local(files_to_FE)
 
@@ -27,7 +27,7 @@ foreach file in `files_to_FE' {
         local location iso3c
         local Y WDI_ppp
     }
-    else if ("`file'" == "subnational_GRP") {
+    else if ("`file'" == "adm1_year_aggregation") {
         local location region
         local Y GRP
     }

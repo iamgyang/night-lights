@@ -1,4 +1,4 @@
-/* This cleans all the subnational GRP data and merges it with subnational VIIRS
+/* This cleans all the subnational ADM1 GRP data and merges it with subnational VIIRS
 and BM data */
 
 /* First, load all the data ---------------------------------------------- */
@@ -113,5 +113,5 @@ perfect) */
 	create_categ(region iso3c year)
 
 // save:
-save "$input/subnational_GRP.dta", replace
+save "$input/adm1_year_aggregation.dta", replace
 
