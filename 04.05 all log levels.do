@@ -54,8 +54,8 @@ clear
 // macro stores which nonOECD countries are present in the subnational GRP data
 capture macro drop isos_in_subnat
 
-foreach file in adm1_year_aggregation iso3c_year_aggregation {
-	foreach light_label in VIIRS BM {
+foreach file in adm2_year_aggregation adm1_year_aggregation iso3c_year_aggregation {
+	foreach light_label in BM { //VIIRS
 		foreach income_group in OECD n_O Glo {
 			use "$input/`file'.dta", clear
 			keep if year >= 2012
@@ -67,6 +67,11 @@ foreach file in adm1_year_aggregation iso3c_year_aggregation {
 			if ("`income_group'" == "n_O") {
 				drop_oecd iso3c
 			}
+
+			// the ADM2 aggregation is almost all OECD countries
+// 			if ("`income_group'" == "n_O") & ("`file'" == "adm2_year_aggregation") {
+// 				continue
+// 			}
 
 			// !!!!!!!!!!! PERHAPS CHANGE BACK: THIS BELOW CODE RESTRICTED ATTENTION TO
 			// NON-OECD COUNTRIES (BRICS MAINLY) THAT WE HAVE SUBNATIONAL DATA ON
@@ -99,6 +104,7 @@ foreach file in adm1_year_aggregation iso3c_year_aggregation {
 				local location iso3c
 				local Y WDI
 				local AGG "Country"
+				local ADM2_FE ""
 				local ADM1_FE ""
 				local Country_FE "X"
 				label variable ln_`Y' "Log(GDP, LCU)"
@@ -107,11 +113,21 @@ foreach file in adm1_year_aggregation iso3c_year_aggregation {
 				local location ADM1
 				local Y GRP
 				local AGG "Admin1"
+				local ADM2_FE ""
 				local ADM1_FE "X"
 				local Country_FE ""
 				label variable ln_`Y' "Log(GRP)"
 			}
-
+			else if ("`file'" == "adm2_year_aggregation") {
+				local location ADM2
+				local Y GRP
+				local AGG "Admin2"
+				local ADM2_FE "X"
+				local ADM1_FE ""
+				local Country_FE ""
+				label variable ln_`Y' "Log(GRP)"
+			}
+			
 			// indicator variable for COVID-19
 			gen covid_dummy = 1 if year >= 2020
 			replace covid_dummy = 0 if !(year >= 2020)
@@ -128,10 +144,9 @@ foreach file in adm1_year_aggregation iso3c_year_aggregation {
 					levelsof iso3c, local(isos_in_subnat)
 				}
 
-
 				// regression
 				pause `file' `light_label' `income_group' FIRST REGRESSION
-				bootstrap, rep(50) cluster(cat_`location') : ///
+// 				bootstrap, rep(50) cluster(cat_`location') : ///
 				reghdfe ln_`Y' ln_`light_var'_area c.ln_`light_var'_area#covid_dummy, absorb(cat_`location' cat_year) vce(cluster cat_`location')
 				eststo reg_`income_group'_`light_label'_`location'_`Y'_c
 				di "reg_`income_group'_`light_label'_`location'_`Y'_c"
@@ -139,12 +154,13 @@ foreach file in adm1_year_aggregation iso3c_year_aggregation {
 				estadd local NC `e(N_clust)'
 				local y = round(`e(r2_a_within)', .001)
 				estadd local WR2 `y'
+				estadd local ADM2_FE "`ADM2_FE'"
 				estadd local ADM1_FE "`ADM1_FE'"
 				estadd local Country_FE "`Country_FE'"
 				estadd local Year_FE "X"
 
 				pause `file' `light_label' `income_group' SECOND REGRESSION
-				bootstrap, rep(50) cluster(cat_`location') : ///
+// 				bootstrap, rep(50) cluster(cat_`location') : ///
 				reghdfe ln_`Y' ln_`light_var'_area, absorb(cat_`location' cat_year) vce(cluster cat_`location')
 				eststo reg_`income_group'_`light_label'_`location'_`Y'
 				di "reg_`income_group'_`light_label'_`location'_`Y'"
@@ -152,6 +168,7 @@ foreach file in adm1_year_aggregation iso3c_year_aggregation {
 				estadd local NC `e(N_clust)'
 				local y = round(`e(r2_a_within)', .001)
 				estadd local WR2 `y'
+				estadd local ADM2_FE "`ADM2_FE'"
 				estadd local ADM1_FE "`ADM1_FE'"
 				estadd local Country_FE "`Country_FE'"
 				estadd local Year_FE "X"
@@ -162,9 +179,10 @@ foreach file in adm1_year_aggregation iso3c_year_aggregation {
 				local location iso3c
 				local Y GRP
 				local AGG "Country"
+				local ADM2_FE ""
 				local ADM1_FE ""
 				local Country_FE "X"
-
+				
 				// aggregate / collapse GRP
 				gcollapse (sum) GRP `light_var' `loc_var', by(iso3c year)
 				foreach i in GRP `light_var' `loc_var' {
@@ -184,25 +202,27 @@ foreach file in adm1_year_aggregation iso3c_year_aggregation {
 				
 				// regression
 				pause `file' `light_label' `income_group' COLLAPSED REGRESSION FIRST
-				bootstrap, rep(50) cluster(cat_iso3c) : ///
+// 				bootstrap, rep(50) cluster(cat_iso3c) : ///
 				reghdfe ln_`Y' ln_`light_var'_area c.ln_`light_var'_area#covid_dummy, absorb(cat_iso3c cat_year) vce(cluster cat_iso3c)
                 eststo reg_`income_group'_`light_label'_`location'_`Y'_c
                 estadd local AGG "`AGG'"
                 estadd local NC `e(N_clust)'
                 local y = round(`e(r2_a_within)', .001)
                 estadd local WR2 `y'
+				estadd local ADM2_FE "`ADM2_FE'"
                 estadd local ADM1_FE "`ADM1_FE'"
                 estadd local Country_FE "`Country_FE'"
                 estadd local Year_FE "X"
 				
 				pause `file' `light_label' `income_group' COLLAPSED REGRESSION SECOND
-				bootstrap, rep(50) cluster(cat_iso3c) : ///
+// 				bootstrap, rep(50) cluster(cat_iso3c) : ///
 				reghdfe ln_`Y' ln_`light_var'_area, absorb(cat_iso3c cat_year) vce(cluster cat_iso3c)
                 eststo reg_`income_group'_`light_label'_`location'_`Y'
                 estadd local AGG "`AGG'"
                 estadd local NC `e(N_clust)'
                 local y = round(`e(r2_a_within)', .001)
                 estadd local WR2 `y'
+				estadd local ADM2_FE "`ADM2_FE'"
                 estadd local ADM1_FE "`ADM1_FE'"
                 estadd local Country_FE "`Country_FE'"
                 estadd local Year_FE "X"
@@ -254,14 +274,13 @@ foreach file in adm1_year_aggregation iso3c_year_aggregation {
 	}
 }
 
-
 /* EXPORT ----------- */
 
 local i = 1
 
 foreach Y in WDI GRP{
-foreach location in ADM1 iso3c{
-foreach light_label in VIIRS BM{
+foreach location in ADM2 ADM1 iso3c {
+foreach light_label in BM {
 
 if (`i' == 1) {
     local addendum `"mgroups("Global" "Global" "OECD" "OECD" "Not OECD" "Not OECD", pattern(1 1 1 1 1 1 1 1 1 1) span prefix(\multicolumn{@span}{c}{) suffix(})) replace"'
@@ -275,26 +294,29 @@ else if (`i'!=1) {
 if ("`Y'" == "WDI" & "`location'" == "ADM1") {
     continue
 }
+if ("`Y'" == "WDI" & "`location'" == "ADM2") {
+    continue
+}
 
 // get panel labels:
-    if (`i' == 1) {
-        local panel_label "A: Country level, VIIRS"
-    }
-    if (`i' == 2) {
-        local panel_label "B: Country level, BM"
-    }
-    if (`i' == 3) {
-        local panel_label "C: Subnational level, VIIRS"
-    }
-    if (`i' == 4) {
-        local panel_label "D: Subnational level, BM"
-    }
-    if (`i' == 5) {
-        local panel_label "E: Country level, using GDP as summed subnational GRP, VIIRS"
-    }
-    if (`i' == 6) {
-        local panel_label "F: Country level, using GDP as summed subnational GRP, BM"
-    }
+    // if (`i' == 1) {
+    //     local panel_label "A: Country level, VIIRS"
+    // }
+    // if (`i' == 2) {
+    //     local panel_label "B: Country level, BM"
+    // }
+    // if (`i' == 3) {
+    //     local panel_label "C: Subnational level, VIIRS"
+    // }
+    // if (`i' == 4) {
+    //     local panel_label "D: Subnational level, BM"
+    // }
+    // if (`i' == 5) {
+    //     local panel_label "E: Country level, using GDP as summed subnational GRP, VIIRS"
+    // }
+    // if (`i' == 6) {
+    //     local panel_label "F: Country level, using GDP as summed subnational GRP, BM"
+    // }
 
 // output:
     esttab reg_Glo_`light_label'_`location'_`Y' reg_Glo_`light_label'_`location'_`Y'_c ///
@@ -303,7 +325,7 @@ if ("`Y'" == "WDI" & "`location'" == "ADM1") {
     using "$overleaf/all_log_levels.tex", ///
     posthead("\hline \\ \multicolumn{4}{l}{\textbf{Panel `panel_label'}} \\\\[-1ex]") ///
     fragment ///
-    scalars("AGG Aggregation Level" "NC Number of Groups" "WR2 Adjusted Within R-squared" "ADM1_FE ADM1 Fixed Effects" "Country_FE Country Fixed Effects" "Year_FE Year Fixed Effects") ///
+    scalars("AGG Aggregation Level" "NC Number of Groups" "WR2 Adjusted Within R-squared" "ADM2_FE ADM1 Fixed Effects" "ADM1_FE ADM1 Fixed Effects" "Country_FE Country Fixed Effects" "Year_FE Year Fixed Effects") ///
     nomtitles nonumbers nolines ///
     b(3) se(3) ar2 star(* 0.10 ** 0.05 *** 0.01) sfmt(3) ///
     label booktabs nobaselevels  drop(_cons) ///
