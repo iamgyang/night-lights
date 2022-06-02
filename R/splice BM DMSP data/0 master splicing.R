@@ -67,21 +67,21 @@ source(glue(
     "C:/Users/{user}/Dropbox/Coding_General/personal.functions.R"
 ))
 
-# Run everything ----------------------------------------------------------
-
-# create log directory path:
-dir.create(file.path(root_dir, "log"), showWarnings = FALSE)
-
-closeAllConnections()
-setwd(input_dir)
-
-# splicing
-sink(file=glue("{root_dir}log/log_mlr hyperparameter tuning 2.txt"))
-source(glue("{code_dir}/R/mlr hyperparameter tuning 2.R"), echo=TRUE, max.deparse.length=10000)
-sink()
-
-sink(file=glue("{root_dir}log/log_splicing dmsp bm 2.txt"))
-source(glue("{code_dir}/R/splicing dmsp bm 2.R"), echo=TRUE, max.deparse.length=10000)
-sink()
-
-setwd(input_dir)
+# # Run everything ----------------------------------------------------------
+# 
+# # create log directory path:
+# dir.create(file.path(root_dir, "log"), showWarnings = FALSE)
+# 
+# closeAllConnections()
+# setwd(input_dir)
+# 
+# # splicing
+# sink(file=glue("{root_dir}log/log_mlr hyperparameter tuning 2.txt"))
+# source(glue("{code_dir}/R/mlr hyperparameter tuning 2.R"), echo=TRUE, max.deparse.length=10000)
+# sink()
+# 
+# sink(file=glue("{root_dir}log/log_splicing dmsp bm 2.txt"))
+# source(glue("{code_dir}/R/splicing dmsp bm 2.R"), echo=TRUE, max.deparse.length=10000)
+# sink()
+# 
+# setwd(input_dir)

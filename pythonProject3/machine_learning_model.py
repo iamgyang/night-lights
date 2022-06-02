@@ -68,7 +68,7 @@ for categorical in link_list:
 # STEP 2: Predict on the test set: -----------------------------------------------------------
 
 # load previously-trained categorical predictor from file:
-# predictor_categ = TabularPredictor.load(f"{save_path}/categorical")
+predictor_categ = TabularPredictor.load(f"{save_path}/categorical")
 predictor_conti = TabularPredictor.load(f"{save_path}/continuous")
 
 # make probability predictions:
@@ -88,9 +88,9 @@ rmse_test = abs(perf['root_mean_squared_error']) # CHANGE! -- make it the actual
 # predict upper and lower bounds for the new dataset of BM from 2014-2022:
 full_data["dmsp_pos_pred"] = predictor_categ.predict_proba(full_data)["positive"]
 full_data["sum_pix_dmsp_pred"] = predictor_conti.predict(full_data)
-full_data["sum_pix_dmsp_pred_mean"] = full_data[["sum_pix_dmsp_pred", "dmsp_pos_pred"]].product()
-full_data["sum_pix_dmsp_pred_upper"] = full_data["sum_pix_dmsp_pred"] + 1.96 * rmse_test
-full_data["sum_pix_dmsp_pred_lower"] = full_data["sum_pix_dmsp_pred"] - 1.96 * rmse_test
+full_data["sum_pix_dmsp_pred_mean"] = full_data[["sum_pix_dmsp_pred", "dmsp_pos_pred"]].product(axis = 1)
+full_data["sum_pix_dmsp_pred_upper"] = full_data["sum_pix_dmsp_pred_mean"] + 1.96 * rmse_test
+full_data["sum_pix_dmsp_pred_lower"] = full_data["sum_pix_dmsp_pred_mean"] - 1.96 * rmse_test
 
 # export
 full_data.to_csv('full_data_splicing_with_predictions.csv')
