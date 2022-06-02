@@ -1,5 +1,14 @@
 # example 2 ---------------------------------------------------------------
 
+xgb_wrapper <- function(train_data,
+                        target_variable,
+                        excluded_vars,
+                        categorical = FALSE, 
+                        method_ = 'xgbTree',
+                        cv_num = 10,
+                        tune_grid_row_size = 100,
+                        seed_train = 94720204) {
+
 load("merging_midpoint.RData")
 
 # remove variables that are not interesting
@@ -120,25 +129,4 @@ lrn_xgboost_tuned$train(task)
 
 return(lrn_xgboost_tuned)
 
-# # The test set results are presented below.
-# rr = resample(
-#     task,
-#     learner = lrn("regr.xgboost"),
-#     resampling = crossval,
-#     store_models = TRUE
-# )
-# print(rr)
-# 
-# # Using the hyper parameter selected from the training set if we predict using
-# # the test set we get the below
-# rr$aggregate(msr("regr.mae"))
-# rr$errors
-# rr$warnings
-# rr$resampling
-# rr$prediction()
-# 
-# # Let's visualize the test set predictions now.
-# # Plots
-# autoplot(rr, measure = msr('regr.mae'))
-# autoplot(rr, type = "histogram")
-# 
+}
