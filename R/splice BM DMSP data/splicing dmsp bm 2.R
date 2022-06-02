@@ -72,11 +72,11 @@ pvq[,dmsp_pos:=factor((dmsp_pos), levels = c(1, 0))]
 dtrain <- pvq[year == 2012]
 dtest <- pvq[year == 2013]
 
-# get row number:
-num_rows <- nrow(dtrain)
-dtrain[, row_num := seq(1, num_rows)]
-
+# export for Python ML model
 setwd(input_dir)
+dtrain %>% write.csv("train.csv", na = "", row.names = FALSE)
+dtest %>% write.csv("test.csv", na = "", row.names = FALSE)
+save_pvq %>% write.csv("full_data_splicing.csv", na = "", row.names = FALSE)
 save.image("merging_midpoint.RData")
 load("merging_midpoint.RData")
 
