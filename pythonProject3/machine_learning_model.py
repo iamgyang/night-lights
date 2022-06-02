@@ -1,5 +1,5 @@
-# This fits a bunch of models on the training data using an auto-ML package
-# developed by some Amazon AI people.
+# This fits 2 models on the training data using an auto-ML package developed by
+# some Amazon AI people.
 # https://arxiv.org/pdf/2003.06505.pdf
 # Installation instructions here:
 # https://auto.gluon.ai/stable/install.html
@@ -9,71 +9,92 @@ import os
 from autogluon.tabular import TabularDataset, TabularPredictor
 
 # set working directory. this folder will also store the trained ML models
-save_path = 'C:/Users/user/Dropbox/CGD GlobalSat/HF_measures/input'
-os.chdir(save_path)
-
-# import data
-train_data = TabularDataset('train.csv')
-test_data = TabularDataset('test.csv')
-full_data = TabularDataset('full_data_splicing.csv')
+dir_path = 'C:/Users/user/Dropbox/CGD GlobalSat/HF_measures/input'
+save_path = 'C:/Users/user/Dropbox/CGD GlobalSat/splice_final_model'
+os.chdir(dir_path)
 
 # STEP 1: FIT 2 MODELS ------------------------------------------------------------
 label = 'dmsp_pos'
 link_list = [True, False]
 
 for categorical in link_list:
+
+    # import data
+    train_data = TabularDataset('train.csv')
+    test_data = TabularDataset('test.csv')
+    full_data = TabularDataset('full_data_splicing.csv')
+
     if (categorical):
         label = 'dmsp_pos'
-	exclude_label = 'ln_sum_pix_dmsp'
+        exclude_label = 'ln_sum_pix_dmsp'
+
+        # make sure the response variable is of the correct class
+        train_data[label] = train_data[label].astype(str)
+        test_data[label] = test_data[label].astype(str)
+
+        # additional folder
+        path_addendum = "categorical"
     else:
         label = 'ln_sum_pix_dmsp'
-	exclude_label = 'dmsp_pos'
+        exclude_label = 'dmsp_pos'
 
-# remove data that are unnecessary
-train_data = train_data.drop(columns=["OBJECTID", "year", exclude_label])
-test_data = test_data.drop(columns=["OBJECTID", "year", exclude_label])
+        # make sure the response variable is of the correct class
+        train_data[label] = train_data[label].astype(float)
+        test_data[label] = test_data[label].astype(float)
 
-# make sure the response variable is of the correct class
-train_data[label] = train_data[label].astype(str)
-test_data[label] = test_data[label].astype(str)
+        # additional folder
+        path_addendum = "continuous"
 
-# make sure train and test data columns are all the same
-assert(all(train_data.columns == test_data.columns))
+    # remove data that are unnecessary
+    train_data = train_data.drop(columns=["OBJECTID", "year", exclude_label])
+    test_data = test_data.drop(columns=["OBJECTID", "year", exclude_label])
 
-# model parameters. subsample subset of data for faster demo, try setting this
-# to much larger values
-subsample_size = 500
-train_data = train_data.sample(n=subsample_size, random_state=0)
-train_data.head()
-print("Summary of class variable: \n", train_data[label].describe())
+    # make sure train and test data column/variable names are all the same
+    assert(all(train_data.columns == test_data.columns))
 
-# Longest time you are willing to wait (in seconds)
-time_limit = 60
+    # model parameters. subsample subset of data for faster demo, try setting this
+    # to much larger values
+    subsample_size = 500
+    train_data = train_data.sample(n=subsample_size, random_state=0)
+    train_data.head()
+    print("Summary of class variable: \n", train_data[label].describe())
 
-# fit model
-predictor = TabularPredictor(label=label, path=save_path).fit(train_data, time_limit = time_limit, presets='medium_quality')
+    # Longest time you are willing to wait (in seconds)
+    time_limit = 60
 
-# predict on the test set:
+    # fit model
+    predictor = TabularPredictor(label=label, path=f"{save_path}/{path_addendum}").fit(train_data, time_limit = time_limit, presets='medium_quality')
 
-# values to predict
-y_test = test_data[label]
+# STEP 2: Predict on the test set: -----------------------------------------------------------
 
-# delete label column to prove we're not cheating
-test_data_nolab = test_data.drop(columns=[label])
-test_data_nolab.head()
+# load previously-trained categorical predictor from file:
+# predictor_categ = TabularPredictor.load(f"{save_path}/categorical")
+predictor_conti = TabularPredictor.load(f"{save_path}/continuous")
 
-# unnecessary, just demonstrates how to load previously-trained predictor from file
-predictor = TabularPredictor.load(save_path)
-y_pred = predictor.predict(test_data_nolab)
-print("Predictions:  \n", y_pred)
-perf = predictor.evaluate_predictions(y_true=y_test, y_pred=y_pred, auxiliary_metrics=True)
+# make probability predictions:
+# test_data["dmsp_pos_pred"] = predictor_categ.predict_proba(test_data)["1"]
+test_data["ln_sum_pix_dmsp_pred"] = predictor_conti.predict(test_data)
+# test_data["ln_sum_pix_dmsp_pred_final"] = test_data[["ln_sum_pix_dmsp_pred", "dmsp_pos_pred"]].prod(axis = 1)
+test_data = test_data.dropna()
+
+# evaluation:
+perf = predictor.evaluate_predictions(
+    y_true = test_data[label],
+    y_pred = test_data["ln_sum_pix_dmsp_pred"], 
+    auxiliary_metrics = True)
 predictor.leaderboard(test_data, silent=True)
+rmse_test = abs(perf['root_mean_squared_error']) # CHANGE! -- make it the actual RMSE
 
 # predict upper and lower bounds for the new dataset of BM from 2014-2022:
-full_data["log_sum_pix_dmsp_pred_mean"] = predictor.predict(full_data)
-full_data["log_sum_pix_dmsp_pred_upper"] = predictor.predict(full_data)
-full_data["log_sum_pix_dmsp_pred_lower"] = predictor.predict(full_data)
-cities.to_csv('full_data_splicing_with_predictions.csv')
+# full_data["dmsp_pos_pred"] = predictor_categ.predict_proba(full_data)["1"]
+full_data["ln_sum_pix_dmsp_pred"] = predictor_conti.predict(full_data)
+# full_data["log_sum_pix_dmsp_pred_mean"] = full_data[["ln_sum_pix_dmsp_pred", "dmsp_pos_pred"]].product()
+full_data["log_sum_pix_dmsp_pred_upper"] = full_data["ln_sum_pix_dmsp_pred"] + 1.96 * rmse_test
+full_data["log_sum_pix_dmsp_pred_lower"] = full_data["ln_sum_pix_dmsp_pred"] - 1.96 * rmse_test
+
+# export
+full_data.to_csv('full_data_splicing_with_predictions.csv')
+test_data.to_csv('test_data_splicing_with_predictions.csv')
 
 
 # predictor = TabularPredictor(label=<variable-name>).fit(train_data=<file-name>)
