@@ -17,6 +17,25 @@ naomit
 rename iso iso3c
 save "$input/clean_primary_yrs_ed.dta", replace
 
+// linear interpolation
+gen year2 = 1900 + _n
+keep year2 iso3c
+fillin iso3c year2
+drop if year2 > 2022
+drop _fillin
+rename year2 year
+mmerge iso3c year using "$input/clean_primary_yrs_ed.dta"
+drop _merge
+foreach i in pyrf pyrm {
+	sort iso3c year
+	by iso3c: ipolate `i' year, generate(`i'2)
+	assert abs(`i'2 - `i') < 0.001 if !mi(`i')	
+	replace `i' = `i'2
+	drop `i'2
+}
+naomit
+save "$input/clean_primary_yrs_ed.dta", replace
+
 // rule of law and democracy indicators (VDEM)
 use "$raw_data/V Dem Dataset/Country_Year_V-Dem_Full+others_STATA_v12/V-Dem-CY-Full+Others-v12.dta", clear
 check_dup_id "country_name year"
