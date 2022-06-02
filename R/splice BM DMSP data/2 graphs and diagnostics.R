@@ -60,10 +60,5 @@ summary(lm(ln_gr_dm_actual ~ ln_gr_dm_pred, data = pvq))
 # significant intercept term (t stat is now ~ 19). 
 summary(lm(ln_gr_dm_actual ~ ln_gr_bm_actual, data = pvq))
 
-# Finally, one can simply look at log(actual DMSP t) - log(actual DMSP t-1)'s 
-# distribution using a t test for H0 of mean == 0. Here again, we get |t| = 15,
-# which implies that the first differences for BM are nonstationary.
-t.test(na.omit(pvq$ln_gr_bm_actual))
-
 # Thus, we do not attempt splicing
 
