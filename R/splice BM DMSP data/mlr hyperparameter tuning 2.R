@@ -1,7 +1,3 @@
-# example 2 ---------------------------------------------------------------
-
-load("merging_midpoint.RData")
-
 xgb_wrapper <- function(train_data,
                         target_variable,
                         excluded_vars,
@@ -23,14 +19,19 @@ xgb_wrapper <- function(train_data,
     
     # remove variables that are not interesting
     train_data[, c(excluded_vars) := NULL]
-    
-    set.seed(seed_train)
     train_data <- train_data[!is.na(eval(as.name(target_variable)))]
     
     # create learning task
-    task <- TaskRegr$new(id = name_model,
-                         backend = train_data,
-                         target = target_variable)
+    task <- NULL
+    if(categorical == TRUE) {
+        task <- TaskClassif$new(id = name_model,
+                             backend = train_data,
+                             target = target_variable)
+    } else {
+        task <- TaskRegr$new(id = name_model,
+                             backend = train_data,
+                             target = target_variable)
+    }
     
     # Tune hyperparameters ----------------------------------------------------
     
@@ -63,27 +64,42 @@ xgb_wrapper <- function(train_data,
     evals_trm = trm("evals", n_evals = tune_grid_row_size)
     
     tune_ps_xgboost <- ps(
-        # eta can be up to 1, but usually it is better to use low eta, and tune
-        # nrounds for a more fine-grained model
-        eta = p_dbl(lower = 0.005, upper = 0.3),
+        # # eta can be up to 1, but usually it is better to use low eta, and tune
+        # # nrounds for a more fine-grained model
+        # eta = p_dbl(lower = 0.005, upper = 0.2),
+        # 
+        # # select value for gamma tuning can help overfitting
+        # gamma = p_dbl(lower = 0.5, upper = 0.5),
+        # 
+        # # We know that the problem is not that deep in interactivity so we search a
+        # # low depth
+        # max_depth = p_int(lower = 2, upper = 6),
+        # 
+        # # nrounds to stop overfitting
+        # nrounds = p_int(lower = 100, upper = 2000),
+        # 
+        # colsample_bytree = p_dbl(0, 1),
+        # 
+        # subsample = p_dbl(0.4, 0.7),
+        # 
+        # min_child_weight = p_int(10, 20)
         
-        # select value for gamma tuning can help overfitting
-        gamma = p_dbl(0.01, 0.5),
         
-        # We know that the problem is not that deep in interactivity so we search a
-        # low depth
+        # eta can be up to 1, but usually it is better to use low eta, and tune nrounds for a more fine-grained model
+        eta = p_dbl(lower = 0.01, upper = 0.3),
+        
+        # select value for gamma
+        # tuning can help overfitting but we don't investigate this here
+        gamma = p_dbl(lower = 0, upper = 0),
+        
+        # We know that the problem is not that deep in interactivity so we search a low depth
         max_depth = p_int(lower = 2, upper = 6),
         
         # nrounds to stop overfitting
-        nrounds = p_int(lower = 100, upper = 2000),
-        
-        colsample_bytree = p_dbl(0, 1),
-        
-        subsample = p_dbl(0, 1),
-        
-        min_child_weight = p_int(0, 20)
+        nrounds = p_int(lower = 100, upper = 1000)
     )
     
+    learner_xgb <- NULL
     if (categorical) {
         learner_xgb <- lrn("classif.xgboost")
     } else {
@@ -124,11 +140,17 @@ xgb_wrapper <- function(train_data,
     # specification of the cross-validation folds and second due to the random
     # search). We'll use these when looking at the model.
     
-    lrn_xgboost_tuned = lrn("regr.xgboost")
+    learner_xgb <- NULL
+    if (categorical) {
+        learner_xgb <- lrn("classif.xgboost")
+    } else {
+        learner_xgb <- lrn("regr.xgboost")
+    }
+    
+    lrn_xgboost_tuned = learner_xgb
     lrn_xgboost_tuned$param_set$values = instance_xgboost$result_learner_param_vals
     lrn_xgboost_tuned$train(task)
     
     return(list("model" = lrn_xgboost_tuned,
                 "results" = instance_xgboost$result))
-    
 }
