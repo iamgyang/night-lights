@@ -82,152 +82,39 @@ load("merging_midpoint.RData")
 
 # Run ML model in Python -----------------------------------------------------
 
-# we're going to have a hurdle model -- first, run a classifier that determines
-# whether DMSP is 0 or not. Then, run a model that determines a numeric value
-# given that DMSP is 1. Then, merge the two models by multiplying the
-# probability that we obtain from one to the numeric value we obtain by the
-# other.
+# load back in the predicted results from python
+dtest <- fread("test_data_splicing_with_predictions.csv")
 
-# set.seed(983409)
-# dtrain_samp <- sample_n(dtrain, 10)
-dtrain_samp <- dtrain
+# Graphs and Diagnostics --------------------------------------------------
 
-classifier <- 
-  xgb_wrapper(
-    train_data = dtrain_samp, 
-    target_variable = "dmsp_pos", 
-    excluded_vars = c("OBJECTID", "year", "ln_sum_pix_dmsp", "row_num"), 
-    categorical = TRUE,
-    cv_num = 10,
-    tune_grid_row_size = 50,
-    seed_train = 940384,
-    name_model = "classifier"
-  )
+setnames(dtest, "ln_sum_pix_dmsp_pred", "pred")
+dtest[, resid := ln_sum_pix_dmsp - pred]
 
-classifier_model <- classifier[["model"]]
+# actual vs. predicted
+PLOT <- ggplot(dtest, aes(y = pred, x = ln_sum_pix_dmsp)) + 
+  geom_point(shape = 21) + 
+  my_custom_theme + 
+  labs(
+    y = "Predicted log(DMSP pixels)", 
+    x = "Actual log(DMSP pixels)", 
+    title = "Actual vs. Predicted for test sample (2013)",
+    subtitle = c("Tree-based model trained on data in 2012.")
+    ) + 
+  geom_abline(slope = 1, intercept = 0)
 
-continuous <- 
-  xgb_wrapper(
-    train_data = dtrain_samp[dmsp_pos == 1], 
-    target_variable = "ln_sum_pix_dmsp", 
-    excluded_vars = c("OBJECTID", "year", "dmsp_pos", "row_num"), 
-    categorical = FALSE,
-    cv_num = 10,
-    tune_grid_row_size = 50,
-    seed_train = 940384,
-    name_model = "regression"
-  )
+ggsave("actual_v_predict_test.pdf", PLOT, width = 14, height = 14)
 
-continuous_model <- continuous[["model"]]
+# residual vs. fitted plot
+PLOT <- ggplot(dtest, aes(y = resid, x = pred)) + 
+  geom_point() + 
+  my_custom_theme + 
+  labs(
+    x = "Predicted log(DMSP pixels)", 
+    y = "Residual", 
+    title = "Residual vs. fitted plot for test sample (2013)",
+    subtitle = c("Tree-based model trained on data in 2012.")
+  ) + 
+  geom_abline(slope = 0, intercept = 0)
 
-save.image(glue("run_{as.name(as.character(Sys.Date()))}.RData"))
-
-# # Graphs and Diagnostics --------------------------------------------------
-# 
-# # make predictions
-# 
-# prediction_xgb <- function(new_data) {
-#   # first, categorical prediction of 0 or 1:
-#   prob_pos <- predict(classifier_model, new_data, type = "prob")$"Yes"
-#   
-#   # then, given that one is positive, predict the continuous value:
-#   value_given_pos <- predict(continuous_model, new_data, type = "raw")
-#   
-#   # final prediction is the product of the categorical (0/1 probability) with the
-#   # continuous value:
-#   return(prob_pos * value_given_pos)
-# }
-# 
-# dtest[, pred := prediction_xgb(dtest)]
-# dtest[, resid := ln_sum_pix_dmsp - pred]
-# 
-# # STOP HERE ----------------------------------------------------------------
-# 
-# # actual vs. predicted
-# PLOT <- ggplot(dtest, aes(y = pred, x = ln_sum_pix_dmsp)) + 
-#   geom_point() + 
-#   my_custom_theme + 
-#   labs(
-#     y = "Predicted log(DMSP pixels)", 
-#     x = "Actual log(DMSP pixels)", 
-#     title = "Actual vs. Predicted for test sample (2013)",
-#     subtitle = c("Tree-based model trained on data in 2012.")
-#     ) + 
-#   geom_abline(slope = 1, intercept = 0)
-# 
-# ggsave("actual_v_predict_test.pdf", PLOT, width = 14, height = 14)
-# 
-# # residual vs. fitted plot
-# PLOT <- ggplot(dtest, aes(y = resid, x = pred)) + 
-#   geom_point() + 
-#   my_custom_theme + 
-#   labs(
-#     x = "Predicted log(DMSP pixels)", 
-#     y = "Residual", 
-#     title = "Residual vs. fitted plot for test sample (2013)",
-#     subtitle = c("Tree-based model trained on data in 2012.")
-#   ) + 
-#   geom_abline(slope = 0, intercept = 0)
-# 
-# ggsave("residual_v_predict_test.pdf", PLOT, width = 14, height = 14)
-# 
-# 
-# # Other diagnostics -------------------------------------------------------
-# 
-# for (xgbmod in list(continuous_model, classifier_model)) {
-#   name_xgbmod <- xgbmod$modelType
-#   # Diagnostics
-#   print(xgbmod$results)
-#   print(xgbmod$resample)
-#   
-#   # plot results (useful for larger tuning grids)
-#   pdf(file = glue("XGB_results_{name_xgbmod}.pdf"))
-#   print(plot(xgbmod))
-#   dev.off()
-# }
-# 
-# # test set RMSE:
-# residuals <- na.omit(dtest$resid)
-# residuals <- residuals[is.finite(residuals)]
-# print("RMSE of test sample:")
-# rmse_1 <- sqrt(sum(residuals^2)/length(residuals))
-# print(rmse_1)
-# 
-# # # hold out train set RMSE:
-# # residuals <- na.omit(dtest$resid)
-# # residuals <- residuals[is.finite(residuals)]
-# # print("RMSE of test sample:")
-# # rmse_1 <- sqrt(sum(residuals^2)/length(residuals))
-# # print(rmse_1)
-# 
-# # # cross validation RMSE:
-# # print("cross-validated RMSE:")
-# # print(min(xgbmod$results$RMSE))
-# # rmse_3 <- min(xgbmod$results$RMSE)
-# 
-# # Actually predict values --------------------------------------------
-# 
-# # pessimistic RMSE:
-# pess_rmse <- max(rmse_1)#, rmse_3)
-# 
-# # calculated predicted (spliced values)
-# pvq[, pred_mean := prediction_xgb(pvq)]
-# pvq[, pred_lower := pred_mean - 1.96 * pess_rmse]
-# pvq[, pred_upper := pred_mean + 1.96 * pess_rmse]
-# 
-# # create output data.table
-# output <- pvq[,.(
-#   OBJECTID,
-#   year,
-#   ln_sum_pix_dmsp = ln_sum_pix_dmsp,
-#   pred_mean = pred_mean,
-#   pred_lower = pred_lower,
-#   pred_upper = pred_upper
-# )]
-# 
-# # write to CSV
-# setwd(input_dir)
-# write.csv(output, 'spliced_dmsp_bm_adm2.csv', row.names = FALSE)
-# closeAllConnections()
-# 
+ggsave("residual_v_predict_test.pdf", PLOT, width = 14, height = 14)
 
