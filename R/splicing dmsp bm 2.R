@@ -1,67 +1,3 @@
-# Warning--if you are unable to download any of the packages here, the rest of
-# the code will not work
-
-# Packages ---------------------------------------------------------------
-
-# clear environment objects
-rm(list = ls())
-
-list.of.packages <- c(
-  "data.table",
-  "caret",
-  "xgboost",
-  "verification",
-  "glue",
-  "ggthemes",
-  "ggplot2",
-  "dplyr",
-  "sp"
-)
-
-new.packages <-
-  list.of.packages[!(list.of.packages %in% installed.packages()[, "Package"])]
-if (length(new.packages))
-  install.packages(new.packages, dependencies = TRUE)
-for (package in list.of.packages) {
-  cat(paste0(package, "\n"))
-  library(eval((package)), character.only = TRUE)
-}
-
-# Directories -------------------------------------------------------------
-
-# You will have to edit this to be your own computer's working directories:
-user <- Sys.info()["user"]
-root_dir <- paste0("C:/Users/", user, "/Dropbox/CGD GlobalSat/")
-input_dir <- paste0(root_dir, "HF_measures/input")
-output_dir <- paste0(root_dir, "HF_measures/output")
-code_dir <- paste0(root_dir, "HF_measures/code")
-raw_dir <-
-  paste0("C:/Users/", user, "/Dropbox/CGD GlobalSat/raw-data/")
-setwd(input_dir)
-
-# Defaults and Functions --------------------------------------------------
-
-# debugging
-options(error = browser)
-options(error = NULL)
-
-# disable data.table auto-indexing (causes errors w/ dplyr functions)
-options(datatable.auto.index = FALSE)
-
-# set GGPLOT default theme:
-theme_set(theme_clean() +
-            theme(plot.background = element_rect(color = "white"))
-          # ggplot theme LATEX font:
-          + theme(text = element_text(family = "LM Roman 10")))
-
-# import personal functions:
-source(glue(
-  "C:/Users/{user}/Dropbox/Coding_General/personal.functions.R"
-))
-
-source(glue(
-  "C:/Users/{user}/Dropbox/Coding_General/generalized_xgboost_function.R"
-))
 
 # CODE --------------------------------------------------------------------
 
@@ -95,7 +31,6 @@ dmsp_ntl <- bob %>% as.data.table()
 dmsp_ntl[, ln_sum_pix_dmsp := log(sum_pix_dmsp)]
 dmsp_ntl[, dmsp_pos:=as.numeric(sum_pix_dmsp>0)]
 dmsp_ntl[, sum_pix_dmsp := NULL]
-
 check_dup_id(dmsp_ntl, c("OBJECTID", "year"))
 
 # + Lat Longs -------------------------------------------------------------
@@ -105,6 +40,10 @@ lat_long <- data.table(OBJECTID = fl$OBJECTID,
                        lat = fl$lt,
                        long = fl$lg)
 check_dup_id(lat_long, c("OBJECTID"))
+
+
+
+# FINISHED IMPORTING DATA -------------------------------------------------
 
 setwd(input_dir)
 save.image("splicing_midpoint.RData")
@@ -126,70 +65,77 @@ waitifnot(length(setdiff(unique(pvq$year), c(2012, 2013)))==0)
 
 setcolorder(pvq, c("OBJECTID", "year", "dmsp_pos", "ln_sum_pix_dmsp"))
 
+# for all values that are infinite, turn it into NA values
+invisible(lapply(names(pvq),function(.name) set(pvq, which(is.infinite(pvq[[.name]])), j = .name,value =NA)))
+
 # split train (2012) and test (2013):
 dtrain <- pvq[year == 2012]
 dtest <- pvq[year == 2013]
 
+# get row number:
+num_rows <- nrow(dtrain)
+dtrain[,row_num:=seq(1, num_rows)]
+
+setwd(input_dir)
+save.image("merging_midpoint.RData")
+load("merging_midpoint.RData")
+
+
 # Run XGBoost -----------------------------------------------------------------
 
 # we're going to have a hurdle model -- first, run a classifier that determines
-# whether DMSP is 0 or not. Then, run a nonparametric tree based model to
-# determine the actual value.
+# whether DMSP is 0 or not. Then, run a model that determines a numeric value given that DMSP is 1. Then, merge the two models by multiplying the probability that we obtain from one to the numeric value we obtain by the other.
 
-classifier <- 
+set.seed(983409)
+dtrain_samp <- sample_n(dtrain, 100)
+
+classifier_model <- 
   xgb_wrapper(
-    train_data = dtrain, 
+    train_data = dtrain_samp, 
     target_variable = "dmsp_pos", 
-    excluded_vars = c("OBJECTID", "year", "ln_sum_pix_dmsp"), 
+    excluded_vars = c("OBJECTID", "year", "ln_sum_pix_dmsp", "row_num"), 
     categorical = TRUE,
-    method_ = 'xgbTree'
+    method_ = 'xgbTree',
+    cv_num = 2,
+    tune_grid_row_size = 2,
+    seed_train = 940384
   )
 
-classifier <- 
+continuous_model <- 
   xgb_wrapper(
-    train_data = dtrain, 
-    target_variable = "dmsp_pos", 
-    excluded_vars = c("OBJECTID", "year", "ln_sum_pix_dmsp"), 
-    categorical = TRUE,
-    method_ = 'xgbTree'
-  )
-
-classifier_los <- classifier[["leave out sample"]]
-classifier_model <- classifier[["model"]]
-
-continuous <- 
-  xgb_wrapper(
-    train_data = dtrain[dmsp_pos == 1], 
+    train_data = dtrain_samp[dmsp_pos == 1], 
     target_variable = "ln_sum_pix_dmsp", 
-    excluded_vars = c("OBJECTID", "year", "dmsp_pos"), 
+    excluded_vars = c("OBJECTID", "year", "dmsp_pos", "row_num"), 
     categorical = FALSE,
-    method_ = 'xgbTree'
+    method_ = 'xgbTree',
+    cv_num = 2,
+    tune_grid_row_size = 2,
+    seed_train = 940384
   )
-continuous_los <- continuous[["leave out sample"]]
-continuous_model <- continuous[["model"]]
 
 # Graphs and Diagnostics --------------------------------------------------
 
 # make predictions
 
-# first, categorical prediction of 0 or 1:
-dtest[, pr_pos := predict(classifier, newdata = dtest)]
+prediction_xgb <- function(new_data) {
+  # first, categorical prediction of 0 or 1:
+  prob_pos <- predict(classifier_model, new_data, type = "prob")$"Yes"
+  
+  # then, given that one is positive, predict the continuous value:
+  value_given_pos <- predict(continuous_model, new_data, type = "raw")
+  
+  # final prediction is the product of the categorical (0/1 probability) with the
+  # continuous value:
+  return(prob_pos * value_given_pos)
+}
 
-# then, continuous prediction of some value:
-dtest[, val_if_pos := predict(continuous, newdata = dtest)]
+dtest[, pred := prediction_xgb(dtest)]
+dtest[, resid := ln_sum_pix_dmsp - pred]
 
-# final prediction is the product of the categorical (0/1 probability) with the
-# continuous value OR is a conversion of the probability into 0/1s, and then
-# product with the continuous value:
-dtest[, pred1 := pr_pos * val_if_pos]
-dtest[, pred2 := as.numeric(pr_pos>0.5) * val_if_pos]
-dtest[, resid1 := target - pred1]
-dtest[, resid2 := target - pred2]
-
-# STOP HERE -------------------------------------------------------------------------
+# STOP HERE ----------------------------------------------------------------
 
 # actual vs. predicted
-PLOT <- ggplot(dtest, aes(y = pred, x = target)) + 
+PLOT <- ggplot(dtest, aes(y = pred, x = ln_sum_pix_dmsp)) + 
   geom_point() + 
   my_custom_theme + 
   labs(
@@ -216,49 +162,63 @@ PLOT <- ggplot(dtest, aes(y = resid, x = pred)) +
 
 ggsave("residual_v_predict_test.pdf", PLOT, width = 14, height = 14)
 
-# RMSE:
+
+# Other diagnostics -------------------------------------------------------
+
+for (xgbmod in list(continuous_model, classifier_model)) {
+  name_xgbmod <- xgbmod$modelType
+  # Diagnostics
+  print(xgbmod$results)
+  print(xgbmod$resample)
+  
+  # plot results (useful for larger tuning grids)
+  pdf(file = glue("XGB_results_{name_xgbmod}.pdf"))
+  print(plot(xgbmod))
+  dev.off()
+}
+
+# test set RMSE:
 residuals <- na.omit(dtest$resid)
+residuals <- residuals[is.finite(residuals)]
 print("RMSE of test sample:")
 rmse_1 <- sqrt(sum(residuals^2)/length(residuals))
 print(rmse_1)
 
-# Other diagnostics -------------------------------------------------------
+# # hold out train set RMSE:
+# residuals <- na.omit(dtest$resid)
+# residuals <- residuals[is.finite(residuals)]
+# print("RMSE of test sample:")
+# rmse_1 <- sqrt(sum(residuals^2)/length(residuals))
+# print(rmse_1)
 
-# Diagnostics
-print(xgbmod$results)
-print(xgbmod$resample)
-
-# plot results (useful for larger tuning grids)
-pdf(file = "XGB_results")
-print(plot(xgbmod))
-dev.off()
-
-# cross validation RMSE:
-print("cross-validated RMSE:")
-print(min(xgbmod$results$RMSE))
-rmse_3 <- min(xgbmod$results$RMSE)
+# # cross validation RMSE:
+# print("cross-validated RMSE:")
+# print(min(xgbmod$results$RMSE))
+# rmse_3 <- min(xgbmod$results$RMSE)
 
 # Actually predict values --------------------------------------------
 
 # pessimistic RMSE:
-pess_rmse <- max(rmse_1, rmse_2, rmse_3)
+pess_rmse <- max(rmse_1)#, rmse_3)
 
 # calculated predicted (spliced values)
-pvq[,pred_mean:=predict(xgbmod, newdata = pvq)]
-pvq[,pred_lower:=pred_mean - 1.96 * pess_rmse]
-pvq[,pred_upper:=pred_mean + 1.96 * pess_rmse]
+pvq[, pred_mean := prediction_xgb(pvq)]
+pvq[, pred_lower := pred_mean - 1.96 * pess_rmse]
+pvq[, pred_upper := pred_mean + 1.96 * pess_rmse]
 
 # create output data.table
 output <- pvq[,.(
   OBJECTID,
   year,
-  sum_pix_dmsp = exp(target) - 1,
-  pred_mean = exp(pred_mean) - 1,
-  pred_lower = exp(pred_lower) - 1,
-  pred_upper = exp(pred_upper) - 1
+  ln_sum_pix_dmsp = ln_sum_pix_dmsp,
+  pred_mean = pred_mean,
+  pred_lower = pred_lower,
+  pred_upper = pred_upper
 )]
 
 # write to CSV
 setwd(input_dir)
 write.csv(output, 'spliced_dmsp_bm_adm2.csv', row.names = FALSE)
 closeAllConnections()
+
+save.image(glue("run_{as.name(as.character(Sys.Date()))}.RData"))
