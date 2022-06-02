@@ -2,6 +2,7 @@ cd "C:/Users/`c(username)'/Dropbox/CGD GlobalSat/HF_measures/code"
 pause off
 do "00 preliminaries.do"
 do "04.16 barro reg.do"
+do "04.17 barro alt measure regs.do"
 
 do "02.73 clean subnatl GRP.do"
 do "03.1 merge_iso3c_yr.do"
