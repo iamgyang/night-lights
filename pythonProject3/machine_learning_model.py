@@ -26,7 +26,7 @@ for categorical in link_list:
 
     if (categorical):
         label = 'dmsp_pos'
-        exclude_label = 'ln_sum_pix_dmsp'
+        exclude_label = 'sum_pix_dmsp'
 
         # make sure the response variable is of the correct class
         train_data[label] = train_data[label].astype(str)
@@ -35,7 +35,7 @@ for categorical in link_list:
         # additional folder
         path_addendum = "categorical"
     else:
-        label = 'ln_sum_pix_dmsp'
+        label = 'sum_pix_dmsp'
         exclude_label = 'dmsp_pos'
 
         # make sure the response variable is of the correct class
@@ -72,25 +72,25 @@ for categorical in link_list:
 predictor_conti = TabularPredictor.load(f"{save_path}/continuous")
 
 # make probability predictions:
-# test_data["dmsp_pos_pred"] = predictor_categ.predict_proba(test_data)["1"]
-test_data["ln_sum_pix_dmsp_pred"] = predictor_conti.predict(test_data)
-# test_data["ln_sum_pix_dmsp_pred_final"] = test_data[["ln_sum_pix_dmsp_pred", "dmsp_pos_pred"]].prod(axis = 1)
+test_data["dmsp_pos_pred"] = predictor_categ.predict_proba(test_data)["positive"]
+test_data["sum_pix_dmsp_pred"] = predictor_conti.predict(test_data)
+test_data["sum_pix_dmsp_pred_final"] = test_data[["sum_pix_dmsp_pred", "dmsp_pos_pred"]].prod(axis = 1)
 test_data = test_data.dropna()
 
 # evaluation:
 perf = predictor.evaluate_predictions(
     y_true = test_data[label],
-    y_pred = test_data["ln_sum_pix_dmsp_pred"], 
+    y_pred = test_data["sum_pix_dmsp_pred_final"], 
     auxiliary_metrics = True)
 predictor.leaderboard(test_data, silent=True)
 rmse_test = abs(perf['root_mean_squared_error']) # CHANGE! -- make it the actual RMSE
 
 # predict upper and lower bounds for the new dataset of BM from 2014-2022:
-# full_data["dmsp_pos_pred"] = predictor_categ.predict_proba(full_data)["1"]
-full_data["ln_sum_pix_dmsp_pred"] = predictor_conti.predict(full_data)
-# full_data["log_sum_pix_dmsp_pred_mean"] = full_data[["ln_sum_pix_dmsp_pred", "dmsp_pos_pred"]].product()
-full_data["log_sum_pix_dmsp_pred_upper"] = full_data["ln_sum_pix_dmsp_pred"] + 1.96 * rmse_test
-full_data["log_sum_pix_dmsp_pred_lower"] = full_data["ln_sum_pix_dmsp_pred"] - 1.96 * rmse_test
+full_data["dmsp_pos_pred"] = predictor_categ.predict_proba(full_data)["positive"]
+full_data["sum_pix_dmsp_pred"] = predictor_conti.predict(full_data)
+full_data["sum_pix_dmsp_pred_mean"] = full_data[["sum_pix_dmsp_pred", "dmsp_pos_pred"]].product()
+full_data["sum_pix_dmsp_pred_upper"] = full_data["sum_pix_dmsp_pred"] + 1.96 * rmse_test
+full_data["sum_pix_dmsp_pred_lower"] = full_data["sum_pix_dmsp_pred"] - 1.96 * rmse_test
 
 # export
 full_data.to_csv('full_data_splicing_with_predictions.csv')

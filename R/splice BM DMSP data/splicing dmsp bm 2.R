@@ -13,27 +13,19 @@ bm_ntl <- readstata13::read.dta13("Black Marble NTL/bm_adm2.dta")
 bm_ntl <- as.data.table(bm_ntl)
 bm_ntl <- bm_ntl[,.(OBJECTID, sum_pix_bm = BM_sumpix, pol_area, mon, year)]
 
-# make it LOG (1+sum pixels):
-bm_ntl[,ln_one_sum_pix_bm:=log(1+sum_pix_bm)]
 bm_ntl[,sum_pix_bm:=NULL]
 
-bm_ntl <- data.table::dcast(bm_ntl, OBJECTID + year + pol_area ~ mon, value.var = "ln_one_sum_pix_bm")
+bm_ntl <- data.table::dcast(bm_ntl, OBJECTID + year + pol_area ~ mon, value.var = "sum_pix_bm")
 check_dup_id(bm_ntl, c("OBJECTID", "year"))
 
 # + DMSP ------------------------------------------------------------------
 
 load("DMSP ADM2/dmsp_objectid.RData")
 dmsp_ntl <- bob %>% as.data.table()
-
-# again, make it log(x) (we're predicting things, so we don't really care
-# about interpretation here.)
-dmsp_ntl[, ln_sum_pix_dmsp := log(sum_pix_dmsp)]
 dmsp_ntl[, dmsp_pos:=as.numeric(sum_pix_dmsp>0)]
-dmsp_ntl[, sum_pix_dmsp := NULL]
 check_dup_id(dmsp_ntl, c("OBJECTID", "year"))
 
 # + Lat Longs -------------------------------------------------------------
-
 load(glue("{root_dir}intermediate_data/Aggregated Datasets/Aggregated Datasets/adm2_coords_OBJECTID/Objectid_cords.RData"))
 lat_long <- data.table(OBJECTID = fl$OBJECTID,
                        lat = fl$lt,
@@ -60,13 +52,15 @@ pvq <- pvq[!is.na(dmsp_pos)]
 # check that only years 2012-2013 exist in data:
 waitifnot(length(setdiff(unique(pvq$year), c(2012, 2013)))==0)
 
-setcolorder(pvq, c("OBJECTID", "year", "dmsp_pos", "ln_sum_pix_dmsp"))
+setcolorder(pvq, c("OBJECTID", "year", "dmsp_pos", "sum_pix_dmsp"))
 
 # for all values that are infinite, turn it into NA values
 invisible(lapply(names(pvq),function(.name) set(pvq, which(is.infinite(pvq[[.name]])), j = .name,value =NA)))
 
-# # convert DMSP positive to factor
-pvq[,dmsp_pos:=factor((dmsp_pos), levels = c(1, 0))]
+# convert DMSP positive to factor
+pvq[,dmsp_pos:=as.character(dmsp_pos)]
+pvq[dmsp_pos==1,dmsp_pos:="positive"]
+pvq[dmsp_pos==0,dmsp_pos:="zero"]
 
 # split train (2012) and test (2013):
 dtrain <- pvq[year == 2012]
@@ -87,16 +81,16 @@ dtest <- fread("test_data_splicing_with_predictions.csv")
 
 # Graphs and Diagnostics --------------------------------------------------
 
-setnames(dtest, "ln_sum_pix_dmsp_pred", "pred")
-dtest[, resid := ln_sum_pix_dmsp - pred]
+setnames(dtest, "sum_pix_dmsp_pred", "pred")
+dtest[, resid := sum_pix_dmsp - pred]
 
 # actual vs. predicted
-PLOT <- ggplot(dtest, aes(y = pred, x = ln_sum_pix_dmsp)) + 
+PLOT <- ggplot(dtest, aes(y = pred, x = sum_pix_dmsp)) + 
   geom_point(shape = 21) + 
   my_custom_theme + 
   labs(
-    y = "Predicted log(DMSP pixels)", 
-    x = "Actual log(DMSP pixels)", 
+    y = "Predicted DMSP pixels", 
+    x = "Actual DMSP pixels", 
     title = "Actual vs. Predicted for test sample (2013)",
     subtitle = c("Tree-based model trained on data in 2012.")
     ) + 
@@ -109,7 +103,7 @@ PLOT <- ggplot(dtest, aes(y = resid, x = pred)) +
   geom_point() + 
   my_custom_theme + 
   labs(
-    x = "Predicted log(DMSP pixels)", 
+    x = "Predicted DMSP pixels", 
     y = "Residual", 
     title = "Residual vs. fitted plot for test sample (2013)",
     subtitle = c("Tree-based model trained on data in 2012.")
