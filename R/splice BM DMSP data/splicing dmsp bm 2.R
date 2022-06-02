@@ -12,9 +12,6 @@ setwd(raw_dir)
 bm_ntl <- readstata13::read.dta13("Black Marble NTL/bm_adm2.dta")
 bm_ntl <- as.data.table(bm_ntl)
 bm_ntl <- bm_ntl[,.(OBJECTID, sum_pix_bm = BM_sumpix, pol_area, mon, year)]
-
-bm_ntl[,sum_pix_bm:=NULL]
-
 bm_ntl <- data.table::dcast(bm_ntl, OBJECTID + year + pol_area ~ mon, value.var = "sum_pix_bm")
 check_dup_id(bm_ntl, c("OBJECTID", "year"))
 
