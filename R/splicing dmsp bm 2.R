@@ -89,7 +89,7 @@ load("merging_midpoint.RData")
 set.seed(983409)
 dtrain_samp <- sample_n(dtrain, 100)
 
-classifier_model <- 
+classifier <- 
   xgb_wrapper(
     train_data = dtrain_samp, 
     target_variable = "dmsp_pos", 
@@ -101,7 +101,9 @@ classifier_model <-
     seed_train = 940384
   )
 
-continuous_model <- 
+classifier_model <- classifier[["model"]]
+
+continuous <- 
   xgb_wrapper(
     train_data = dtrain_samp[dmsp_pos == 1], 
     target_variable = "ln_sum_pix_dmsp", 
@@ -112,6 +114,8 @@ continuous_model <-
     tune_grid_row_size = 2,
     seed_train = 940384
   )
+
+continuous_model <- continuous[["model"]]
 
 # Graphs and Diagnostics --------------------------------------------------
 
