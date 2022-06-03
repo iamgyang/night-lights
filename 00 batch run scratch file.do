@@ -4,6 +4,7 @@ do "00 preliminaries.do"
 do "04.16 barro reg.do"
 do "04.17 barro alt measure regs.do"
 
+do "01.7 clean barro data.do"
 do "02.73 clean subnatl GRP.do"
 do "03.1 merge_iso3c_yr.do"
 do "03.2 subsets_and_collapsing_iso3c_yr.do"
