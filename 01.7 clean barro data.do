@@ -49,7 +49,7 @@ naomit
 // Egalitarian democracy index (D)	  v2x_egaldem
 egen dem = rowmean(v2x_polyarchy v2x_libdem v2x_partipdem v2x_delibdem v2x_egaldem)
 keep country_name year dem v2x_rule
-label variable dem "Democracy Index (Avg. of Electoral, Liberal, Participatory, Deliberative, Egalitarian)"
+label variable dem "Democracy Index" 
 check_dup_id "country_name year"
 conv_ccode "country_name"
 replace iso = "XKX" if country_name == "Kosovo"
@@ -117,5 +117,29 @@ rename countrycode iso3c
 drop countryname
 sort iso3c year
 save "$input/clean_wd_wdi_lots_indicators.dta", replace
+
+
+// Predicted DMSP variable
+import delimited "$raw_data/VIIRS NTL Extracted Data 2 2012-2020/VIIRS_annual2.csv", clear
+keep iso3c objectid
+gduplicates drop
+naomit
+save "$input/raw_objectid_country_mapping.dta", replace
+
+import delimited "$input/2012 predicts 2013/full_data_splicing_with_predictions.csv", clear
+keep objectid year sum_pix_dmsp sum_pix_dmsp_pred
+mmerge objectid using "$input/raw_objectid_country_mapping.dta"
+drop _merge
+gcollapse (sum) sum_pix_dmsp sum_pix_dmsp_pred, by(iso3c year)
+naomit
+numlist "2014/2017"
+local foo "`r(numlist)'"
+foreach i of numlist 2014/2100 {
+	replace sum_pix_dmsp = . if year == `i'
+}
+
+erase "$input/raw_objectid_country_mapping.dta"
+save "$input/dmsp_predictions.dta", replace
+
 
 .
