@@ -34,6 +34,9 @@ for categorical in link_list:
 
         # additional folder
         path_addendum = "categorical"
+
+        # evaluation metric
+        eval_metric = "mcc"
     else:
         label = 'sum_pix_dmsp'
         exclude_label = 'dmsp_pos'
@@ -45,25 +48,28 @@ for categorical in link_list:
         # additional folder
         path_addendum = "continuous"
 
+        # evaluation metric
+        eval_metric = "mae"
+
     # remove data that are unnecessary
     train_data = train_data.drop(columns=["OBJECTID", "year", exclude_label])
-    test_data = test_data.drop(columns=["OBJECTID", "year", exclude_label])
 
     # make sure train and test data column/variable names are all the same
-    assert(all(train_data.columns == test_data.columns))
+    # assert(all(train_data.columns == test_data.columns))
 
     # model parameters. subsample subset of data for faster demo, try setting this
     # to much larger values
-    subsample_size = 500
-    train_data = train_data.sample(n=subsample_size, random_state=0)
+    # subsample_size = 500
+    # train_data = train_data.sample(n=subsample_size, random_state=0)
     train_data.head()
     print("Summary of class variable: \n", train_data[label].describe())
 
     # Longest time you are willing to wait (in seconds)
-    time_limit = 60
+    time_limit = 3*60*60
+    # time_limit = 20
 
     # fit model
-    predictor = TabularPredictor(label=label, path=f"{save_path}/{path_addendum}").fit(train_data, time_limit = time_limit, presets='medium_quality')
+    predictor = TabularPredictor(label=label, path=f"{save_path}/{path_addendum}").fit(train_data, time_limit = time_limit, presets='optimize_for_deployment')
 
 # STEP 2: Predict on the test set: -----------------------------------------------------------
 
@@ -78,19 +84,19 @@ test_data["sum_pix_dmsp_pred_final"] = test_data[["sum_pix_dmsp_pred", "dmsp_pos
 test_data = test_data.dropna()
 
 # evaluation:
-perf = predictor.evaluate_predictions(
+perf = predictor_conti.evaluate_predictions(
     y_true = test_data[label],
     y_pred = test_data["sum_pix_dmsp_pred_final"], 
     auxiliary_metrics = True)
-predictor.leaderboard(test_data, silent=True)
+predictor_conti.leaderboard(test_data, silent=True)
 rmse_test = abs(perf['root_mean_squared_error']) # CHANGE! -- make it the actual RMSE
 
 # predict upper and lower bounds for the new dataset of BM from 2014-2022:
 full_data["dmsp_pos_pred"] = predictor_categ.predict_proba(full_data)["positive"]
-full_data["sum_pix_dmsp_pred"] = predictor_conti.predict(full_data)
-full_data["sum_pix_dmsp_pred_mean"] = full_data[["sum_pix_dmsp_pred", "dmsp_pos_pred"]].product(axis = 1)
-full_data["sum_pix_dmsp_pred_upper"] = full_data["sum_pix_dmsp_pred_mean"] + 1.96 * rmse_test
-full_data["sum_pix_dmsp_pred_lower"] = full_data["sum_pix_dmsp_pred_mean"] - 1.96 * rmse_test
+full_data["sum_pix_dmsp_giv_pos_pred"] = predictor_conti.predict(full_data)
+full_data["sum_pix_dmsp_pred"] = full_data[["sum_pix_dmsp_giv_pos_pred", "dmsp_pos_pred"]].product(axis = 1)
+full_data["sum_pix_dmsp_pred_upper"] = full_data["sum_pix_dmsp_pred"] + 1.96 * rmse_test
+full_data["sum_pix_dmsp_pred_lower"] = full_data["sum_pix_dmsp_pred"] - 1.96 * rmse_test
 
 # export
 full_data.to_csv('full_data_splicing_with_predictions.csv')
