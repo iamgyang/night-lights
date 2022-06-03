@@ -70,15 +70,16 @@ drop country_name
 save "$input/clean_vdem.dta", replace
 
 // inflation (WB from Khose)
-use "$raw_data/Khose Inflation Database/annual.dta"
+use "$raw_data/Khose Inflation Database/annual.dta", clear
 keep def_a country_code year country
 check_dup_id "country year"
 rename country_code iso3c
 drop country
 naomit
+label variable def_a "GDP deflator annual growth (%)"
 save "$input/khose_wb_gdp_deflator.dta", replace
 
-// WB open data
+// WB WDI
 clear
 wbopendata, clear nometadata long indicator( ///
     SP.DYN.LE00.IN; ///
