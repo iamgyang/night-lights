@@ -6,6 +6,8 @@ dtest <- fread("test_data_splicing_with_predictions.csv")
 
 setnames(dtest, "sum_pix_dmsp_pred", "pred")
 dtest[, resid := log(sum_pix_dmsp) - log(pred)]
+invisible(lapply(names(dtest),function(.name) set(dtest, which(is.infinite(dtest[[.name]])), j = .name,value =NA)))
+
 
 # actual vs. predicted
 PLOT <- ggplot(dtest, aes(y = log(pred), x = log(sum_pix_dmsp))) + 
@@ -37,11 +39,16 @@ ggsave("residual_v_predict_test.pdf", PLOT, width = 14, height = 14)
 
 # regression of log growth on log growth ----------------------------------
 
-pvq <- fread("full_data_splicing_with_predictions.csv")
+pvq <- fread("C:/Users/user/Dropbox/CGD GlobalSat/HF_measures/input/2012 predicts 2013/full_data_splicing_with_predictions.csv")
+pvq <- fread("C:/Users/user/Dropbox/CGD GlobalSat/HF_measures/input/full_data_splicing_with_predictions.csv")
 pvq <- pvq[order(OBJECTID, year)]
-pvq[,ln_gr_dm_pred:= log(sum_pix_dmsp_pred_mean) - shift(log(sum_pix_dmsp_pred_mean)), by = "OBJECTID"]
+pvq[,ln_gr_dm_pred:= log(sum_pix_dmsp_pred) - shift(log(sum_pix_dmsp_pred)), by = "OBJECTID"]
 pvq[,ln_gr_bm_actual:= log(Dec) - shift(log(Dec)), by = "OBJECTID"]
 pvq[,ln_gr_dm_actual:= log(sum_pix_dmsp) - shift(log(sum_pix_dmsp)), by = "OBJECTID"]
+pvq[,ln_dm_pred:= log(sum_pix_dmsp_pred)]
+pvq[,ln_dm_actual:= log(sum_pix_dmsp)]
+pvq[,ln_bm_actual:= Jan*Feb*Mar*Apr*May*Jun*Jul*Aug*Sep*Oct*Nov*Dec]
+
 invisible(lapply(names(pvq),function(.name) set(pvq, which(is.infinite(pvq[[.name]])), j = .name,value =NA)))
 
 # In summary, the following was done: Black box ML model was fit on DMSP levels
@@ -60,5 +67,12 @@ summary(lm(ln_gr_dm_actual ~ ln_gr_dm_pred, data = pvq))
 # significant intercept term (t stat is now ~ 19). 
 summary(lm(ln_gr_dm_actual ~ ln_gr_bm_actual, data = pvq))
 
+summary(lm(ln_dm_actual ~ ln_dm_pred , data = pvq[year == 2013]))
+summary(lm(ln_dm_actual ~ ln_dm_pred, data = pvq[year == 2012]))
+modelsummary::modelsummary(fixest::feols(ln_dm_actual ~ ln_dm_pred | OBJECTID, data = pvq))
+modelsummary::modelsummary(fixest::feols(ln_dm_actual ~ ln_bm_actual | OBJECTID, data = pvq))
+
+
 # Thus, we do not attempt splicing
 
+save.image("2012_predict_2013.RData")
