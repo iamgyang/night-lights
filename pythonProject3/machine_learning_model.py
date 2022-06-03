@@ -69,7 +69,7 @@ for categorical in link_list:
     # time_limit = 20
 
     # fit model
-    predictor = TabularPredictor(label=label, path=f"{save_path}/{path_addendum}").fit(train_data, time_limit = time_limit, presets='optimize_for_deployment')
+    predictor = TabularPredictor(label=label, path=f"{save_path}/{path_addendum}").fit(train_data, time_limit = time_limit, presets='best_quality')
 
 # STEP 2: Predict on the test set: -----------------------------------------------------------
 
