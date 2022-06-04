@@ -1,15 +1,26 @@
 
 # load back in the predicted results from python
-dtest <- fread("C:/Users/user/Dropbox/CGD GlobalSat/HF_measures/input/2012 predicts 2013/test_data_splicing_with_predictions.csv")
+dtest <- fread("C:/Users/user/Dropbox/CGD GlobalSat/HF_measures/input/test_data_splicing_with_predictions.csv")
+
+if (any(names(dtest)=="ln_sum_pix_dmsp_pred_final")) {
+  dtest[,sum_pix_dmsp_pred:=sinh(ln_sum_pix_dmsp_pred_final)]
+}
 
 # Graphs and Diagnostics --------------------------------------------------
 
-setnames(dtest, "sum_pix_dmsp_pred", "pred")
-dtest[, resid := log(sum_pix_dmsp) - log(pred)]
+dtest[, resid := log(sum_pix_dmsp) - log(sum_pix_dmsp_pred)]
+
+# replace the log(1+x) with log(x):
+dtest[,ln_sum_pix_dmsp:=log(sum_pix_dmsp)]
+dtest[,ln_sum_pix_dmsp_pred:=log(sum_pix_dmsp_pred)]
+
 invisible(lapply(names(dtest),function(.name) set(dtest, which(is.infinite(dtest[[.name]])), j = .name,value =NA)))
 
+dtest$ln_sum_pix_dmsp_pred %>% hist(50)
+dtest$ln_sum_pix_dmsp %>% hist(50)
+
 # actual vs. predicted
-PLOT <- ggplot(dtest, aes(y = log(pred), x = log(sum_pix_dmsp))) + 
+PLOT <- ggplot(dtest, aes(y = ln_sum_pix_dmsp_pred, x = ln_sum_pix_dmsp)) + 
   geom_point(shape = 21) + 
   my_custom_theme + 
   labs(
@@ -23,7 +34,7 @@ PLOT <- ggplot(dtest, aes(y = log(pred), x = log(sum_pix_dmsp))) +
 ggsave("actual_v_predict_test.pdf", PLOT, width = 14, height = 14)
 
 # residual vs. fitted plot
-PLOT <- ggplot(dtest, aes(y = resid, x = log(pred))) + 
+PLOT <- ggplot(dtest, aes(y = resid, x = ln_sum_pix_dmsp_pred)) + 
   geom_point() + 
   my_custom_theme + 
   labs(
@@ -38,7 +49,10 @@ ggsave("residual_v_predict_test.pdf", PLOT, width = 14, height = 14)
 
 # regression of log growth on log growth ----------------------------------
 
-pvq <- fread("C:/Users/user/Dropbox/CGD GlobalSat/HF_measures/input/2012 predicts 2013/full_data_splicing_with_predictions.csv")
+pvq <- fread("C:/Users/user/Dropbox/CGD GlobalSat/HF_measures/input/full_data_splicing_with_predictions.csv")
+if (any(names(pvq)=="ln_sum_pix_dmsp_pred")) {
+  pvq[,sum_pix_dmsp_pred:=sinh(ln_sum_pix_dmsp_pred)]
+}
 pvq[,ln_dm_pred:= log(sum_pix_dmsp_pred)]
 pvq[,ln_dm_actual:= log(sum_pix_dmsp)]
 pvq[,ln_bm_actual:= Jan*Feb*Mar*Apr*May*Jun*Jul*Aug*Sep*Oct*Nov*Dec]
@@ -75,10 +89,7 @@ summary(lm(ln_gr_dm_actual ~ ln_gr_bm_actual, data = pvq))
 
 summary(lm(ln_dm_actual ~ ln_dm_pred , data = pvq[year == 2013]))
 summary(lm(ln_dm_actual ~ ln_dm_pred, data = pvq[year == 2012]))
-modelsummary::modelsummary(fixest::feols(ln_dm_actual ~ ln_dm_pred | OBJECTID, data = pvq))
-modelsummary::modelsummary(fixest::feols(ln_dm_actual ~ ln_bm_actual | OBJECTID, data = pvq))
-
-
-# Thus, we do not attempt splicing
+fixest::feols(ln_dm_actual ~ ln_dm_pred | OBJECTID, data = pvq)
+fixest::feols(ln_dm_actual ~ ln_bm_actual | OBJECTID, data = pvq)
 
 save.image("2012_predict_2013.RData")
