@@ -60,7 +60,7 @@ pvq[dmsp_pos==1,dmsp_pos:="positive"]
 pvq[dmsp_pos==0,dmsp_pos:="zero"]
 
 # log values
-pvq[,ln_sum_pix_dmsp:=log(1+sum_pix_dmsp)]
+pvq[,ln_sum_pix_dmsp:=asinh(sum_pix_dmsp)]
 for (i in c("Jan",
             "Feb",
             "Mar",
@@ -74,7 +74,7 @@ for (i in c("Jan",
             "Nov",
             "Dec")
 ) {
-    pvq[,c(i):=log(1+eval(as.name(i)))]
+    pvq[,c(i):=asinh(eval(as.name(i)))]
 }
 
 # split train (2012) and test (2013):
