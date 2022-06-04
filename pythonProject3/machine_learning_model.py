@@ -46,7 +46,7 @@ else:
     path_addendum = "continuous"
 
     # evaluation metric
-    eval_metric = "mae"
+    eval_metric = "rmse"
 
 # remove data that are unnecessary
 train_data = train_data.drop(columns=["OBJECTID", "year", "sum_pix_dmsp",  exclude_label])
@@ -62,11 +62,11 @@ train_data.head()
 print("Summary of class variable: \n", train_data[label].describe())
 
 # Longest time you are willing to wait (in seconds)
-time_limit = 3*60*60
+time_limit = 4*60*60
 # time_limit = 20
 
 # fit model
-predictor = TabularPredictor(label=label, path=f"{save_path}/{path_addendum}").fit(train_data, time_limit = time_limit, presets='best_quality', eval_metric = eval_metric)
+predictor = TabularPredictor(label=label, eval_metric=eval_metric, path=f"{save_path}/{path_addendum}").fit(train_data, time_limit = time_limit, presets='best_quality')
 
 # STEP 2: Predict on the test set: -----------------------------------------------------------
 
