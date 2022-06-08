@@ -1,5 +1,5 @@
 // import data
-foreach XVAR in ln_sum_pix_bm_dec_area ln_sum_pix_bm_area ln_del_sum_pix_area {
+foreach XVAR in ln_sum_pix_bm_area ln_del_sum_pix_area {
 
 	// create table to store output
 		clear
@@ -104,7 +104,7 @@ foreach XVAR in ln_sum_pix_bm_dec_area ln_sum_pix_bm_area ln_del_sum_pix_area {
 // LINEAR FIT -----------------------------------------------------------
 
 // import data
-foreach XVAR in ln_sum_pix_bm_dec_area ln_sum_pix_bm_area ln_del_sum_pix_area {
+foreach XVAR in ln_sum_pix_bm_area ln_del_sum_pix_area {
 
 	// create table to store output
 		clear
