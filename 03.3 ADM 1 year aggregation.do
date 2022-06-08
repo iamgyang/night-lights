@@ -48,17 +48,26 @@ perfect) */
     save `viirs'
     clear
 
-/* black marble night lights */
+/* Black Marble night lights */
     use "$input/bm_adm1_year.dta", clear
 	naomit
     tempfile bm
     save `bm'
     clear
 
+/* DMSP */
+    use "$input/dmsp_adm1_year.dta", clear
+    rename sum_pix_dmsp_aiddata sum_pix_dmsp
+    naomit
+    tempfile dmsp
+    save `dmsp'
+    clear
+
 /* MERGE EVERYTHING! */
     append using `iibu'
     append using `grp_oecd'
     mmerge gid_1 year using `viirs'
+    mmerge gid_1 year using `dmsp'
 
     /* basically, one check is to make sure that the countries align -- they
     don't, unfortunately  // !!!!!!! some were not geocoded accurately */
