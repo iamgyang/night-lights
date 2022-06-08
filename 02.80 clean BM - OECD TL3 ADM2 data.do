@@ -39,5 +39,5 @@ drop if year >= 2019
 	create_categ(ADM2 iso3c year)
 
 // save:
-save "$inputa", replace
+save "$input/adm2_year_aggregation.dta", replace
 .

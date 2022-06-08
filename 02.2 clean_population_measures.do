@@ -17,11 +17,4 @@ replace poptotal = poptotal[_n-1] if poptotal == . & iso3c[_n] == iso3c[_n-1]
 
 save "$input/wb_pop_estimates_cleaned.dta", replace
 
-
-
-
-
-
-
-
-
+.
