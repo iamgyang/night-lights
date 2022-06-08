@@ -55,7 +55,7 @@ input_dir <- paste0(root_dir, "input")
 output_dir <- paste0(root_dir, "output")
 code_dir <- paste0(root_dir, "code")
 raw_dir <-
-  paste0("C:/Users/", user, "/Dropbox/CGD GlobalSat/raw-data/")
+  paste0("C:/Users/", user, "/Dropbox/CGD GlobalSat/raw_data/")
 setwd(input_dir)
 
 # Defaults and Functions --------------------------------------------------

@@ -1,6 +1,6 @@
 # Clean the objectID dataset
-setwd("C:/Users/user/Dropbox/CGD GlobalSat/raw-data/ucdp_war")
-load("C:/Users/user/Dropbox/CGD GlobalSat/raw-data/ucdp_war/GED_poly.RData")
+setwd("C:/Users/user/Dropbox/CGD GlobalSat/raw_data/ucdp_war")
+load("C:/Users/user/Dropbox/CGD GlobalSat/raw_data/ucdp_war/GED_poly.RData")
 df <-
     setDT(wrpol)[, .(OBJECTID, GID_1, GID_0, country, date_start, date_end, best)]
 df[, c("date_start", "date_end") := lapply(.SD, as.Date), .SDcols = c("date_start", "date_end")]

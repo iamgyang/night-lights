@@ -4,7 +4,7 @@ library(dplyr)
 library(lubridate)
 
 # load data
-cnet <- fread("C:/Users/user/Dropbox/CGD GlobalSat/raw-data/Coronanet/coronanet_release.csv/coronanet_release.csv")
+cnet <- fread("C:/Users/user/Dropbox/CGD GlobalSat/raw_data/Coronanet/coronanet_release.csv/coronanet_release.csv")
 
 # get variables of interest & filter to subnational data:
 cnet <-

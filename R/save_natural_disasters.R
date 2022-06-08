@@ -1,7 +1,7 @@
 library(data.table)
 library(magrittr)
 library(readstata13)
-setwd("C:/Users/user/Dropbox/CGD GlobalSat/raw-data/Natural Disasters")
+setwd("C:/Users/user/Dropbox/CGD GlobalSat/raw_data/Natural Disasters")
 load("nat_disaster_emd_poly.RData")
 DT <-
     emdpol %>%

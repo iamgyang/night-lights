@@ -25,9 +25,9 @@ global code        "$root/HF_measures/code"
 global input       "$root/HF_measures/input"
 global output      "$root/HF_measures/output"
 global overleaf	   "C:/Users/`c(username)'/Dropbox/Apps/Overleaf/Night Lights"
-global raw_data    "$root/raw-data"
+global raw_data    "$root/raw_data"
 global intermediate_data    "$root/intermediate_data"
-global ntl_input   "$root/raw-data/VIIRS NTL Extracted Data 2012-2020"
+global ntl_input   "$root/raw_data/VIIRS NTL Extracted Data 2012-2020"
 
 // CHANGE THIS!! --- Do we want to install user-defined functions?
 loc install_user_defined_functions "No"

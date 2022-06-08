@@ -1,7 +1,7 @@
 // DMSP from Aid Data William and Mary: Seth Goodman ------------------------------------
 
 // This file creates agggregates from the DMSP data. 
-use "$raw_data/raw-data/DMSP ADM2/dmsp 1992-2013.csv", clear
+use "$raw_data/raw_data/DMSP ADM2/dmsp 1992-2013.csv", clear
 rename *, lower
 keep objectid sum_pix_dmsp_aiddata pol_area year
 

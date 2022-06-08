@@ -45,7 +45,7 @@ b_df <-
     paste0(
       "C:/Users/",
       user,
-      "/Dropbox/CGD GlobalSat/raw-data/EU regional GDP/NUTS2_labeled_clean.csv"
+      "/Dropbox/CGD GlobalSat/raw_data/EU regional GDP/NUTS2_labeled_clean.csv"
     )
   ) %>% as.data.table()
 
