@@ -64,10 +64,11 @@ pvq[,ln_gr_dm_actual:= log(sum_pix_dmsp) - shift(log(sum_pix_dmsp)), by = "OBJEC
 invisible(lapply(names(pvq),function(.name) set(pvq, which(is.infinite(pvq[[.name]])), j = .name,value =NA)))
 
 # plot a histogram!!! a is the residuals
+a_ <- dtest$resid
 h <- hist(a_, breaks = 100, density = 100,
           col = "grey", xlab = "Accuracy", main = "Overall") 
-xfit <- seq(min(a_), max(a_), length = 1000) 
-yfit <- dnorm(xfit, mean = mean(a_), sd = sd(a_)) 
+xfit <- seq(min(a_, na.rm = T), max(a_, na.rm = T), length = 1000) 
+yfit <- dnorm(xfit, mean = mean(a_, na.rm = T), sd = sd(a_, na.rm = T)) 
 yfit <- yfit * diff(h$mids[1:2]) * length(a_) 
 lines(xfit, yfit, col = "black", lwd = 1)
 
@@ -80,12 +81,12 @@ lines(xfit, yfit, col = "black", lwd = 1)
 # Take log(predicted DMSP 2013) - log(predicted DMSP 2012) ~ log(actual DMSP
 # 2013) - log(actual DMSP 2012). This gives us a fit with an intercept term t
 # statistic ~ 20. This implies that the DMSP distribution is nonstationary. 
-summary(lm(ln_gr_dm_actual ~ ln_gr_dm_pred, data = pvq))
+fit <- (lm(ln_gr_dm_actual ~ ln_gr_dm_pred, data = pvq))
 
 # One can also fit a model of log(actual DMSP 2013) - log(actual DMSP 2012)  ~
 # log(actual BM 2013) - log(actual BM 2012), in which case we again get a highly
 # significant intercept term (t stat is now ~ 19). 
-summary(lm(ln_gr_dm_actual ~ ln_gr_bm_actual, data = pvq))
+fit <- summary(lm(ln_gr_dm_actual ~ ln_gr_bm_actual, data = pvq))
 
 summary(lm(ln_dm_actual ~ ln_dm_pred , data = pvq[year == 2013]))
 summary(lm(ln_dm_actual ~ ln_dm_pred, data = pvq[year == 2012]))
