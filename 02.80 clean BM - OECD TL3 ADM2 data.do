@@ -22,7 +22,8 @@ assert n == 1
 restore
 
 destring year, replace
-// !!! we do not have many observations for 2019 (likely due to GRP data)
+
+// we do not have many observations for 2019 (likely due to GRP data)
 drop if year >= 2019
 
 // create variables of interest
