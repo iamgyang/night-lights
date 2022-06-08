@@ -44,7 +44,7 @@ bys iso3c: fillmissing sum_area
 gen del_sum_pix_area = del_sum_pix / del_sum_area
 gen sum_pix_area = sum_pix / sum_area
 gen sum_light_dmsp_div_area = sum_light_dmsp / sum_area
-gen sum_pix_dmsp_aiddata_div_area = sum_pix_dmsp_aiddata / sum_area
+gen sum_pix_dmsp_ad_div_area = sum_pix_dmsp_ad / sum_area
 foreach i of numlist 79(5)99 {
 	gen del_sum_pix_`i'_area = del_sum_pix_`i' / del_sum_area_`i'
 	gen sum_pix_`i'_area = sum_pix_`i' / sum_area_`i'
@@ -98,8 +98,8 @@ label variable sum_light_dmsp "DMSP pixels (HR)"
 label variable sum_light_dmsp_div_area "DMSP pixels / area (HR)"
 label variable sumoflights_gold "DMSP pixels (AGJ)"
 label variable sum_light_dmsp "DMSP pixels (HR)"
-label variable sum_pix_dmsp_aiddata "DMSP pixels"
-label variable sum_pix_dmsp_aiddata_div_area "DMSP pixels / area"
+label variable sum_pix_dmsp_ad "DMSP pixels"
+label variable sum_pix_dmsp_ad_div_area "DMSP pixels / area"
 label variable WDI "WDI real GDP LCU"
 label variable WDI_ppp "WDI real GDP PPP"
 
@@ -141,8 +141,8 @@ input str40 measure_vars
 	"WDI"
 	"WDI_ppp"
 	"sumoflights_gold"
-	"sum_pix_dmsp_aiddata"
-	"sum_pix_dmsp_aiddata_div_area"
+	"sum_pix_dmsp_ad"
+	"sum_pix_dmsp_ad_div_area"
 end
 levelsof measure_vars, local(measure_vars)
 clear

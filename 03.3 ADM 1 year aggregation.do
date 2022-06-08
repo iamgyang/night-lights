@@ -57,7 +57,7 @@ perfect) */
 
 /* DMSP */
     use "$input/dmsp_adm1_year.dta", clear
-    rename sum_pix_dmsp_aiddata sum_pix_dmsp
+    rename sum_pix_dmsp_ad sum_pix_dmsp
     naomit
     tempfile dmsp
     save `dmsp'

@@ -91,12 +91,4 @@ keep if n <= 50000
 save "$input/sample_war_nat_disaster_event_prior_to_cutoff.dta", replace
 
 
-
-
-
-
-
-
-
-
-
+.

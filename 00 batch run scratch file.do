@@ -2,6 +2,22 @@ cd "C:/Users/`c(username)'/Dropbox/CGD GlobalSat/HF_measures/code"
 pause off
 do "00 preliminaries.do"
 do "01.8 clean DMSP.do"
+do "03.1 merge_iso3c_yr.do"
+do "03.2 iso3c year aggregation.do"
+do "03.3 ADM 1 year aggregation.do"
+do "03.4 ADM 2 year aggregation.do"
+do "04.02 windowed regs.do"
+do "04.05 all log levels.do"
+
+
+
+
+
+
+do "00 preliminaries.do"
+do "01.8 clean DMSP.do"
+
+
 do "02.80 clean BM - OECD TL3 ADM2 data.do"
 do "04.05 all log levels.do"
 

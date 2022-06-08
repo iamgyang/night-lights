@@ -3,7 +3,7 @@ rename *, lower
 check_dup_id "objectid year reg_id"
 mmerge objectid year using "$input/dmsp_adm2_year.dta", replace
 drop _merge
-rename sum_pix_dmsp_aiddata sum_pix_dmsp
+rename sum_pix_dmsp_ad sum_pix_dmsp
 rename objectid ADM2
 rename value GRP
 
