@@ -10,7 +10,7 @@ from autogluon.tabular import TabularDataset, TabularPredictor
 
 # set working directory. this folder will also store the trained ML models
 dir_path = 'C:/Users/user/Dropbox/CGD GlobalSat/HF_measures/input'
-save_path = 'C:/Users/user/Dropbox/CGD GlobalSat/splice_final_model'
+save_path = 'C:/Users/user/Dropbox/CGD GlobalSat/splice_final_model/train 2012, fit 2013 asinh DMSP, asinh BM'
 os.chdir(dir_path)
 
 # STEP 1: FIT 2 MODELS ------------------------------------------------------------
@@ -62,7 +62,7 @@ train_data.head()
 print("Summary of class variable: \n", train_data[label].describe())
 
 # Longest time you are willing to wait (in seconds)
-time_limit = 4*60*60
+time_limit = 5*60*60
 # time_limit = 20
 
 # fit model
