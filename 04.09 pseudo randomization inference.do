@@ -19,8 +19,8 @@ well, and compare the regressions. */
 
 // does the result hold under bootstrap? Yes!
 /* Note: this bootstrap samples entire COUNTRIES 50 times. */
-bootstrap, rep(50) cluster(cat_iso3c) size(50): ///
-    reghdfe ln_WDI ln_del_sum_pix_area, absorb(cat_iso3c cat_year) vce(cluster cat_iso3c)
+// bootstrap, rep(50) cluster(cat_iso3c) size(50): ///
+//     reghdfe ln_WDI ln_del_sum_pix_area, absorb(cat_iso3c cat_year) vce(cluster cat_iso3c)
 
 /* does the result hold if I randomize which countries get which lights? No!
 (which is a good thing) */

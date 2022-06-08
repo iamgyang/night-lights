@@ -49,9 +49,10 @@ clear
 capture macro drop isos_in_subnat
 
 foreach file in adm2_year_aggregation adm1_year_aggregation iso3c_year_aggregation {
-	foreach light_label in BM { //VIIRS
+	foreach light_label in BM {
 		foreach income_group in OECD n_O Glo {
 			use "$input/`file'.dta", clear
+			di "`file'_`light_label'_`income_group'"
 			keep if year >= 2012
 
 			// restrict the countries to those of interest
@@ -225,55 +226,12 @@ foreach file in adm2_year_aggregation adm1_year_aggregation iso3c_year_aggregati
 	}
 }
 
-
-
-foreach file in adm1_year_aggregation iso3c_year_aggregation {
-	foreach light_label in VIIRS BM {
-		foreach income_group in OECD n_O Glo {
-
-
-            if ("`file'" == "iso3c_year_aggregation") {
-				local location iso3c
-				local Y WDI
-				local AGG "Country"
-				local ADM1_FE ""
-				local Country_FE "X"
-			}
-			else if ("`file'" == "adm1_year_aggregation") {
-				local location ADM1
-				local Y GRP
-				local AGG "Admin1"
-				local ADM1_FE "X"
-				local Country_FE ""
-			}
-			di "reg_`income_group'_`light_label'_`location'_`Y'"
-			di "reg_`income_group'_`light_label'_`location'_`Y'_c"
-
-
-			if ("`file'" == "adm1_year_aggregation") {
-				local location iso3c
-				local Y GRP
-				local AGG "Country"
-				local ADM1_FE ""
-				local Country_FE "X"
-			}
-
-			di "reg_`income_group'_`light_label'_`location'_`Y'"
-			di "reg_`income_group'_`light_label'_`location'_`Y'_c"
-
-
-
-
-		}
-	}
-}
-
 /* EXPORT ----------- */
 
 local i = 1
 
-foreach Y in WDI GRP{
-foreach location in ADM2 ADM1 iso3c {
+foreach Y in WDI GRP {
+foreach location in iso3c ADM1 ADM2 {
 foreach light_label in BM {
 
 if (`i' == 1) {
@@ -284,34 +242,30 @@ else if (`i'!=1) {
 	local addendum `"append"'
 }
 
-// we do not have WDI for ADM1s:
+// we do not have WDI for ADMs:
 if ("`Y'" == "WDI" & "`location'" == "ADM1") {
     continue
 }
 if ("`Y'" == "WDI" & "`location'" == "ADM2") {
     continue
 }
+// we're going to skip the portion where we're running collapsed country-level
+// for ADMs
+if ("`Y'" == "GRP" & "`location'" == "iso3c") {
+    continue
+}
 
 // get panel labels:
-    // if (`i' == 1) {
-    //     local panel_label "A: Country level, VIIRS"
-    // }
-    // if (`i' == 2) {
-    //     local panel_label "B: Country level, BM"
-    // }
-    // if (`i' == 3) {
-    //     local panel_label "C: Subnational level, VIIRS"
-    // }
-    // if (`i' == 4) {
-    //     local panel_label "D: Subnational level, BM"
-    // }
-    // if (`i' == 5) {
-    //     local panel_label "E: Country level, using GDP as summed subnational GRP, VIIRS"
-    // }
-    // if (`i' == 6) {
-    //     local panel_label "F: Country level, using GDP as summed subnational GRP, BM"
-    // }
-
+    if (`i' == 1) {
+        local panel_label "A: Country level"
+    }
+    if (`i' == 2) {
+        local panel_label "B: Admin. 1 level"
+    }
+    if (`i' == 3) {
+        local panel_label "C: Admin. 2 level"
+    }
+    
 // output:
     esttab reg_Glo_`light_label'_`location'_`Y' reg_Glo_`light_label'_`location'_`Y'_c ///
     reg_OECD_`light_label'_`location'_`Y' reg_OECD_`light_label'_`location'_`Y'_c /// 
