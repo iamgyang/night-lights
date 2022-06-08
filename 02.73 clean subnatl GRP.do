@@ -75,7 +75,7 @@ perfect) */
 
     drop if mi(GRP) | mi(gid_1) | mi(year)
 
-// drop if we got it directly from the country website (bettrer than OECD data)
+// drop if we got it directly from the country website (better than OECD data)
     drop if (iso3c == "BRA" | iso3c == "IDN" | iso3c == "IND" | iso3c == "USA") & (source == "OECD")
 
 // check duplicates
