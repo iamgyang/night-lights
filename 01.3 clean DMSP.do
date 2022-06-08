@@ -6,8 +6,8 @@ tempfile dmsp dmsp_hender dmsp_goldberg
 // DMSP from Australian website (Hodler and Raschky) --------------------
 import delimited "$raw_data/Other/Nighttime_Lights_ADM2_1992_2013.csv", clear
 gcollapse (sum) sum_light, by(countrycode year)
-rename (countrycode sum_light) (iso3c sum_light_dmsp)
-keep iso3c year sum_light_dmsp
+rename (countrycode sum_light) (iso3c sum_pix_dmsp)
+keep iso3c year sum_pix_dmsp
 
 save `dmsp'
 

@@ -43,7 +43,7 @@ foreach i in PWT WDI {
 bys iso3c: fillmissing sum_area
 gen del_sum_pix_area = del_sum_pix / del_sum_area
 gen sum_pix_area = sum_pix / sum_area
-gen sum_light_dmsp_div_area = sum_light_dmsp / sum_area
+gen sum_pix_dmsp_div_area = sum_pix_dmsp / sum_area
 gen sum_pix_dmsp_ad_div_area = sum_pix_dmsp_ad / sum_area
 foreach i of numlist 79(5)99 {
 	gen del_sum_pix_`i'_area = del_sum_pix_`i' / del_sum_area_`i'
@@ -94,10 +94,10 @@ label variable mean_g_ln_lights_gold "Growth in DMSP pixels (AGJ) per capita"
 label variable poptotal "population (UN)"
 label variable PWT "PWT real GDP PPP"
 label variable sum_area "lights (raw) polygon area"
-label variable sum_light_dmsp "DMSP pixels (HR)"
-label variable sum_light_dmsp_div_area "DMSP pixels / area (HR)"
+label variable sum_pix_dmsp "DMSP pixels (HR)"
+label variable sum_pix_dmsp_div_area "DMSP pixels / area (HR)"
 label variable sumoflights_gold "DMSP pixels (AGJ)"
-label variable sum_light_dmsp "DMSP pixels (HR)"
+label variable sum_pix_dmsp "DMSP pixels (HR)"
 label variable sum_pix_dmsp_ad "DMSP pixels"
 label variable sum_pix_dmsp_ad_div_area "DMSP pixels / area"
 label variable WDI "WDI real GDP LCU"
@@ -135,8 +135,8 @@ input str40 measure_vars
 	"pos_sumpx"
 	"pos_sumpx_area"
 	"PWT"
-	"sum_light_dmsp"
-	"sum_light_dmsp_div_area"
+	"sum_pix_dmsp"
+	"sum_pix_dmsp_div_area"
 	"sumoflights_gold"
 	"WDI"
 	"WDI_ppp"

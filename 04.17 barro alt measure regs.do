@@ -4,7 +4,7 @@
 use "$input/iso3c_year_aggregation.dta", clear
 
 // keep log BM, log DMSP, year, and country
-keep ln_WDI_ppp_pc ln_sum_pix_bm_pc ln_sum_light_dmsp_pc year iso3c sum_area poptotal
+keep ln_WDI_ppp_pc ln_sum_pix_bm_pc ln_sum_pix_dmsp_pc year iso3c sum_area poptotal
 order iso3c year
 sort iso3c year
 
@@ -62,8 +62,8 @@ sort iso3c year cat_iso3c cat_year
 // fix ntl data
 gen ln_sum_pix_dmsp_pred_pc = log(sum_pix_dmsp_pred / poptotal)
 gen ln_ntl = ln_sum_pix_bm_pc
-replace ln_ntl = ln_sum_light_dmsp_pc if year == 1992
-replace ln_sum_pix_dmsp_pred_pc = ln_sum_light_dmsp_pc if mi(ln_sum_pix_dmsp_pred_pc)
+replace ln_ntl = ln_sum_pix_dmsp_pc if year == 1992
+replace ln_sum_pix_dmsp_pred_pc = ln_sum_pix_dmsp_pc if mi(ln_sum_pix_dmsp_pred_pc)
 
 // generate growth
 keep if year == 1992 | year ==2020
@@ -73,7 +73,7 @@ foreach i in ln_ntl ln_WDI_ppp_pc ln_sum_pix_dmsp_pred_pc {
 }
 
 keep if year == 1992
-drop ln_sum_light_dmsp_pc ln_sum_pix_bm_pc ln_sum_pix_dmsp_pred_pc
+drop ln_sum_pix_dmsp_pc ln_sum_pix_bm_pc ln_sum_pix_dmsp_pred_pc
 
 // dropping some variables because they cause us to lose too many countries
 mdesc

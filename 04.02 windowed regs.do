@@ -65,7 +65,7 @@ foreach light_var in "DMSP" "BM" {
 			else if ("`light_var'" == "DMSP") {
 				loc years "1992/2012"
 				loc years_group `""1992" "1993" "1994" "1995" "1996" "1997" "1998" "1999" "2000" "2001" "2002" "2003" "2004" "2005" "2006" "2007" "2008" "2009" "2010" "2011" "2012""'
-				rename ln_sum_light_dmsp_div_area RHS_var
+				rename ln_sum_pix_dmsp_div_area RHS_var
 			}
 			else if ("`light_var'" == "BM") {
 				loc years "2013/2019"
