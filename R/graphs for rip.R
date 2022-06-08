@@ -89,7 +89,7 @@ make_graph <- function(data_f, x, y, xlab, ylab, filename) {
 }
 
 for (file in c ("adm1_year_aggregation", "iso3c_year_aggregation")) {
-  for (RHS in c("ln_del_sum_pix_area", "ln_sum_pix_bm_dec_area")) {
+  for (RHS in c("ln_del_sum_pix_area", "ln_sum_pix_bm_area")) {
     for (income_group in c("OECD", "Not_OECD")) {
       if (file == "adm1_year_aggregation") {
         LHS <- "ln_GRP"
