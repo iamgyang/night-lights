@@ -3,7 +3,7 @@ local end_yr = 2020
 est clear
 set graphics off
 
-foreach light_var in ln_sum_pix_bm_dec_area  ln_del_sum_pix_area {
+foreach light_var in ln_sum_pix_bm_area  ln_del_sum_pix_area {
 
 use "$input/iso3c_year_aggregation.dta", clear
 keep if year == `start_yr' | year == `end_yr' // this is for BM (which we only have up to 2014)
@@ -106,7 +106,7 @@ as(png) width(3000) height(1714) replace
 
 }
 
-esttab reg_ln_del_sum_pix_area1 reg_ln_del_sum_pix_area2 reg_ln_sum_pix_bm_dec_area1 reg_ln_sum_pix_bm_dec_area2 using "$overleaf/concavity.tex", replace f  ///
+esttab reg_ln_del_sum_pix_area1 reg_ln_del_sum_pix_area2 reg_ln_sum_pix_bm_area1 reg_ln_sum_pix_bm_area2 using "$overleaf/concavity.tex", replace f  ///
 b(3) se(3) star(* 0.10 ** 0.05 *** 0.01) ///
 label booktabs nobaselevels collabels(none) ///
 sfmt(3)

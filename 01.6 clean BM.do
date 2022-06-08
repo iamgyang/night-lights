@@ -86,10 +86,7 @@ use "$input/bm_adm2_month.dta", clear
 
 use "$input/bm_adm1_month.dta", clear
 
-// create a new variable --- BM for DECEMBER
-gen sum_pix_bm_dec = sum_pix_bm if month == 12
-
-gcollapse (sum) sum_pix_bm sum_pix_bm_dec (mean) pol_area, by(iso3c gid_1 name_1 year)
+gcollapse (sum) sum_pix_bm (mean) pol_area, by(iso3c gid_1 name_1 year)
 
 foreach i in iso3c gid_1 name_1 year {
     drop if mi(`i')
@@ -98,7 +95,7 @@ foreach i in iso3c gid_1 name_1 year {
 save "$input/bm_adm1_year.dta", replace
 
 // collapse by year and country
-gcollapse (sum) sum_pix_bm sum_pix_bm_dec pol_area, by(iso3c year)
+gcollapse (sum) sum_pix_bm pol_area, by(iso3c year)
 
 drop if mi(iso3c) | mi(year)
 

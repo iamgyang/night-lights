@@ -11,7 +11,7 @@
 
 /* Create manual fixed effects */
 foreach income_group in OECD Not_OECD {
-foreach light_var in ln_del_sum_pix_area ln_sum_pix_bm_dec_area {
+foreach light_var in ln_del_sum_pix_area ln_sum_pix_bm_area {
 foreach file in `files_to_FE' {
     di "`light_var' `file'"
     use "$input/`file'.dta", clear

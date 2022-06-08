@@ -29,7 +29,7 @@ drop _merge
 rename pwt_rgdpna PWT
 
 // the sum of the empty set is 0--so we remove these false 0's
-foreach i in del_sum_pix del_sum_area sum_pix_bm_dec pol_area {
+foreach i in del_sum_pix del_sum_area sum_pix_bm pol_area {
     replace `i' = . if `i' == 0
 }
 
@@ -52,7 +52,6 @@ gen sum_pix_clb_area = sum_pix_clb / sum_area
 gen pos_sumpx_area = pos_sumpx / sum_area
 gen sum_pix_new_area = sum_pix_new / sum_area
 gen sum_pix_bm_area = sum_pix_bm / pol_area
-gen sum_pix_bm_dec_area = sum_pix_bm_dec / pol_area
 
 // label variables
 label variable rgdppc_ppp_gold "WB real GDP PPP per capita (AGJ)"
@@ -60,8 +59,6 @@ label variable del_sum_area "VIIRS (cleaned) polygon area"
 label variable del_sum_pix "VIIRS (cleaned) pixels"
 label variable del_sum_pix_area "VIIRS (cleaned) pixels / area"
 // Black Marble version
-label variable sum_pix_bm_dec "BM Dec. pixels"
-label variable sum_pix_bm_dec_area "BM Dec. pixels / area"
 label variable sum_pix_bm "BM pixels"
 label variable sum_pix_bm_area "BM pixels / area"
 // calibrated night lights versions
@@ -124,8 +121,6 @@ input str40 measure_vars
 	"del_sum_pix_99"
 	"sum_pix_bm"
 	"sum_pix_bm_area"
-	"sum_pix_bm_dec"
-	"sum_pix_bm_dec_area"
 	"sum_pix_area"
 	"sum_pix"
 	"sum_pix_area"
@@ -286,44 +281,7 @@ label variable cat_wbdqcat_3 "WB data quality"
 assert !(!mi(del_sum_pix_79_area) & mi(del_sum_pix_area))
 assert !(mi(del_sum_pix_79_area) & !mi(del_sum_pix_area))
 
-// // everywhere where VIIRS is not missing for 2017-2020, we should have BM:
-// preserve
-// keep if inlist(year, 2017, 2018, 2019, 2020) & !mi(del_sum_pix_area)
-// keep iso3c year del_sum_pix del_sum_area ln_del_sum_pix g_ln_del_sum_pix_area iso3c year sum_pix_bm_dec sum_pix_bm_dec_area sum_pix_bm_dec_pc ln_sum_pix_bm_dec ln_sum_pix_bm_dec_area ln_sum_pix_bm_dec_pc g_ln_sum_pix_bm_dec g_ln_sum_pix_bm_dec_area g_ln_sum_pix_bm_dec_pc g_an_ln_sum_pix_bm_dec g_an_ln_sum_pix_bm_dec_area g_an_ln_sum_pix_bm_dec_pc
-// assert !mi(sum_pix_bm_dec_area)
-// restore // !!!!!!!!!!!!!!!!!!!!!!!! ok, this is not true... we're missing some countries (mostly islands?)
-
 save "$input/iso3c_year_aggregation.dta", replace
 
 // check with other version of lights (different calibration) from Parth's data:
 use "$input/iso3c_year_aggregation.dta", clear
-
-
-
-
-
-// // find differences between sum_pix, pol_area, WDI, PWT, Oxford, IMF
-// rename pol_area_pagg sum_area_pagg
-// foreach i in sum_pix sum_area {
-//     preserve
-// 	di "`i'"
-// 	keep `i' iso3c year `i'_pagg
-// 	naomit
-// 	gen diff_`i' = abs(`i'/`i'_pagg-1)
-// 	assert diff_`i' < 0.01
-// 	restore
-// }
-
-
-// these are the same values
-// gg_ln_sumoflights_gold_pc/g_ln_lights_gold
-// gg_ln_lights_gold/g_ln_lights_gold
-// gg_ln_sumoflights_gold_pc/g_ln_lights_gold
-// ln_sumoflights_gold_pc/ln_lights
-
-// capture drop diff
-// gen diff = abs(ln_lights_gold/ln_sumoflights_gold_pc - 1)
-// br iso3c year ln_sumoflights_gold_pc ln_lights_gold if diff > 0.01 & !missing(diff)
-
-
-
