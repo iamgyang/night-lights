@@ -24,11 +24,11 @@ foreach agg_level in cat_iso3c cat_ADM1 {
 	loc olsregs ""
 	loc quantregs ""
 
-	label variable ln_sum_pix_bm_dec "Log(BM Dec. pixels)"
+	label variable ln_sum_pix_bm "Log(BM pixels)"
 	label variable ln_sum_pix_bm "Log(BM pixels)"
 	label variable ln_del_sum_pix "Log(VIIRS pixels)"
 
-	foreach var in ln_sum_pix_bm_dec ln_sum_pix_bm ln_del_sum_pix{
+	foreach var in ln_sum_pix_bm ln_sum_pix_bm ln_del_sum_pix{
 		reghdfe `var' gdp_var c.gdp_var#c.gdp_var, absorb(`agg_level' cat_year) vce(cluster `agg_level')
         eststo r`i'_`agg_level'
         estadd local AGG "`AGG'"

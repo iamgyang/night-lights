@@ -1,20 +1,16 @@
 /* Do all log levels regressions (i.e. HWS regressions) */
-
-pause off // CHANGE!!!!
-
 est clear
 clear	
 
-
-// just basic DMSP vs. BM Dec at country level:
+// just basic DMSP vs. BM at country level:
 use "$input/iso3c_year_aggregation.dta", clear
 label variable lndn "Log(DMSP pixels/area)"
-label variable sum_pix_bm_dec_area "BM Dec. pixels/area"
-quietly capture drop ln_sum_pix_bm_dec_area 
-create_logvars "sum_pix_bm_dec_area"
+label variable sum_pix_bm_area "BM pixels/area"
+quietly capture drop ln_sum_pix_bm_area 
+create_logvars "sum_pix_bm_area"
 
 // do the HWS regression for the same variable and same year as them:
-bootstrap, rep(50) cluster(cat_iso3c) : ///
+// bootstrap, rep(50) cluster(cat_iso3c) : ///
 reghdfe ln_WDI lndn if year <= 2008 & !(inlist(iso3c, "GNQ", "BHR", "SGP", "HKG")), absorb(cat_iso3c cat_year) vce(cluster cat_iso3c)
 	eststo reg_DMSP
 	estadd local AGG "Country"
@@ -26,9 +22,9 @@ reghdfe ln_WDI lndn if year <= 2008 & !(inlist(iso3c, "GNQ", "BHR", "SGP", "HKG"
 	estadd local Year_FE "X"
 
 // do the BM regression
-bootstrap, rep(50) cluster(cat_iso3c) : ///
-reghdfe ln_WDI ln_sum_pix_bm_dec_area, absorb(cat_iso3c cat_year) vce(cluster cat_iso3c)
-	eststo reg_VIIRS
+// bootstrap, rep(50) cluster(cat_iso3c) : ///
+reghdfe ln_WDI ln_sum_pix_bm_area, absorb(cat_iso3c cat_year) vce(cluster cat_iso3c)
+	eststo reg_BM
 	estadd local AGG "Country"
 	estadd local NC `e(N_clust)'
 	local y = round(`e(r2_a_within)', .001)
@@ -92,7 +88,7 @@ foreach file in adm2_year_aggregation adm1_year_aggregation iso3c_year_aggregati
 				local loc_var del_sum_area
 			}
 			if ("`light_label'" == "BM") {
-				local light_var sum_pix_bm_dec
+				local light_var sum_pix_bm
 				local loc_var pol_area
 			}
 			label variable ln_`light_var'_area "Log(`light_label' pixels/area)"
