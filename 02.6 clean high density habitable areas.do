@@ -29,15 +29,4 @@ foreach i of numlist 84(5)99{
 	drop _merge
 }
 save "$input/clean_high_density_ntl.dta", replace
-
-
-
-
-
-
-
-
-
-
-
-
+.

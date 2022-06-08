@@ -22,7 +22,7 @@ both DMSP and VIIRS, global, OECD, etc.
 foreach agg_level in "cat_iso3c" "cat_ADM1" "cat_ADM2" {
 foreach income_group in "Global" "OECD" "Not OECD" {
 foreach light_var in "DMSP" "BM" {
-		
+			di "`agg_level' `income_group' `light_var'"
 			// Here, we don't have information subnationally
 			if ("`agg_level'" == "cat_ADM1") & ("`income_group'" == "Global") {
 				continue
@@ -62,10 +62,10 @@ foreach light_var in "DMSP" "BM" {
 			}
 
 			// define the years we do the regression on
-			else if ("`light_var'" == "DMSP") {
+			if ("`light_var'" == "DMSP") {
 				loc years "1992/2012"
 				loc years_group `""1992" "1993" "1994" "1995" "1996" "1997" "1998" "1999" "2000" "2001" "2002" "2003" "2004" "2005" "2006" "2007" "2008" "2009" "2010" "2011" "2012""'
-				rename ln_sum_pix_dmsp_div_area RHS_var
+				rename ln_sum_pix_dmsp_ad_area RHS_var
 			}
 			else if ("`light_var'" == "BM") {
 				loc years "2013/2019"
@@ -78,7 +78,7 @@ foreach light_var in "DMSP" "BM" {
 			// regressions
 			est clear
 			foreach year of numlist `years' {
-
+				di "`year'"
 				eststo: reghdfe LHS_var RHS_var if (year == `year' | year == `year' + 1), absorb(`fixed_effects') vce(cluster `agg_level')
 				estadd local NC `e(N_clust)'
 				local y= round(`e(r2_a_within)', .001)

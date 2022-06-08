@@ -1,6 +1,7 @@
 cd "C:/Users/`c(username)'/Dropbox/CGD GlobalSat/HF_measures/code"
 pause off
 do "00 preliminaries.do"
+do "01.3 clean DMSP.do"
 do "01.8 clean DMSP.do"
 do "03.1 merge_iso3c_yr.do"
 do "03.2 iso3c year aggregation.do"
