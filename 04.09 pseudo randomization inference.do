@@ -82,12 +82,4 @@ bootstrap, rep(50) cluster(cat_iso3c) size(50): ///
     estadd local Country_FE "X"
 	
     /* okay, so original regression holds muster */
-	
-	
-	
-	
-	
-	
-	
-	
-	
+.

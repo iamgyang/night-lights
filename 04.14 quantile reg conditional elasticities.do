@@ -61,13 +61,13 @@ foreach agg_level in cat_iso3c cat_ADM1 {
 	esttab `olsregs' using "$overleaf/quadratic_`agg_level'_1.tex", replace f ///
 		b(3) se(3) ar2 label star(* 0.10 ** 0.05 *** 0.01) ///
 		booktabs ///
-		scalars("AGG Aggregation Level" "NC Number of Groups" "WR2 Adjusted Within R-squared" "ADM1_FE ADM1 Fixed Effects" "Country_FE Country Fixed Effects" "Year_FE Year Fixed Effects") ///
+		scalars("AGG Aggregation Level" "NC Number of Groups" "WR2 Adjusted Within R-squared" "ADM1_FE Admin. 1 Fixed Effects" "Country_FE Country Fixed Effects" "Year_FE Year Fixed Effects") ///
 		nobaselevels  drop(_cons)
 
 	esttab `quantregs' using "$overleaf/quadratic_`agg_level'_2.tex", replace f ///
 		b(3) se(3) ar2 label star(* 0.10 ** 0.05 *** 0.01) ///
 		booktabs ///
-		scalars("AGG Aggregation Level" "ADM1_FE ADM1 Fixed Effects" "Country_FE Country Fixed Effects" "Year_FE Year Fixed Effects") ///
+		scalars("AGG Aggregation Level" "ADM1_FE Admin. 1 Fixed Effects" "Country_FE Country Fixed Effects" "Year_FE Year Fixed Effects") ///
 		nobaselevels  drop(*.cat_year)
 
 

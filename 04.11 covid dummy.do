@@ -65,7 +65,7 @@ reg_OECD_BM_iso3c reg_Not_OECD_VIIRS_iso3c reg_Not_OECD_BM_iso3c using "$overlea
 posthead("\hline \\ \multicolumn{4}{l}{\textbf{Panel A: Country level}} \\\\[-1ex]") ///
 fragment ///
 mgroups("Global VIIRS" "Global BM" "OECD VIIRS" "OECD BM" "Not OECD VIIRS" "Not OECD BM", pattern(1 1 1 1 1 1 1 1 1 1 1 1) span prefix(\multicolumn{@span}{c}{) suffix(})) ///
-scalars("AGG Aggregation Level" "NC Number of Groups" "WR2 Adjusted Within R-squared" "ADM1_FE ADM1 Fixed Effects" "Country_FE Country Fixed Effects") ///
+scalars("AGG Aggregation Level" "NC Number of Groups" "WR2 Adjusted Within R-squared" "ADM1_FE Admin. 1 Fixed Effects" "Country_FE Country Fixed Effects") ///
 nomtitles ///
 b(3) se(3) ar2 star(* 0.10 ** 0.05 *** 0.01) sfmt(3) ///
 label booktabs nobaselevels  drop(_cons) ///
@@ -76,7 +76,7 @@ reg_OECD_BM_ADM1 reg_Not_OECD_VIIRS_ADM1 reg_Not_OECD_BM_ADM1 using "$overleaf/c
 posthead("\hline \\ \multicolumn{4}{l}{\textbf{Panel B: ADM1 level}} \\\\[-1ex]") ///
 fragment ///
 append ///
-scalars("AGG Aggregation Level" "NC Number of Groups" "WR2 Adjusted Within R-squared" "ADM1_FE ADM1 Fixed Effects" "Country_FE Country Fixed Effects") ///
+scalars("AGG Aggregation Level" "NC Number of Groups" "WR2 Adjusted Within R-squared" "ADM1_FE Admin. 1 Fixed Effects" "Country_FE Country Fixed Effects") ///
 nomtitles nonumbers nolines ///
 b(3) se(3) ar2 star(* 0.10 ** 0.05 *** 0.01) sfmt(3) ///
 label booktabs nobaselevels drop(_cons)

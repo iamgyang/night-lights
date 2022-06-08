@@ -38,16 +38,14 @@ reghdfe ln_WDI ln_sum_pix_bm_dec_area, absorb(cat_iso3c cat_year) vce(cluster ca
 	estadd local Year_FE "X"
 
 // output:
-    esttab reg_DMSP reg_VIIRS using "$overleaf/basic_DMSP_vs_VIIRS.tex", ///
+    esttab reg_DMSP reg_BM using "$overleaf/basic_DMSP_vs_VIIRS.tex", ///
     fragment ///
-    scalars("AGG Aggregation Level" "NC Number of Groups" "WR2 Adjusted Within R-squared" "ADM1_FE ADM1 Fixed Effects" "Country_FE Country Fixed Effects" "Year_FE Year Fixed Effects") ///
+    scalars("AGG Aggregation Level" "NC Number of Groups" "WR2 Adjusted Within R-squared" "ADM2_FE Admin. 2 Fixed Effects" "ADM1_FE Admin. 1 Fixed Effects" "Country_FE Country Fixed Effects" "Year_FE Year Fixed Effects") ///
     nonumbers ///
     b(3) se(3) ar2 star(* 0.10 ** 0.05 *** 0.01) sfmt(3) ///
     label booktabs nobaselevels  drop(_cons) replace
 
 /* Do all log levels regressions */
-pause off // CHANGE!!!!
-
 est clear
 clear	
 
@@ -325,9 +323,9 @@ if ("`Y'" == "WDI" & "`location'" == "ADM2") {
     using "$overleaf/all_log_levels.tex", ///
     posthead("\hline \\ \multicolumn{4}{l}{\textbf{Panel `panel_label'}} \\\\[-1ex]") ///
     fragment ///
-    scalars("AGG Aggregation Level" "NC Number of Groups" "WR2 Adjusted Within R-squared" "ADM2_FE ADM1 Fixed Effects" "ADM1_FE ADM1 Fixed Effects" "Country_FE Country Fixed Effects" "Year_FE Year Fixed Effects") ///
+    scalars("NC Number of Groups" "WR2 Adjusted Within R-squared" "Country_FE Country Fixed Effects" "ADM1_FE Admin. 1 Fixed Effects" "ADM2_FE Admin. 2 Fixed Effects" "Year_FE Year Fixed Effects") ///
     nomtitles nonumbers nolines ///
-    b(3) se(3) ar2 star(* 0.10 ** 0.05 *** 0.01) sfmt(3) ///
+    b(3) se(3) ar2 star(* 0.10 ** 0.05 *** 0.01 **** 0.001) sfmt(3) ///
     label booktabs nobaselevels  drop(_cons) ///
     `addendum'
 
