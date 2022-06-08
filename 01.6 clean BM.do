@@ -1,10 +1,7 @@
-// This file cleans the black marble p.m. to data. The black marble area them to
-// data comes originally from in our data file that Park provides. That our data
-// file is been converted to a DTA file within an hour. This file converts that
-// DTA file into different aggregations of the Black Marble data (ADM2 - month,
-// ADM2 - year, ISO3C - year). Note that when comparing the Black Marble data to
-// VIIRS data, there are some discrepancies with polygon area. This is due to
-// something called "raster extent". (ask Parth)
+// This file cleans the Black Marble data. The BM data comes originally from an
+// R data file that Parth provides. That R data file is been converted to a DTA
+// file. This file converts that DTA file into different aggregations of the
+// Black Marble data (ADM2 - month, ADM2 - year, ISO3C - year).
 
 use "$raw_data/Black Marble NTL/bm_adm2.dta", clear
 decode_vars, all
@@ -101,5 +98,4 @@ drop if mi(iso3c) | mi(year)
 
 save "$input/bm_iso3c_year.dta", replace
 
-
-
+.
