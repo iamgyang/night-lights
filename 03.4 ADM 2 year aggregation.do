@@ -14,11 +14,11 @@ rename bm_sumpix sum_pix_bm
 
 // check
 preserve
-keep ADM2 pol_area
-naomit
-gduplicates drop
-bys ADM2: gen n = _N
-assert n == 1
+    keep ADM2 pol_area
+    naomit
+    gduplicates drop
+    bys ADM2: gen n = _N
+    assert n == 1
 restore
 
 destring year, replace
