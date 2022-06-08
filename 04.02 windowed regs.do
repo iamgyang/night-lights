@@ -19,15 +19,15 @@ save `base'
 For each year, regress log(GDP)~log(NTL) and plot the coefficients. Do this for
 both DMSP and VIIRS, global, OECD, etc.
 */
-foreach agg_level in "cat_iso3c" "cat_ADM1" {
+foreach agg_level in "cat_iso3c" "cat_ADM1" "cat_ADM2" {
 foreach income_group in "Global" "OECD" "Not OECD" {
-foreach light_var in "VIIRS" "DMSP" "BM" {
+foreach light_var in "DMSP" "BM" {
 		
 			// Here, we don't have information subnationally
-			if ("`agg_level'" == "cat_ADM1") & ("`light_var'" == "DMSP") {
+			if ("`agg_level'" == "cat_ADM1") & ("`income_group'" == "Global") {
 				continue
 			}
-			if ("`agg_level'" == "cat_ADM1") & ("`income_group'" == "Global") {
+			if ("`agg_level'" == "cat_ADM2") & ("`income_group'" == "Global") {
 				continue
 			}
 			
@@ -45,6 +45,13 @@ foreach light_var in "VIIRS" "DMSP" "BM" {
 				// define fixed effects
 				local fixed_effects "cat_year cat_ADM1"
 			}
+			else if ("`agg_level'" == "cat_ADM2") {
+				use "$input/adm2_year_aggregation.dta", clear
+				// define the LHS var:
+				rename ln_GRP LHS_var
+				// define fixed effects
+				local fixed_effects "cat_year cat_ADM2"
+			}
 			
 			// define which countries we keep
 			if ("`income_group'" == "OECD") {
@@ -55,11 +62,6 @@ foreach light_var in "VIIRS" "DMSP" "BM" {
 			}
 
 			// define the years we do the regression on
-			if ("`light_var'" == "VIIRS") {
-				loc years "2013/2019"
-				loc years_group `""2013" "2014" "2015" "2016" "2017" "2018" "2019""'
-				rename ln_del_sum_pix_area RHS_var
-			}
 			else if ("`light_var'" == "DMSP") {
 				loc years "1992/2012"
 				loc years_group `""1992" "1993" "1994" "1995" "1996" "1997" "1998" "1999" "2000" "2001" "2002" "2003" "2004" "2005" "2006" "2007" "2008" "2009" "2010" "2011" "2012""'
@@ -132,13 +134,13 @@ use  `base'
 drop if point >9999
 sort light_var yr_start
 gduplicates drop
-save "$input/synthetic_gdp_results.dta", replace
+save "$input/window_regression_results.dta", replace
 
-foreach agg_level in "cat_iso3c" "cat_ADM1" {
+foreach agg_level in "cat_iso3c" "cat_ADM1" "cat_ADM2" {
 foreach income_group in "Global" "OECD" "Not OECD" {
-foreach light_var in "VIIRS" "DMSP" "BM" {
+foreach light_var in "DMSP" "BM" {
 
-			use "$input/synthetic_gdp_results.dta", clear
+			use "$input/window_regression_results.dta", clear
 
 			// filter for our specific coefficients
 			keep if agg_level == "`agg_level'"
