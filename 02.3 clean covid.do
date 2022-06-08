@@ -1,3 +1,11 @@
+/*
+Coronanet and Oxford provide data on lockdown stringency. Coronanet has a
+lockdown stringency measure that is different for business, mask policies, and
+school. On the other hand Oxford also has different indices for government,
+economic support, and containment. We typically use the overall Oxford
+stringency index four our regression. But, this file cleans all of those other
+stringency measures, so that they can be tested too if needed.
+*/
 
 // Coronanet COVID data ------------------------------------------------
 
@@ -74,40 +82,6 @@ rename countrycode iso3c
 drop countryname
 
 save "$input/covid_oxford_cleaned.dta", replace
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

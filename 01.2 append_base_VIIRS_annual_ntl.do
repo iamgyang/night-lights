@@ -1,3 +1,6 @@
+// There are two sources of the VIIRS data, annual and monthly. This cleans and
+// appends all the ANNUAL ADM2 level VIIRS night lights into 1 file. This data
+// was cleaned by NASA.
 
 // NEW VIIRS (annual) ----------------------------------------------------
 
@@ -41,18 +44,5 @@ import delimited "$raw_data/VIIRS NTL Extracted Data 2 2012-2020/VIIRS_annual2.c
 // Save NEW VIIRS DATASET
 	save "$input/NTL_appended2.dta", replace
 	
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 

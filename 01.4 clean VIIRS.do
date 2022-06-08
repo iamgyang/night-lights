@@ -1,13 +1,17 @@
-// This file cleans VIIRS (i.e. creates a unified dataset with the negatives deleted for VIIRS
+// This file cleans VIIRS (i.e. creates a unified dataset with the negatives
+// deleted for VIIRS. Here, NTL_appended denotes the monthly VIIRS nightlights
+// data, while NTL_appended2 to denotes the annual VIIRS nightlights data. We
+// noticed that some ADM2 regions had negative values for their pixel lumosity.
+// This doesn't make sense, as you cannot have negative amounts of brightness,
+// so we create a clean version of the VIIRS data by deleting the ADM2 regions
+// that have negative lumosity. We call this variable del_sum_pix, where 'del'
+// stands for 'deleted'. We continue to keep the original non-deleted
+// 'non-clean' version of the nightlights data, under the name sum_pix.
 
 foreach viirs_file_type in NTL_appended NTL_appended2 {
 	
-	
 	use "$input/`viirs_file_type'.dta", clear
-// 	gen n = _n
-// 	keep if n <= 10
-// 	drop n
-	
+
 	// get ID values for the date: year, month, and quarter:
 	capture quietly drop year
 	gen year = year(date2)
@@ -26,13 +30,15 @@ foreach viirs_file_type in NTL_appended NTL_appended2 {
 
 	use `base_viirs'
 	keep if !missing(sum_pix)
-	// key difference between the cleaned and not cleaned VIIRS is that we delete here.
+	// key difference between the cleaned and not cleaned VIIRS is that we
+	// delete here.
 	drop if sum_pix<0
 	rename (sum_pix pol_area) (del_sum_pix del_sum_area)
 	tempfile ntl_clean
 	save `ntl_clean'
 	
-	// merge the cleaned and not-cleaned VIIRS (cleaned means that we delete negatives)
+	// merge the cleaned and not-cleaned VIIRS (cleaned means that we delete
+	// negatives)
 	clear
 	use `ntl_clean'
 	mmerge iso3c objectid year month using `ntl_raw'
@@ -66,7 +72,6 @@ foreach viirs_file_type in NTL_appended NTL_appended2 {
 	}
 	check_dup_id "objectid year month quarter"
 	
-	local viirs_file_type "NTL_appended2"
 	save "$input/`viirs_file_type'_cleaned.dta", replace
 }
 
@@ -87,28 +92,6 @@ foreach i in iso3c name_0 gid_1 name_1 gid_2 sum_area {
 }
 
 save "$input/NTL_VIIRS_appended_cleaned_all.dta", replace
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

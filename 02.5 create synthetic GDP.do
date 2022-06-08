@@ -1,5 +1,12 @@
+// For a time, we were experimenting with using correlates of GDP such as
+// electricity consumption, global revenue data, as well as other indicators
+// such as imports and exports to provide a proxy for GDP, and then see whether
+// night lights data is related to this proxy. This file downloads and cleans
+// that non-GDP non-night lights data. In the end we may not end up using this
+// file because we do not create this 'synthetic' GDP.
+
 // Electricity consumption ----------------------------------------------
-import delimited "$raw_data\Electricity Consumption OWID\per-capita-electricity-consumption.csv", clear
+import delimited "$raw_data/Electricity Consumption OWID/per-capita-electricity-consumption.csv", clear
 
 // fix ISO codes & check they match country names
 drop if code == "OWID_WRL" | missing(code)

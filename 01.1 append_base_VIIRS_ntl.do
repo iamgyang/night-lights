@@ -1,4 +1,5 @@
-// Appends all VIIRS night lights files into 1 file. 
+// There are two sources of the VIIRS data, annual and monthly. This cleans and
+// appends all the MONTHLY ADM2 level VIIRS night lights into 1 file. 
 
 if ("$import_nightlights" == "yes") {
 	import delimited "$ntl_input/NTL_adm2_2012.csv", encoding(UTF-8) clear 
@@ -59,41 +60,6 @@ else if ("$import_nightlights" != "yes") {
 
 // save
 	save "$input/NTL_appended.dta", replace
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
