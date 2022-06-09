@@ -75,8 +75,8 @@ foreach light_var in "DMSP" "BM" {
 			else if ("`light_var'" == "DMSP" & "`agg_level'" != "cat_iso3c") {
 				// we have some limitations on our subnational Gross Regional
 				// Product data, so we don't have 1992-2000 data.
-				loc years "1995/2012"
-				loc years_group `""1995" "2002" "2003" "2004" "2005" "2006" "2007" "2008" "2009" "2010" "2011" "2012""'
+				loc years "2001/2012"
+				loc years_group `""2001" "2003" "2004" "2005" "2006" "2007" "2008" "2009" "2010" "2011" "2012""'
 				rename ln_sum_pix_dmsp_ad_area RHS_var
 			}
 			
@@ -125,7 +125,7 @@ foreach light_var in "DMSP" "BM" {
 			local scalar_labels `"scalars("NC Number of Countries" "WR2 Adjusted Within R-squared")"'
 
 			esttab using "$overleaf/window_`income_group'_`agg_level'_`light_var'.tex", replace f  ///
-				b(3) se(3) ar2 nomtitle label star(* 0.10 ** 0.05 *** 0.01) ///
+				b(3) se(3) ar2 nomtitle label star(* 0.10 ** 0.05 *** 0.01 **** 0.001) ///
 				booktabs collabels(none) mgroups(`years_group', ///
 				pattern(1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1) ///
 				prefix(\multicolumn{@span}{c}{) suffix(}) span erepeat(\cmidrule(lr){@span})) ///
@@ -177,21 +177,7 @@ foreach light_var in "DMSP" "BM" {
 			legend(off)
 			;
 			# delimit cr
-			gr export "$overleaf/window_`income_group'_`agg_level'_`light_var'_coefficient.png", replace
-			set graphics on
-
-			set graphics off
-			# delimit ;
-			twoway (line WR2 yr_start, lcolor(red)) 
-			(scatter WR2 yr_start) , 
-			ytitle("`ytitle'") ytitle(, 
-			orientation(horizontal)) xtitle("") 
-			xsize(10) ysize(5)
-			xlabel(`x_axis_start'(2)`x_axis_end')
-			legend(off)
-			;
-			# delimit cr
-			gr export "$overleaf/window_`income_group'_`agg_level'_`light_var'_WR2.png", replace
+			gr export "$overleaf/window_`income_group'_`agg_level'_`light_var'_coefficient.pdf", replace
 			set graphics on
 
 }
