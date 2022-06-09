@@ -63,14 +63,6 @@ save `ox_str'
             // make ISO3C and MONTH categorical variables
             create_categ(iso3c month year)
 			
-			// make a plot
-			reg g_an_ln_`light' cat_iso3c cat_month
-			predict r_lights, r
-			
-			scatter r_lights stringencyindex // if stringencyindex > 1  & abs(g_an_ln_`light') < 4
-			gr export "$overleaf/stringency_`light'.png", replace
-			pause scatterplot
-
 			//	income group restriction:
 			if ("`income_group'" == "OECD") {
 				keep_oecd iso3c
@@ -92,21 +84,21 @@ save `ox_str'
 
 /* EXPORT ----------- */
 
-esttab qGlobal_VIIRS qOECD_VIIRS qNot_OECD_VIIRS using "$overleaf/country_lockdown.tex", ///
-posthead("\hline \\ \multicolumn{4}{l}{\textbf{Panel A: Country level, VIIRS}} \\\\[-1ex]") ///
+esttab qGlobal_VIIRS qOECD_VIIRS qNot_OECD_VIIRS using "$overleaf/covid_stringency.tex", ///
+posthead("\hline\hline  \\ \multicolumn{4}{l}{\textbf{Panel A: Country level, VIIRS}} \\\\[-1ex]") ///
 fragment ///
 mgroups("Global" "OECD" "Not OECD", pattern(1 1 1) span prefix(\multicolumn{@span}{c}{) suffix(})) ///
 scalars("NC Number of Countries" "WR2 Adjusted Within R-squared") ///
 nomtitles ///
-b(3) se(3) ar2 star(* 0.10 ** 0.05 *** 0.01) sfmt(3) ///
+b(3) se(3) ar2 star(* 0.10 ** 0.05 *** 0.01 **** 0.01) sfmt(3) ///
 label booktabs nobaselevels  drop(_cons) ///
 replace
 
-esttab qGlobal_BM qOECD_BM qNot_OECD_BM using "$overleaf/country_lockdown.tex", ///
-posthead("\hline \\ \multicolumn{4}{l}{\textbf{Panel B: Country level, Black Marble (BM)}} \\\\[-1ex]") ///
+esttab qGlobal_BM qOECD_BM qNot_OECD_BM using "$overleaf/covid_stringency.tex", ///
+posthead("\hline\hline \\ \multicolumn{4}{l}{\textbf{Panel B: Country level, Black Marble (BM)}} \\\\[-1ex]") ///
 fragment ///
 append ///
 scalars("NC Number of Countries" "WR2 Adjusted Within R-squared") ///
 nomtitles nonumbers nolines ///
-b(3) se(3) ar2 star(* 0.10 ** 0.05 *** 0.01) sfmt(3) ///
+b(3) se(3) ar2 star(* 0.10 ** 0.05 *** 0.01 **** 0.01) sfmt(3) ///
 label booktabs nobaselevels drop(_cons)
