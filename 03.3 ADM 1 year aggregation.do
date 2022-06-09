@@ -3,31 +3,47 @@ and BM data */
 
 /* First, load all the data ---------------------------------------------- */
 
-/* India, Brazil, Indonesia, USA (note that the ADM1 mapping might not be
-perfect) */
-use "$raw_data/National Accounts/geo_coded_data/global_subnational_ntlmerged_woPHL.dta", clear
-keep year region GRP iso3c_x gid_1 name_1
-rename iso3c_x iso3c_grp
+// Mapping from [region --> GID_1]
+// for India, Brazil, Indonesia, USA.
+// (note that the geo-coding is not perfect. we are unable to map 30 regions to their respective GID_1 ADM-1s IDs.
+import delimited "$raw_data/National Accounts/geo_coded_data/global_subnational_ntlmerged_woPHL.csv", varnames(1) clear
+gduplicates drop
+check_dup_id "region"
+tempfile country_website_mapping
+save `country_website_mapping'
+
+// Subnational GRP data for India, Brazil, Indonesia, Australia, Philipines, and USA.
+use "$raw_data/National Accounts/IND_PHL_USA_AUS_adm1_grp.dta", clear
+destring GRP, replace
+append using "$input/brazil_subnatl_grp.dta", force
+append using "$input/india_subnatl_grp.dta", force
+replace region = lower(region)
+check_dup_id "region year"
 gen source = "country website"
-tempfile iibu
-save `iibu'
+mmerge region using `country_website_mapping'
+drop if _merge != 3 // 29 regions unable to be mapped; in particular, Philipines and Australian mapping was poor.
+drop _merge note
+check_dup_id "region year"
+tempfile IND_PHL_USA_AUS
+save `IND_PHL_USA_AUS'
 clear
 
-/* Global ADM1 GRP from OECD (note that ADM1 mapping might not be perfect) */
+// Mapping OECD [regional_name --> GID_1] 
+// note that ADM1 mapping might not be perfect. right now, we're missing some of India
 use "$raw_data/National Accounts/geo_coded_data/oecd2_adm2NTL_map17feb22.dta", clear
 keep NAME_0 NAME_1 GID_1 iso3c regional_name
 rename *, lower
 decode_vars, all
 gduplicates drop
 naomit
+conv_ccode name_0
+drop if iso!=iso3c
+drop iso name_0
 
 // import subnational GRP
 mmerge iso3c regional_name using "$input/oecd_tl2.dta"
-keep if _merge ==3 // !!!!!!! TODO: some were not geocoded accurately
-assert _merge == 3
+keep if _merge ==3 // !!!!!!! right now we're missing 60 ADM-1 regions, much of which is India
 drop _merge
-conv_ccode name_0
-keep if iso3c == iso | mi(iso) | mi(iso3c) // !!!!!!! TODO: some were not geocoded accurately
 rename value GRP
 rename regional_name region
 rename iso3c iso3c_grp
