@@ -110,7 +110,7 @@ replace iso3c_grp = iso3c if mi(iso3c_grp)
 drop name_1 iso3c
 rename iso3c_grp iso3c
 drop _merge
-drop if mi(GRP) | mi(gid_1) | mi(year)
+assert !(mi(gid_1) | mi(year))
 
 // drop if we got it directly from the country website (better than OECD data)
 drop if (iso3c == "BRA" | iso3c == "IDN" | iso3c == "IND" | iso3c == "USA") & (source == "OECD")
@@ -131,6 +131,10 @@ foreach i in sum_pix_bm sum_pix_dmsp_ad {
 	create_logvars "`i'_area"
 }
 create_logvars "GRP"
+rename gid_1 ADM1
+
+// create categorical variables
+create_categ(ADM1 iso3c year)
 
 // save:
 save "$input/adm1_year_aggregation.dta", replace
