@@ -177,7 +177,7 @@ fragment ///
 mgroups("India, Indonesia, Brazil" "OECD" "Global", pattern(1 1 1) span prefix(\multicolumn{@span}{c}{) suffix(})) ///
 scalars("AGG Aggregation Level" ) ///
 nomtitles ///
-b(3) se(3) ar2 star(* 0.10 ** 0.05 *** 0.01) sfmt(3) ///
+b(3) se(3) ar2 star(* 0.10 ** 0.05 *** 0.01 **** 0.001) sfmt(3) ///
 label booktabs nobaselevels  drop(_cons) ///
 replace
 
@@ -187,6 +187,6 @@ fragment ///
 append ///
 scalars("AGG Aggregation Level" ) ///
 nomtitles nonumbers nolines ///
-b(3) se(3) ar2 star(* 0.10 ** 0.05 *** 0.01) sfmt(3) ///
+b(3) se(3) ar2 star(* 0.10 ** 0.05 *** 0.01 **** 0.001) sfmt(3) ///
 label booktabs nobaselevels drop(_cons)
 

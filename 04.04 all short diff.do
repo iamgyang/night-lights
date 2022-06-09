@@ -183,7 +183,7 @@ fragment ///
 mgroups("India, Indonesia, Brazil" "OECD" "Global", pattern(1 1 1) span prefix(\multicolumn{@span}{c}{) suffix(})) ///
 scalars("AGG Aggregation Level" "NC Number of Groups" "WR2 Adjusted Within R-squared" "ADM1_FE Admin. 1 Fixed Effects" "Country_FE Country Fixed Effects" "Year_FE Year Fixed Effects" ) ///
 nomtitles ///
-b(3) se(3) star(* 0.10 ** 0.05 *** 0.01) sfmt(3) ///
+b(3) se(3) star(* 0.10 ** 0.05 *** 0.01 **** 0.001) sfmt(3) ///
 label booktabs nobaselevels  drop(_cons) ///
 replace
 
@@ -193,7 +193,7 @@ fragment ///
 append ///
 scalars("AGG Aggregation Level" "NC Number of Groups" "WR2 Adjusted Within R-squared" "ADM1_FE Admin. 1 Fixed Effects" "Country_FE Country Fixed Effects" "Year_FE Year Fixed Effects") ///
 nomtitles nonumbers nolines ///
-b(3) se(3) star(* 0.10 ** 0.05 *** 0.01) sfmt(3) ///
+b(3) se(3) star(* 0.10 ** 0.05 *** 0.01 **** 0.001) sfmt(3) ///
 label booktabs nobaselevels drop(_cons)
 
 esttab subn3 subn4 using "$overleaf/all_annual_growth.tex", ///
@@ -202,7 +202,7 @@ fragment ///
 append ///
 scalars("AGG Aggregation Level" "NC Number of Groups" "WR2 Adjusted Within R-squared" "ADM1_FE Admin. 1 Fixed Effects" "Country_FE Country Fixed Effects" "Year_FE Year Fixed Effects") ///
 nomtitles nonumbers nolines ///
-b(3) se(3) star(* 0.10 ** 0.05 *** 0.01) sfmt(3) ///
+b(3) se(3) star(* 0.10 ** 0.05 *** 0.01 **** 0.001) sfmt(3) ///
 label booktabs nobaselevels drop(_cons)
 
 esttab country1 country2 using "$overleaf/all_annual_growth.tex", ///
@@ -212,7 +212,7 @@ append ///
 scalars( "AGG Aggregation Level" "NC Number of Groups" "WR2 Adjusted Within R-squared" "ADM1_FE Admin. 1 Fixed Effects" "Country_FE Country Fixed Effects" "Year_FE Year Fixed Effects") ///
 nomtitles nonumbers nolines ///
 prefoot("\hline") ///
-b(3) se(3) star(* 0.10 ** 0.05 *** 0.01) sfmt(3) ///
+b(3) se(3) star(* 0.10 ** 0.05 *** 0.01 **** 0.001) sfmt(3) ///
 label booktabs nobaselevels drop(_cons)
 
 

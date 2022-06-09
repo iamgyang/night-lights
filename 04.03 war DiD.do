@@ -151,7 +151,7 @@ foreach week_restriction in "3wk" " " {
 			estadd local WR2 `y'
 
 			esttab using "$overleaf/sum_pix_`treat_var'_response_1.tex", append f  ///
-				b(3) se(3) star(* 0.10 ** 0.05 *** 0.01) ///
+				b(3) se(3) star(* 0.10 ** 0.05 *** 0.01 **** 0.001) ///
 				label booktabs nomtitle nobaselevels collabels(none) ///
 				scalars("NC Number of Countries" "WR2 Adjusted Within R-squared") ///
 				title("`light_label' `treat_var'" "(`pctile' percentile) `week_restriction'") ///
