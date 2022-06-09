@@ -7,11 +7,11 @@ use "$input/iso3c_year_aggregation.dta", clear
 
 // black marble December 
 keep ln_WDI_ppp ln_sum_pix_bm_area ln_sum_pix_dmsp_area cat_iso3c cat_year year iso3c
-reghdfe ln_WDI_ppp ln_sum_pix_bm_area, absorb(cat_iso3c cat_year) vce(cluster cat_iso3c)
+reghdfe ln_WDI_ppp ln_sum_pix_bm_area, absorb(cat_iso3c cat_year)
 predict ln_gdp_bm
 
 // DMSP
-reghdfe ln_WDI_ppp ln_sum_pix_dmsp_area, absorb(cat_iso3c cat_year) vce(cluster cat_iso3c)
+reghdfe ln_WDI_ppp ln_sum_pix_dmsp_area, absorb(cat_iso3c cat_year)
 predict ln_gdp_dmsp
 
 // dev's code requires us to start unlogged w/ GDP per capita

@@ -86,7 +86,7 @@ foreach light_var in "DMSP" "BM" {
 			est clear
 			foreach year of numlist `years' {
 				di "`year'"
-				eststo: reghdfe LHS_var RHS_var if (year == `year' | year == `year' + 1), absorb(`fixed_effects') vce(cluster `agg_level')
+				eststo: reghdfe LHS_var RHS_var if (year == `year' | year == `year' + 1), absorb(`fixed_effects')
 				estadd local NC `e(N_clust)'
 				local y= round(`e(r2_a_within)', .001)
 				estadd local WR2 `y'

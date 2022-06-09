@@ -73,7 +73,7 @@ save `ox_str'
 			
 			
 			pause PRIOR TO REGRESSION
-			reghdfe g_an_ln_`light' stringencyindex, absorb(cat_iso3c cat_month) vce(cluster cat_iso3c)
+			reghdfe g_an_ln_`light' stringencyindex, absorb(cat_iso3c cat_month)
 			estadd local NC `e(N_clust)'
 			local y= round(`e(r2_a_within)', .001)
 			estadd local WR2 `y'

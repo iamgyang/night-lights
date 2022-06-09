@@ -17,7 +17,7 @@ foreach var of varlist ln_* {
 }
 drop if mi(g_ln_del_sum_pix_area) | mi(g_ln_GRP)
 drop if iso3c == "USA"
-reghdfe g_ln_GRP g_ln_del_sum_pix_area, absorb(cat_ADM1 cat_year) vce(cluster cat_ADM1)
+reghdfe g_ln_GRP g_ln_del_sum_pix_area, absorb(cat_ADM1 cat_year)
 eststo subn1
 estadd local NC `e(N_clust)'
 local y = round(`e(r2_a_within)', .001)
@@ -27,7 +27,7 @@ estadd local ADM1_FE "X"
 estadd local Year_FE "X"
 estadd local Country_FE ""
 
-reghdfe g_ln_GRP g_ln_del_sum_pix_area, absorb(cat_iso3c cat_year) vce(cluster cat_iso3c)
+reghdfe g_ln_GRP g_ln_del_sum_pix_area, absorb(cat_iso3c cat_year)
 eststo subn3
 estadd local NC `e(N_clust)'
 local y = round(`e(r2_a_within)', .001)
@@ -48,7 +48,7 @@ foreach var of varlist ln_* {
 	label variable g_`var' "Diff. `lab'"
 }
 drop if mi(g_ln_del_sum_pix_area) | mi(g_ln_GRP)
-reghdfe g_ln_GRP g_ln_del_sum_pix_area, absorb(cat_ADM1 cat_year) vce(cluster cat_ADM1)
+reghdfe g_ln_GRP g_ln_del_sum_pix_area, absorb(cat_ADM1 cat_year)
 eststo subn2
 estadd local NC `e(N_clust)'
 local y = round(`e(r2_a_within)', .001)
@@ -58,7 +58,7 @@ estadd local ADM1_FE "X"
 estadd local Year_FE "X"
 estadd local Country_FE ""
 
-reghdfe g_ln_GRP g_ln_del_sum_pix_area, absorb(cat_iso3c cat_year) vce(cluster cat_iso3c)
+reghdfe g_ln_GRP g_ln_del_sum_pix_area, absorb(cat_iso3c cat_year)
 eststo subn4
 estadd local NC `e(N_clust)'
 local y = round(`e(r2_a_within)', .001)
@@ -88,7 +88,7 @@ foreach var of varlist ln_* {
 	label variable g_`var' "Diff. `lab'"
 }
 drop if mi(g_ln_del_sum_pix_area) | mi(g_ln_GRP)
-reghdfe g_ln_GRP g_ln_del_sum_pix_area, absorb(cat_iso3c cat_year) vce(cluster cat_iso3c)
+reghdfe g_ln_GRP g_ln_del_sum_pix_area, absorb(cat_iso3c cat_year)
 eststo country1
 estadd local NC `e(N_clust)'
 local y = round(`e(r2_a_within)', .001)
@@ -115,7 +115,7 @@ foreach var of varlist ln_* {
 	label variable g_`var' "Diff. `lab'"
 }
 drop if mi(g_ln_del_sum_pix_area) | mi(g_ln_GRP)
-reghdfe g_ln_GRP g_ln_del_sum_pix_area, absorb(cat_iso3c cat_year) vce(cluster cat_iso3c)
+reghdfe g_ln_GRP g_ln_del_sum_pix_area, absorb(cat_iso3c cat_year)
 eststo country2
 estadd local NC `e(N_clust)'
 local y = round(`e(r2_a_within)', .001)
@@ -129,7 +129,7 @@ estadd local Country_FE "X"
 
 /* Global */
 use "$input/iso3c_year_aggregation.dta", clear
-reghdfe g_ln_WDI g_ln_del_sum_pix_area, absorb(cat_iso3c cat_year) vce(cluster cat_iso3c)
+reghdfe g_ln_WDI g_ln_del_sum_pix_area, absorb(cat_iso3c cat_year)
 eststo country_wdi3
 estadd local NC `e(N_clust)'
 local y = round(`e(r2_a_within)', .001)
@@ -142,7 +142,7 @@ estadd local Country_FE "X"
 /* India, Indonesia, Brazil */
 use "$input/iso3c_year_aggregation.dta", clear
 keep if iso3c == "IND" | iso3c == "BRA" | iso3c == "IDN"
-reghdfe g_ln_WDI g_ln_del_sum_pix_area, absorb(cat_iso3c cat_year) vce(cluster cat_iso3c)
+reghdfe g_ln_WDI g_ln_del_sum_pix_area, absorb(cat_iso3c cat_year)
 eststo country_wdi1
 estadd local NC `e(N_clust)'
 local y = round(`e(r2_a_within)', .001)
@@ -165,7 +165,7 @@ foreach i in `country_codes' {
 }
 keep if tokeep == "Yes"
 drop tokeep
-reghdfe g_ln_WDI g_ln_del_sum_pix_area, absorb(cat_iso3c cat_year) vce(cluster cat_iso3c)
+reghdfe g_ln_WDI g_ln_del_sum_pix_area, absorb(cat_iso3c cat_year)
 eststo country_wdi2
 estadd local NC `e(N_clust)'
 local y = round(`e(r2_a_within)', .001)

@@ -29,7 +29,7 @@ foreach agg_level in cat_iso3c cat_ADM1 {
 	label variable ln_del_sum_pix "Log(VIIRS pixels)"
 
 	foreach var in ln_sum_pix_bm ln_sum_pix_bm ln_del_sum_pix{
-		reghdfe `var' gdp_var c.gdp_var#c.gdp_var, absorb(`agg_level' cat_year) vce(cluster `agg_level')
+		reghdfe `var' gdp_var c.gdp_var#c.gdp_var, absorb(`agg_level' cat_year)
         eststo r`i'_`agg_level'
         estadd local AGG "`AGG'"
         estadd local NC `e(N_clust)'

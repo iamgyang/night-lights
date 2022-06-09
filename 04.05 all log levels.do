@@ -11,7 +11,7 @@ create_logvars "sum_pix_bm_area"
 
 // do the HWS regression for the same variable and same year as them:
 // bootstrap, rep(50) cluster(cat_iso3c) : ///
-reghdfe ln_WDI lndn if year <= 2008 & !(inlist(iso3c, "GNQ", "BHR", "SGP", "HKG")), absorb(cat_iso3c cat_year) vce(cluster cat_iso3c)
+reghdfe ln_WDI lndn if year <= 2008 & !(inlist(iso3c, "GNQ", "BHR", "SGP", "HKG")), absorb(cat_iso3c cat_year)
 	eststo reg_DMSP
 	estadd local AGG "Country"
 	estadd local NC `e(N_clust)'
@@ -23,7 +23,7 @@ reghdfe ln_WDI lndn if year <= 2008 & !(inlist(iso3c, "GNQ", "BHR", "SGP", "HKG"
 
 // do the BM regression
 // bootstrap, rep(50) cluster(cat_iso3c) : ///
-reghdfe ln_WDI ln_sum_pix_bm_area, absorb(cat_iso3c cat_year) vce(cluster cat_iso3c)
+reghdfe ln_WDI ln_sum_pix_bm_area, absorb(cat_iso3c cat_year)
 	eststo reg_BM
 	estadd local AGG "Country"
 	estadd local NC `e(N_clust)'
@@ -142,7 +142,7 @@ foreach file in adm2_year_aggregation adm1_year_aggregation iso3c_year_aggregati
 				// regression
 				pause `file' `light_label' `income_group' FIRST REGRESSION
 // 				bootstrap, rep(50) cluster(cat_`location') : ///
-				reghdfe ln_`Y' ln_`light_var'_area c.ln_`light_var'_area#covid_dummy, absorb(cat_`location' cat_year) vce(cluster cat_`location')
+				reghdfe ln_`Y' ln_`light_var'_area c.ln_`light_var'_area#covid_dummy, absorb(cat_`location' cat_year)
 				eststo reg_`income_group'_`light_label'_`location'_`Y'_c
 				di "reg_`income_group'_`light_label'_`location'_`Y'_c"
 				estadd local AGG "`AGG'"
@@ -156,7 +156,7 @@ foreach file in adm2_year_aggregation adm1_year_aggregation iso3c_year_aggregati
 
 				pause `file' `light_label' `income_group' SECOND REGRESSION
 // 				bootstrap, rep(50) cluster(cat_`location') : ///
-				reghdfe ln_`Y' ln_`light_var'_area, absorb(cat_`location' cat_year) vce(cluster cat_`location')
+				reghdfe ln_`Y' ln_`light_var'_area, absorb(cat_`location' cat_year)
 				eststo reg_`income_group'_`light_label'_`location'_`Y'
 				di "reg_`income_group'_`light_label'_`location'_`Y'"
 				estadd local AGG "`AGG'"
@@ -198,7 +198,7 @@ foreach file in adm2_year_aggregation adm1_year_aggregation iso3c_year_aggregati
 				// regression
 				pause `file' `light_label' `income_group' COLLAPSED REGRESSION FIRST
 // 				bootstrap, rep(50) cluster(cat_iso3c) : ///
-				reghdfe ln_`Y' ln_`light_var'_area c.ln_`light_var'_area#covid_dummy, absorb(cat_iso3c cat_year) vce(cluster cat_iso3c)
+				reghdfe ln_`Y' ln_`light_var'_area c.ln_`light_var'_area#covid_dummy, absorb(cat_iso3c cat_year)
                 eststo reg_`income_group'_`light_label'_`location'_`Y'_c
                 estadd local AGG "`AGG'"
                 estadd local NC `e(N_clust)'
@@ -211,7 +211,7 @@ foreach file in adm2_year_aggregation adm1_year_aggregation iso3c_year_aggregati
 				
 				pause `file' `light_label' `income_group' COLLAPSED REGRESSION SECOND
 // 				bootstrap, rep(50) cluster(cat_iso3c) : ///
-				reghdfe ln_`Y' ln_`light_var'_area, absorb(cat_iso3c cat_year) vce(cluster cat_iso3c)
+				reghdfe ln_`Y' ln_`light_var'_area, absorb(cat_iso3c cat_year)
                 eststo reg_`income_group'_`light_label'_`location'_`Y'
                 estadd local AGG "`AGG'"
                 estadd local NC `e(N_clust)'

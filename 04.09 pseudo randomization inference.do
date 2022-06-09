@@ -7,7 +7,7 @@ well, and compare the regressions. */
 
 /* Global log levels regression is highly significant */
     use "$input/iso3c_year_aggregation.dta", clear
-    reghdfe ln_WDI ln_del_sum_pix_area, absorb(cat_iso3c cat_year) vce(cluster cat_iso3c)
+    reghdfe ln_WDI ln_del_sum_pix_area, absorb(cat_iso3c cat_year)
     eststo country_wdi3
     estadd local NC `e(N_clust)'
     local y = round(`e(r2_a_within)', .001)
@@ -20,7 +20,7 @@ well, and compare the regressions. */
 // does the result hold under bootstrap? Yes!
 /* Note: this bootstrap samples entire COUNTRIES 50 times. */
 // bootstrap, rep(50) cluster(cat_iso3c) size(50): ///
-//     reghdfe ln_WDI ln_del_sum_pix_area, absorb(cat_iso3c cat_year) vce(cluster cat_iso3c)
+//     reghdfe ln_WDI ln_del_sum_pix_area, absorb(cat_iso3c cat_year)
 
 /* does the result hold if I randomize which countries get which lights? No!
 (which is a good thing) */
@@ -60,7 +60,7 @@ well, and compare the regressions. */
 	create_categ(iso3c year)
 	
 	// our original regression
-	reghdfe ln_WDI ln_del_sum_pix_area, absorb(cat_iso3c cat_year) vce(cluster cat_iso3c)
+	reghdfe ln_WDI ln_del_sum_pix_area, absorb(cat_iso3c cat_year)
     eststo country_wdi3
     estadd local NC `e(N_clust)'
     local y = round(`e(r2_a_within)', .001)
@@ -71,7 +71,7 @@ well, and compare the regressions. */
     estadd local Country_FE "X"
 	
 	// new randomized regression
-	reghdfe ln_WDI rand_ln_del_sum_pix_area, absorb(cat_iso3c cat_year) vce(cluster cat_iso3c)
+	reghdfe ln_WDI rand_ln_del_sum_pix_area, absorb(cat_iso3c cat_year)
     eststo country_wdi3
     estadd local NC `e(N_clust)'
     local y = round(`e(r2_a_within)', .001)

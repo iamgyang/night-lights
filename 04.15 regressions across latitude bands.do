@@ -33,7 +33,7 @@ foreach XVAR in ln_sum_pix_bm_area ln_del_sum_pix_area {
 				
 			// run regression on specific latitude band
 				keep if n > `k' & n <= `k'+18
-				reghdfe ln_WDI `XVAR' c.`XVAR'#c.`XVAR', absorb(cat_iso3c cat_year) vce(cluster cat_iso3c)
+				reghdfe ln_WDI `XVAR' c.`XVAR'#c.`XVAR', absorb(cat_iso3c cat_year)
 				
 			// get the upper and lower confidence intervals and the point estimate
 				matrix list r(table)
@@ -138,7 +138,7 @@ foreach XVAR in ln_sum_pix_bm_area ln_del_sum_pix_area {
 				
 			// run regression on specific latitude band
 				keep if n > `k' & n <= `k'+18
-				reghdfe ln_WDI `XVAR', absorb(cat_iso3c cat_year) vce(cluster cat_iso3c)
+				reghdfe ln_WDI `XVAR', absorb(cat_iso3c cat_year)
 				
 			// get the upper and lower confidence intervals and the point estimate
 				matrix list r(table)

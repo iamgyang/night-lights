@@ -145,7 +145,7 @@ foreach week_restriction in "3wk" " " {
 				Within R-squared, e(r2_within)) ///
 				title("`light_label' `treat_var'" "(`pctile' percentile) `week_restriction'")
 			
-			eststo: reghdfe `light_var' post_tr, absorb(cat_year cat_objectid cat_month) vce(cluster cat_objectid)
+			eststo: reghdfe `light_var' post_tr, absorb(cat_year cat_objectid cat_month)
 			estadd local NC `e(N_clust)'
 			local y= round(`e(r2_a_within)', .001)
 			estadd local WR2 `y'
