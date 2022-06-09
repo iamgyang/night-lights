@@ -13,6 +13,7 @@ foreach i of numlist 2004/2008 {
 rename(C-G) (`a')
 reshape long x, i(B) j(year)
 rename (x B) (GRP region)
+gen revision = 1
 tempfile first
 save `first'
 
@@ -30,6 +31,7 @@ foreach i of numlist 2009/2013 {
 rename(C-G) (`a')
 reshape long x, i(B) j(year)
 rename (x B) (GRP region)
+gen revision = 2
 tempfile second
 save `second'
 
@@ -48,6 +50,7 @@ rename(C-L) (`a')
 reshape long x, i(B) j(year)
 rename (x B) (GRP region)
 naomit
+gen revision = 3
 tempfile third
 save `third'
 
@@ -56,6 +59,16 @@ clear
 use `first'
 append using `second'
 append using `third'
+
+// remove duplicates by defaulting to the most recent revision of subnational GRP
+bys region year: gen n = _N
+br if n != 1
+bys region year: gegen rev_recent = max(revision)
+replace GRP = . if revision != rev_recent
+gcollapse (mean) GRP, by(region year)
+assert !mi(region)
+assert !mi(year)
+gen iso3c = "IND"
 
 // save
 save "$input/india_subnatl_grp.dta", replace
