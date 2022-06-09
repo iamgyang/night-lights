@@ -87,34 +87,4 @@ gen note = "GRP values do not match official figures. Growth values do, however.
 drop if strpos(region, "Região")
 
 save "$input/brazil_subnatl_grp.dta", replace
-
-//
-// use "$input/brazil_subnatl_grp.dta", clear
-//
-// // validation
-// gen GRP_growth = 100*(GRP / GRP[_n-1] - 1 )
-// gen fx_real_usd = 5.395 if year == 2021
-// replace fx_real_usd = 5.151 if year == 2020
-// replace fx_real_usd = 3.946 if year == 2019
-// replace fx_real_usd = 3.655 if year == 2018
-// replace fx_real_usd = 3.322 if year == 2017
-// replace fx_real_usd = 3.632 if year == 2016
-// gen current_GRP_USD = current_GRP / fx_real_usd 
-// gen current_gr_USD_BRA = current_GRP_USD / current_GRP_USD[_n-1]-1
-//
-// // okay, I give up. but the growth figures look roughly accurate...
-// // but the GRP numbers IDK where they come from.
-//
-// ed
-//
-
-
-
-
-
-
-
-
-
-
-
+.
