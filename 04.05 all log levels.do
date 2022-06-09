@@ -271,7 +271,7 @@ if ("`Y'" == "GRP" & "`location'" == "iso3c") {
     reg_OECD_`light_label'_`location'_`Y' reg_OECD_`light_label'_`location'_`Y'_c /// 
     reg_n_O_`light_label'_`location'_`Y' reg_n_O_`light_label'_`location'_`Y'_c ///
     using "$overleaf/all_log_levels.tex", ///
-    posthead("\hline \\ \multicolumn{4}{l}{\textbf{Panel `panel_label'}} \\\\[-1ex]") ///
+    posthead("\hline\hline \\ \multicolumn{4}{l}{\textbf{Panel `panel_label'}} \\\\[-1ex]") ///
     fragment ///
     scalars("NC Number of Groups" "WR2 Adjusted Within R-squared" "Country_FE Country Fixed Effects" "ADM1_FE Admin. 1 Fixed Effects" "ADM2_FE Admin. 2 Fixed Effects" "Year_FE Year Fixed Effects") ///
     nomtitles nonumbers nolines ///
